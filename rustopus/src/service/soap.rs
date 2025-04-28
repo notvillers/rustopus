@@ -2,7 +2,7 @@ use reqwest::{blocking::Client, Response};
 use reqwest::header::CONTENT_TYPE;
 use chrono::{Date, DateTime, NaiveDateTime, TimeZone, Utc};
 
-fn get_first_date() -> DateTime<Utc> {
+pub fn get_first_date() -> DateTime<Utc> {
     let naive_datetime = NaiveDateTime::new(
         chrono::NaiveDate::from_ymd_opt(2000, 1, 1).expect("Invalid date provided"), 
         chrono::NaiveTime::from_hms_opt(0, 0, 1).expect("Invalid time provided"));
@@ -11,7 +11,7 @@ fn get_first_date() -> DateTime<Utc> {
 }
 
 
-fn get_response(url: &String, soap_request: String) -> String {
+fn get_response(url: &str, soap_request: String) -> String {
     let client: Client = Client::new();
     let response: Result<reqwest::blocking::Response, reqwest::Error> = client
     .post(url)
@@ -38,7 +38,7 @@ fn get_response(url: &String, soap_request: String) -> String {
 }
 
 
-fn get_products_xml(xmlns: &String, web_update: &DateTime<Utc>, authcode: &String) -> String {
+fn get_products_xml(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
     format!(
         r#"<?xml version="1.0" encoding="utf-8"?>
             <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
@@ -57,38 +57,16 @@ fn get_products_xml(xmlns: &String, web_update: &DateTime<Utc>, authcode: &Strin
 }
 
 
-pub fn get_products(url: &String, xmlns: &String, authcode: &String, web_update: &Option<DateTime<Utc>>) -> String {
-    let web_update: DateTime<Utc> = web_update
-        .unwrap_or_else(get_first_date);
+pub fn get_products(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
     let soap_request: String = get_products_xml(xmlns, &web_update, &authcode);
 
-    let client: Client = Client::new();
-    let response: Result<reqwest::blocking::Response, reqwest::Error> = client
-        .post(url)
-        .header(CONTENT_TYPE, "text/xml; charset=utf-8")
-        .body(soap_request)
-        .send();
+    let response_text: String = get_response(url, soap_request);
 
-    match response {
-        Ok(response) => {
-            let response_text: Result<String, reqwest::Error> = response.text();
-            match response_text {
-                Ok(response_text) => {
-                    response_text
-                }
-                Err(_) => {
-                    "ERROR".to_string()
-                }
-            }
-        }
-        Err(_) => {
-            "ERROR".to_string()
-        }
-    }
+    response_text
 }
 
 
-fn get_stock_xml(xmlns: &String, web_update: &DateTime<Utc>, authcode: &String) -> String {
+fn get_stock_xml(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
 
     format!(r#"<?xml version="1.0" encoding="utf-8"?>
             <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
@@ -107,11 +85,11 @@ fn get_stock_xml(xmlns: &String, web_update: &DateTime<Utc>, authcode: &String) 
 }
 
 
-pub fn get_stock(url: &String, xmlns: &String, authcode: &String, web_update: &Option<DateTime<Utc>>) -> String {
-    let web_update: DateTime<Utc> = web_update
-        .unwrap_or_else(get_first_date);
+pub fn get_stock(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
 
     let soap_request: String = get_stock_xml(xmlns, &web_update, authcode);
 
-    "ok".to_string()
+    let response_text: String = get_response(url, soap_request);
+
+    response_text
 }
