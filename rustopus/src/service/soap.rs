@@ -11,6 +11,33 @@ fn get_first_date() -> DateTime<Utc> {
 }
 
 
+fn get_response(url: &String, soap_request: String) -> String {
+    let client: Client = Client::new();
+    let response: Result<reqwest::blocking::Response, reqwest::Error> = client
+    .post(url)
+    .header(CONTENT_TYPE, "text/xml; charset=utf-8")
+    .body(soap_request)
+    .send();
+
+    match response {
+        Ok(response) => {
+            let response_text: Result<String, reqwest::Error> = response.text();
+            match response_text {
+                Ok(response_text) => {
+                    response_text
+                }
+                Err(_) => {
+                    "ERROR".to_string()
+                }
+            }
+        }
+        Err(_) => {
+            "ERROR".to_string()
+        }
+    }
+}
+
+
 fn get_products_xml(xmlns: &String, web_update: &DateTime<Utc>, authcode: &String) -> String {
     format!(
         r#"<?xml version="1.0" encoding="utf-8"?>
