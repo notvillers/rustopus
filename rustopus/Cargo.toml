@@ -1,0 +1,11 @@
+[package]
+name = "rustopus"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+reqwest = { version = "0.11", features = ["blocking", "rustls-tls"] }
+quick-xml = { version = "0.31", features = ["serialize"] }
+serde = { version = "1.0", features = ["derive"] }
+chrono = "0.4"
+dotenv = "0.15"
