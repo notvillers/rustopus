@@ -21,7 +21,7 @@ async fn index() -> impl Responder {
     let index_str = r#"RustOpus @ Villers
 __________________
 
-Solution to convert hungarian Octopus 8 ERP SOAP data to english
+Solution to convert hungarian Octopus 8 ERP SOAP data to english.
 
 APIs
     /get-products
