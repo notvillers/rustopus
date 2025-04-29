@@ -96,9 +96,15 @@ pub fn get_products_envelope(response_text: &str) -> Result<o8_xml::products::En
 
 pub fn products_to_en_struct(envelope: o8_xml::products::Envelope) -> partner_xml::products::Envelope {
     let mut eng_products: Vec<partner_xml::products::Product> = Vec::new();
+    let mut i = 0;
     for c in envelope.Body.GetCikkekAuthResponse.GetCikkekAuthResult.valasz.cikk {
         let eng_product = hun_to_en_product(c);
         eng_products.push(eng_product);
+
+        i += 1;
+        if i == 10 {
+            break;
+        }
     }
 
     let verzio = envelope.Body.GetCikkekAuthResponse.GetCikkekAuthResult.valasz.verzio;
