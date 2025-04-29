@@ -1,6 +1,6 @@
 use chrono::NaiveDate;
 use serde::{Deserialize, Deserializer};
-use std::{error, str::FromStr};
+use std::str::FromStr;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")] // Handle PascalCase names

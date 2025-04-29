@@ -24,7 +24,15 @@ async fn index() -> impl Responder {
 
 #[get("/get-products")]
 async fn get_products_handler(query: web::Query<ProductRequest>) -> impl Responder {
-    let req = query.into_inner();
+    let mut req = query.into_inner();
+
+    if req.xmlns.trim().is_empty() &&req.url.contains("/services/") {
+        if let Some(pos) = req.url.find("/services/") {
+            let end = pos + "/services/".len();
+            req.xmlns = req.url[..end].to_string();
+        }
+    }
+
     let xml = soap::get_products(&req.url, &req.xmlns, &req.authcode, &soap::get_first_date()).await;
 
     println!("{}", xml);
@@ -37,7 +45,14 @@ async fn get_products_handler(query: web::Query<ProductRequest>) -> impl Respond
 
 #[post("/get-products")]
 async fn post_products_handler(json: web::Json<ProductRequest>) -> impl Responder {
-    let req = json.into_inner();
+    let mut req = json.into_inner();
+
+    if req.xmlns.trim().is_empty() &&req.url.contains("/services/") {
+        if let Some(pos) = req.url.find("/services/") {
+            let end = pos + "/services/".len();
+            req.xmlns = req.url[..end].to_string();
+        }
+    }
 
     let xml = soap::get_products(&req.url, &req.xmlns, &req.authcode, &soap::get_first_date()).await;
 
@@ -48,6 +63,9 @@ async fn post_products_handler(json: web::Json<ProductRequest>) -> impl Responde
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let host = "0.0.0.0";
+    let port = 1140;
+
     println!("Running on http://localhost:1140");
 
     HttpServer::new(|| {
@@ -56,7 +74,7 @@ async fn main() -> std::io::Result<()> {
             .service(get_products_handler)
             .service(post_products_handler)
     })
-    .bind(("0.0.0.0", 1140))?
+    .bind((host, port))?
     .run()
     .await
 }

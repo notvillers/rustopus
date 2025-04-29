@@ -62,9 +62,9 @@ fn get_products_xml(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> 
 
 
 pub async fn get_products(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
-    let soap_request: String = get_products_xml(xmlns, &web_update, &authcode);
+    let soap_request = get_products_xml(xmlns, &web_update, &authcode);
 
-    let response_text: String = get_response(url, soap_request).await;
+    let response_text = get_response(url, soap_request).await;
 
     let envelope = get_products_envelope(&response_text);
 
@@ -96,15 +96,9 @@ pub fn get_products_envelope(response_text: &str) -> Result<o8_xml::products::En
 
 pub fn products_to_en_struct(envelope: o8_xml::products::Envelope) -> partner_xml::products::Envelope {
     let mut eng_products: Vec<partner_xml::products::Product> = Vec::new();
-    let mut i: i32 = 0;
     for c in envelope.Body.GetCikkekAuthResponse.GetCikkekAuthResult.valasz.cikk {
         let eng_product = hun_to_en_product(c);
         eng_products.push(eng_product);
-
-        i += 1;
-        if i == 10 {
-            break;
-        }
     }
 
     let verzio = envelope.Body.GetCikkekAuthResponse.GetCikkekAuthResult.valasz.verzio;
@@ -142,8 +136,8 @@ pub fn products_to_en_struct(envelope: o8_xml::products::Envelope) -> partner_xm
 fn hun_to_en_product(product: o8_xml::products::Cikk) -> partner_xml::products::Product {
     let c = product;
 
-    let c_meret: o8_xml::products::Meret = c.meret.unwrap();
-    let eng_product: partner_xml::products::Product = partner_xml::products::Product {
+    let c_meret = c.meret.unwrap();
+    let eng_product = partner_xml::products::Product {
         id: c.cikkid,
         no: c.cikkszam,
         name: c.cikknev,
@@ -191,9 +185,9 @@ fn get_stock_xml(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> Str
 
 pub async fn get_stock(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
 
-    let soap_request: String = get_stock_xml(xmlns, &web_update, authcode);
+    let soap_request = get_stock_xml(xmlns, &web_update, authcode);
 
-    let response_text: String = get_response(url, soap_request).await;
+    let response_text = get_response(url, soap_request).await;
 
     response_text
 }
