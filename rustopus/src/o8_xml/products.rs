@@ -2,12 +2,13 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
+use super::stock::cikk;
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")] // Handle PascalCase names
 pub struct Envelope {
     pub Body: Body,
 }
-
 
 impl Envelope {
     pub fn has_error(&self) -> bool {

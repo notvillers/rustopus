@@ -1,6 +1,13 @@
-use reqwest::{blocking::Client, Response};
+use reqwest::Client;
 use reqwest::header::CONTENT_TYPE;
-use chrono::{Date, DateTime, NaiveDateTime, TimeZone, Utc};
+use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
+
+use quick_xml::de::from_str;
+use quick_xml::se::to_string;
+
+use crate::o8_xml::{self};
+use crate::partner_xml;
+use crate::partner_xml::products::Size;
 
 pub fn get_first_date() -> DateTime<Utc> {
     let naive_datetime = NaiveDateTime::new(
@@ -11,28 +18,25 @@ pub fn get_first_date() -> DateTime<Utc> {
 }
 
 
-fn get_response(url: &str, soap_request: String) -> String {
-    let client: Client = Client::new();
-    let response: Result<reqwest::blocking::Response, reqwest::Error> = client
-    .post(url)
-    .header(CONTENT_TYPE, "text/xml; charset=utf-8")
-    .body(soap_request)
-    .send();
-
-    match response {
-        Ok(response) => {
-            let response_text: Result<String, reqwest::Error> = response.text();
-            match response_text {
-                Ok(response_text) => {
-                    response_text
-                }
-                Err(_) => {
-                    "ERROR".to_string()
-                }
+async fn get_response(url: &str, soap_request: String) -> String {
+    let client = Client::new();
+    match client
+        .post(url)
+        .header(CONTENT_TYPE, "text/xml; charset=utf-8")
+        .body(soap_request)
+        .send()
+        .await
+    {
+        Ok(resp) => match resp.text().await {
+            Ok(text) => {
+                text
             }
-        }
+            Err(_) => {
+                "<Envelope></Envelope>".to_string()
+            }
+        },
         Err(_) => {
-            "ERROR".to_string()
+            "<Envelope></Envelope>".to_string()
         }
     }
 }
@@ -57,12 +61,112 @@ fn get_products_xml(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> 
 }
 
 
-pub fn get_products(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
+pub async fn get_products(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
     let soap_request: String = get_products_xml(xmlns, &web_update, &authcode);
 
-    let response_text: String = get_response(url, soap_request);
+    let response_text: String = get_response(url, soap_request).await;
 
-    response_text
+    let envelope = get_products_envelope(&response_text);
+
+    match envelope {
+        Ok(envelope) => {
+            let eng_envelope = products_to_en_struct(envelope);
+            let eng_xml = to_string(&eng_envelope);
+
+            match eng_xml {
+                Ok(eng_xml) => {
+                    eng_xml
+                }
+                Err(_) => {
+                    "<Envelope></Envelope>".to_string()
+                }
+            }
+        }
+        Err(_) => {
+            "<Envelope></Envelope>".to_string()
+        }
+    }
+}
+
+
+pub fn get_products_envelope(response_text: &str) -> Result<o8_xml::products::Envelope, quick_xml::DeError> {
+    from_str(response_text)
+}
+
+
+pub fn products_to_en_struct(envelope: o8_xml::products::Envelope) -> partner_xml::products::Envelope {
+    let mut eng_products: Vec<partner_xml::products::Product> = Vec::new();
+    let mut i: i32 = 0;
+    for c in envelope.Body.GetCikkekAuthResponse.GetCikkekAuthResult.valasz.cikk {
+        let eng_product = hun_to_en_product(c);
+        eng_products.push(eng_product);
+
+        i += 1;
+        if i == 10 {
+            break;
+        }
+    }
+
+    let verzio = envelope.Body.GetCikkekAuthResponse.GetCikkekAuthResult.valasz.verzio;
+
+    let hiba = envelope.Body.GetCikkekAuthResponse.GetCikkekAuthResult.valasz.hiba;
+
+    let eng_answer = partner_xml::products::Answer {
+        version: verzio,
+        products: eng_products,
+        error: hiba.map(|h| h.into())
+    };
+
+    let eng_getproductsauthresult = partner_xml::products::GetProductsAuthResult {
+        answer: eng_answer
+    };
+
+    let eng_getproductsauthresponse = partner_xml::products::GetProductsAuthResponse {
+        result: eng_getproductsauthresult
+    };
+
+    let eng_body = partner_xml::products::Body {
+        response: eng_getproductsauthresponse
+    };
+
+    let eng_envelope = partner_xml::products::Envelope {
+        body: eng_body
+    };
+
+    eng_envelope
+
+
+}
+
+
+fn hun_to_en_product(product: o8_xml::products::Cikk) -> partner_xml::products::Product {
+    let c = product;
+
+    let c_meret: o8_xml::products::Meret = c.meret.unwrap();
+    let eng_product: partner_xml::products::Product = partner_xml::products::Product {
+        id: c.cikkid,
+        no: c.cikkszam,
+        name: c.cikknev,
+        unit: c.me,
+        base_unit: c.alapme,
+        base_unit_qty: c.alapmenny,
+        brand: c.gyarto,
+        category_code: c.cikkcsoportkod,
+        category_name: c.cikkcsoportnev,
+        description: c.leiras,
+        weight: c.tomeg,
+        size: Size {
+            x: c_meret.xmeret,
+            y: c_meret.ymeret,
+            z: c_meret.zmeret
+        },
+        main_category_code: c.focsoportkod,
+        main_category_name: c.focsoportnev,
+        sell_unit: c.ertmenny,
+        origin_country: c.szarmorszag
+    };
+
+    eng_product
 }
 
 
@@ -85,11 +189,11 @@ fn get_stock_xml(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> Str
 }
 
 
-pub fn get_stock(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
+pub async fn get_stock(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
 
     let soap_request: String = get_stock_xml(xmlns, &web_update, authcode);
 
-    let response_text: String = get_response(url, soap_request);
+    let response_text: String = get_response(url, soap_request).await;
 
     response_text
 }

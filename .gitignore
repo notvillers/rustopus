@@ -1,3 +1,5 @@
 rustopus/target
 *.xml
 *.env
+test.bat
+test.ps1
