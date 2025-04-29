@@ -56,7 +56,7 @@ async fn main() -> std::io::Result<()> {
             .service(get_products_handler)
             .service(post_products_handler)
     })
-    .bind(("127.0.0.1", 1140))?
+    .bind(("0.0.0.0", 1140))?
     .run()
     .await
 }
