@@ -1,5 +1,5 @@
 mod service;
-use crate::service::soap;
+use crate::service::{soap, ipv4};
 
 mod o8_xml;
 
@@ -8,6 +8,7 @@ mod partner_xml;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use serde::Deserialize;
 
+mod converters;
 
 async fn not_found() -> impl Responder {
     HttpResponse::NotFound()
@@ -18,10 +19,11 @@ async fn not_found() -> impl Responder {
 
 #[get("/")]
 async fn index() -> impl Responder {
-    let index_str = r#"RustOpus @ Villers
+    let index_str = format!(r#"RustOpus @ Villers
 __________________
 
 Solution to convert hungarian Octopus 8 ERP SOAP data to english.
+Some Octopus partner limits the IP addresses, if needed, give them '{}'
 
 APIs
     /get-products
@@ -32,7 +34,14 @@ APIs
             authcode
             url
             xmlns (optional)   
-    /get-stocks (under development)"#;
+    /get-stocks (under development)
+        methods
+            GET
+            POST
+        arguments
+            authcode
+            url
+            xmlns (optional)"#, ipv4::get_ip().await);
     HttpResponse::Ok().body(index_str)
 }
 
@@ -68,7 +77,7 @@ async fn products_handler(params: ProductRequest) -> impl Responder {
         }
     }
 
-    let xml = soap::get_products(url, &xmlns, authcode, &soap::get_first_date()).await;
+    let xml = converters::products::get_products(url, &xmlns, authcode, &soap::get_first_date()).await;
 
     HttpResponse::Ok()
         .content_type("application/xml")
@@ -113,7 +122,7 @@ async fn main() -> std::io::Result<()> {
     let host = "0.0.0.0";
     let port = 1140;
 
-    println!("Running on http://{}:{}", host, port);
+    println!("Running on '{}:{}'", host, port);
 
     HttpServer::new(|| {
         App::new()

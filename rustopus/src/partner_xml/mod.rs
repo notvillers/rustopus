@@ -1,2 +1,2 @@
 pub mod products;
-pub mod stock;
+pub mod stocks;
