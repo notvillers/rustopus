@@ -22,7 +22,7 @@ async fn index() -> impl Responder {
     let index_str = format!(r#"RustOpus @ Villers
 __________________
 
-Solution to convert hungarian Octopus 8 ERP SOAP data to english.
+Solution to convert hungarian Octopus 8 ERP SOAP's XML tags to english.
 Some Octopus partner limits the IP addresses, if needed, give them '{}'
 
 APIs
@@ -34,6 +34,9 @@ APIs
             url
             authcode
             xmlns (optional)
+        example
+            GET
+                curl "https://octopus.villers.website/get-products?url=https://domain.com/services/vision.asmx&auth=your_auth_code"
 
     /get-stocks
         methods
@@ -42,7 +45,10 @@ APIs
         arguments
             url
             authcode
-            xmlns (optional)"#, ipv4::get_ip().await);
+            xmlns (optional)
+        example
+            GET
+                curl "https://octopus.villers.website/get-stocks?url=https://domain.com/services/vision.asmx&auth=your_auth_code""#, ipv4::get_ip().await);
     HttpResponse::Ok().body(index_str)
 }
 
