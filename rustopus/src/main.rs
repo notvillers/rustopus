@@ -31,16 +31,16 @@ APIs
             GET
             POST
         arguments
-            authcode
             url
+            authcode
             xmlns (optional)   
     /get-stocks (under development)
         methods
             GET
             POST
         arguments
-            authcode
             url
+            authcode
             xmlns (optional)"#, ipv4::get_ip().await);
     HttpResponse::Ok().body(index_str)
 }
@@ -101,19 +101,58 @@ async fn post_products_handler(json: web::Json<ProductRequest>) -> impl Responde
 }
 
 
-#[get("/get-stocks")]
-async fn get_stocks_handler() -> impl Responder {
+#[derive(Deserialize)]
+pub struct StockRequest {
+    pub authcode: Option<String>,
+    pub url: Option<String>,
+    pub xmlns: Option<String>,
+}
+
+
+async fn stocks_handler(params: StockRequest) -> impl Responder {
+    let authcode = match params.authcode {
+        Some(ref s) if !s.trim().is_empty() => s,
+        _ => return HttpResponse::Ok()
+                        .content_type("text/plain")
+                        .body("Read index for instructions!")
+    };
+
+    let url = match params.url {
+        Some(ref s) if !s.trim().is_empty() => s,
+        _ => return HttpResponse::Ok()
+                        .content_type("text/plain")
+                        .body("Read index for instructions!")
+    };
+
+    let mut xmlns = params.xmlns.unwrap_or_default();
+    if xmlns.trim().is_empty() &&url.contains("/services/") {
+        if let Some(pos) = url.find("/services/") {
+            let end = pos + "/services/".len();
+            xmlns = url[..end].to_string();
+        }
+    }
+
+    let xml = converters::stocks::get_stocks(url, &xmlns, authcode, &soap::get_first_date()).await;
+
     HttpResponse::Ok()
-        .content_type("text/plain")
-        .body("Under development")
+        .content_type("application/xml")
+        .body(xml)
+}
+
+
+#[get("/get-stocks")]
+async fn get_stocks_handler(query: web::Query<StockRequest>) -> impl Responder {
+    let params = query.into_inner();
+
+    stocks_handler(params).await
 }
 
 
 #[post("/get-stocks")]
-async fn post_stocks_handler() -> impl Responder {
-    HttpResponse::Ok()
-        .content_type("text/plain")
-        .body("Under development")
+async fn post_stocks_handler(json: web::Json<StockRequest>) -> impl Responder {
+    let params = json.into_inner();
+
+    stocks_handler(params).await
 }
 
 

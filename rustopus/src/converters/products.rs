@@ -2,7 +2,6 @@ use chrono::{DateTime, Utc};
 
 use crate::o8_xml;
 use crate::partner_xml;
-use crate::partner_xml::products::Size;
 use crate::service::soap;
 use quick_xml;
 
@@ -52,22 +51,17 @@ fn get_products_envelope(response_text: &str) -> Result<o8_xml::products::Envelo
 
 
 fn convert_products_envelope_to_xml(hu_envelope: o8_xml::products::Envelope) -> String {
-    let en_envelope = convert_products_envelope(hu_envelope);
+    let en_envelope = envelope_to_en(hu_envelope);
     let eng_xml = quick_xml::se::to_string(&en_envelope);
 
     match eng_xml {
-        Ok(eng_xml) =>{
+        Ok(eng_xml) => {
             eng_xml
         }
         Err(_) => {
             "<Envelope></Envelope>".to_string()
         }
     }
-}
-
-
-fn convert_products_envelope(hu_envelope: o8_xml::products::Envelope) -> partner_xml::products::Envelope {
-    envelope_to_en(hu_envelope)
 }
 
 
@@ -103,15 +97,21 @@ fn answer_to_en(answer: o8_xml::products::valasz) -> partner_xml::products::Answ
     partner_xml::products::Answer {
         version: answer.verzio,
         products: products_to_en(answer.cikk),
-        error: answer.hiba.map(|h| h.into())
+        error: answer.hiba.map(|e| e.into())
     }
 }
 
 
 fn products_to_en(prods: Vec<o8_xml::products::Cikk>) -> Vec<partner_xml::products::Product> {
     let mut eng_products: Vec<partner_xml::products::Product> = Vec::new();
+    let mut i = 0;
     for prod in prods {
         eng_products.push(product_to_en(prod));
+
+        i += 1;
+        if i == 10 {
+            break;
+        }
     }
     eng_products
 }
@@ -131,7 +131,7 @@ fn product_to_en(prod: o8_xml::products::Cikk) -> partner_xml::products::Product
         category_name: prod.cikkcsoportnev,
         description: prod.leiras,
         weight: prod.tomeg,
-        size: Size {
+        size: partner_xml::products::Size {
             x: prod_size.xmeret,
             y: prod_size.ymeret,
             z: prod_size.zmeret
