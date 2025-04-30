@@ -33,8 +33,9 @@ APIs
         arguments
             url
             authcode
-            xmlns (optional)   
-    /get-stocks (under development)
+            xmlns (optional)
+
+    /get-stocks
         methods
             GET
             POST
