@@ -159,8 +159,9 @@ async fn post_stocks_handler(json: web::Json<StockRequest>) -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let config = service::config::get_settings();
     let host = "0.0.0.0";
-    let port = 1140;
+    let port = config.server.port;
 
     println!("Running on '{}:{}'", host, port);
 

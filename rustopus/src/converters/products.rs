@@ -104,14 +104,8 @@ fn answer_to_en(answer: o8_xml::products::valasz) -> partner_xml::products::Answ
 
 fn products_to_en(prods: Vec<o8_xml::products::Cikk>) -> Vec<partner_xml::products::Product> {
     let mut eng_products: Vec<partner_xml::products::Product> = Vec::new();
-    let mut i = 0;
     for prod in prods {
         eng_products.push(product_to_en(prod));
-
-        i += 1;
-        if i == 10 {
-            break;
-        }
     }
     eng_products
 }

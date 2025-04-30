@@ -109,14 +109,8 @@ fn main_products_to_en(m_prods: o8_xml::stocks::cikkek) -> partner_xml::stocks::
 
 fn products_to_en(prods: Vec<o8_xml::stocks::cikk>) -> Vec<partner_xml::stocks::Product> {
     let mut eng_products: Vec<partner_xml::stocks::Product> = Vec::new();
-    let mut i = 0;
     for prod in prods {
         eng_products.push(product_to_en(prod));
-
-        i += 1;
-        if i == 10 {
-            break;
-        }
     }
     eng_products
 }
