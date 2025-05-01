@@ -24,41 +24,14 @@ pub async fn get_response(url: &str, soap_request: String) -> String {
             Ok(text) => {
                 text
             }
-            Err(_) => {
+            Err(e) => {
+                println!("Response error: {}", e);
                 "<Envelope></Envelope>".to_string()
             }
         },
-        Err(_) => {
+        Err(e) => {
+            println!("Response error: {}", e);
             "<Envelope></Envelope>".to_string()
         }
     }
-}
-
-
-fn get_stock_xml(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
-
-    format!(r#"<?xml version="1.0" encoding="utf-8"?>
-            <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-            <soap:Body>
-                <GetCikkekKeszletValtozasAuth xmlns="{}">
-                <web_update>{}</web_update>
-                <authcode>{}</authcode>
-                </GetCikkekKeszletValtozasAuth>
-            </soap:Body>
-            </soap:Envelope>
-        "#,
-        xmlns,
-        web_update.format("%Y-%m-%dT%H:%M:%S").to_string(),
-        authcode
-    )
-}
-
-
-pub async fn get_stock(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
-
-    let soap_request = get_stock_xml(xmlns, &web_update, authcode);
-
-    let response_text = get_response(url, soap_request).await;
-
-    response_text
 }

@@ -13,7 +13,8 @@ pub async fn get_products(url: &str, xmlns: &str, authcode: &str, web_update: &D
         Ok(hu_envelope) => {
             convert_products_envelope_to_xml(hu_envelope)
         }
-        Err(_) => {
+        Err(e) => {
+            println!("Get products error: {}", e);
             "<Envelope></Envelope>".to_string()
         }
     }
@@ -58,7 +59,8 @@ fn convert_products_envelope_to_xml(hu_envelope: o8_xml::products::Envelope) -> 
         Ok(eng_xml) => {
             eng_xml
         }
-        Err(_) => {
+        Err(e) => {
+            println!("Convert products error: {}", e);
             "<Envelope></Envelope>".to_string()
         }
     }

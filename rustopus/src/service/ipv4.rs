@@ -10,12 +10,12 @@ pub async fn get_ip() -> String {
                     return body.trim().to_string()
                 }
                 Err(e) => {
-                    println!("{}", e)
+                    println!("ipv4 error: {}", e)
                 }
             }
         }
         Err(e) => {
-            println!("{}", e)
+            println!("ipv4 error: {}", e)
         }
     }
     "unknown ipv4 address".to_string()

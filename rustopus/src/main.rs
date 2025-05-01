@@ -49,7 +49,8 @@ APIs
             xmlns (optional)
         example
             GET
-                curl "https://octopus.villers.website/get-stocks?url=https://domain.com/services/vision.asmx&authcode=your_auth_code""#, ipv4::get_ip().await);
+                curl "https://octopus.villers.website/get-stocks?url=https://domain.com/services/vision.asmx&authcode=your_auth_code""#, 
+            ipv4::get_ip().await);
     HttpResponse::Ok().body(index_str)
 }
 

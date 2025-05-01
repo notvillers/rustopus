@@ -22,7 +22,7 @@ impl Envelope {
 
 #[derive(Debug, Deserialize)]
 pub struct Body {
-    pub GetCikkekAuthResponse: GetCikkekAuthResponse,
+    pub GetCikkekAuthResponse: GetCikkekAuthResponse
 }
 
 
