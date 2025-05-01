@@ -8,6 +8,7 @@ mod o8_xml;
 mod partner_xml;
 
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::http::header;
 use actix_files::Files;
 use serde::Deserialize;
 mod converters;
@@ -52,7 +53,10 @@ APIs
             GET
                 curl "https://octopus.villers.website/get-stocks?url=https://domain.com/services/vision.asmx&authcode=your_auth_code""#, 
             ipv4::get_ip().await);
-    HttpResponse::Ok().body(index_str)
+    //HttpResponse::Ok().body(index_str)
+    HttpResponse::Found()
+        .append_header((header::LOCATION, "/docs/"))
+        .finish()
 }
 
 
@@ -180,8 +184,8 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            //.service(index)
-            .service(Files::new("/", docs_dir.clone())
+            .service(index)
+            .service(Files::new("/docs/", docs_dir.clone())
                 .index_file("index.html")
                 .use_last_modified(true))
             .default_service(web::to(not_found))
