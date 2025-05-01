@@ -1,0 +1,265 @@
+openapi: 3.0.3
+info:
+  title: RustOpus XML API
+  version: 0.1.0
+  description: Get Octopus 8 ERP SOAP XML with english tags instead of hungarians
+
+servers:
+  - url: https://octopus.villers.website
+
+paths:
+  /get-products:
+    get:
+      summary: Get product data (returns XML)
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: Endpoint URL with the ```.asmx``` file
+          schema:
+            type: string
+        - name: authcode
+          in: query
+          required: true
+          description: Authorization code
+          schema:
+            type: string
+        - name: xmlns
+          in: query
+          required: false
+          description: Optional XML namespace
+          schema:
+            type: string
+      responses:
+        '200':
+          description: XML product list
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+    post:
+      summary: Post product request (JSON input, XML output)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductQuery'
+      responses:
+        '200':
+          description: XML product list
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+
+  /get-stocks:
+    get:
+      summary: Get stock data (returns XML)
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: Endpoint URL with the ```.asmx``` file
+          schema:
+            type: string
+        - name: authcode
+          in: query
+          required: true
+          description: Authorization code
+          schema:
+            type: string
+        - name: xmlns
+          in: query
+          required: false
+          description: Optional XML namespace
+          schema:
+            type: string
+      responses:
+        '200':
+          description: XML stock list
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/StockResponse'
+    post:
+      summary: Post stock request (JSON input, XML output)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockQuery'
+      responses:
+        '200':
+          description: XML stock list
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/StockResponse'
+
+components:
+  schemas:
+    ProductQuery:
+      type: object
+      properties:
+        url:
+          type: string
+        authcode:
+          type: string
+        xmlns:
+          type: string
+
+    StockQuery:
+      type: object
+      properties:
+        url:
+          type: string
+        authcode:
+          type: string
+        xmlns:
+          type: string
+    
+    ProductResponse:
+      type: object
+      xml:
+        name: Envelope
+      properties:
+        Body:
+          $ref: '#/components/schemas/Body'
+        
+    Body:
+      type: object
+      properties:
+        GetProductsAuthResponse:
+          $ref: '#/components/schemas/GetProductsAuthResponse'
+        
+    GetProductsAuthResponse:
+      type: object
+      properties:
+        GetProductsAuthResult:
+          $ref: '#/components/schemas/GetProductsAuthResult'
+        
+    GetProductsAuthResult:
+      type: object
+      properties:
+        Answer:
+          $ref: '#/components/schemas/Answer'
+        
+    Answer:
+      type: object
+      properties:
+        version:
+          type: string
+        Product:
+          $ref: '#/components/schemas/Product'
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+            description:
+              type: string
+            
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        no:
+          type: string
+        name:
+          type: string
+        unit:
+          type: string
+        base_unit:
+          type: string
+        base_unit_qty:
+          type: string
+        brand:
+          type: string
+        category_code:
+          type: string
+        category_name:
+          type: string
+        description:
+          type: string
+        weight:
+          type: number
+        size:
+          type: object
+          properties:
+            x:
+              type: number
+            y:  
+              type: number
+            z:
+              type: number
+        main_category_code:
+          type: string
+        main_category_name:
+          type: string
+        sell_unit:
+          type: number
+        origin_country:
+          type: string
+    
+    StockResponse:
+      type: object
+      xml:
+        name: Envelope
+      properties:
+        Body:
+          $ref: '#/components/schemas/stock_Body'
+          
+    stock_Body:
+      type: object
+      xml:
+        name: Body
+      properties:
+        GetStockChangeAuthResponse:
+          $ref: '#/components/schemas/GetStockChangeAuthResponse'
+          
+    GetStockChangeAuthResponse:
+      type: object
+      properties:
+        GetStockChangeAuthResult:
+          $ref: '#/components/schemas/GetStockChangeAuthResult'
+          
+    GetStockChangeAuthResult:
+      type: object
+      properties:
+        stock_Answer:
+          $ref: '#/components/schemas/stock_Answer'
+          
+    stock_Answer:
+      type: object
+      xml:
+        name: Answer
+      properties:
+        version:
+          type: string
+        Products:
+          type: object
+          properties:
+            stock_products:
+              $ref: '#/components/schemas/stock_product'
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+            description:
+              type: string
+      
+    stock_product:
+      type: object
+      xml:
+        name: Product
+      properties:
+        id:
+          type: integer
+        no:
+          type: string
+        stock:
+          type: number

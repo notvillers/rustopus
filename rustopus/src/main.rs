@@ -1,14 +1,15 @@
 mod service;
+use std::{env, path::PathBuf};
+
 use crate::service::{soap, ipv4};
 
 mod o8_xml;
 
 mod partner_xml;
 
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder, Result};
-use actix_files::NamedFile;
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_files::Files;
 use serde::Deserialize;
-
 mod converters;
 
 async fn not_found() -> impl Responder {
@@ -165,12 +166,6 @@ async fn post_stocks_handler(json: web::Json<StockRequest>) -> impl Responder {
 }
 
 
-#[get("/docs")]
-async fn swagger_ui() -> Result<impl Responder> {
-    Ok(NamedFile::open("./static/swagger.html")?)
-}
-
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let config = service::config::get_settings();
@@ -179,11 +174,17 @@ async fn main() -> std::io::Result<()> {
 
     println!("Running on '{}:{}'", host, port);
 
-    HttpServer::new(|| {
+    let current_dir = env::current_dir().expect("Failed to get current directory");
+    let docs_dir: PathBuf;
+    docs_dir = current_dir.join("src").join("static").join("docs");
+
+    HttpServer::new(move || {
         App::new()
+            //.service(index)
+            .service(Files::new("/", docs_dir.clone())
+                .index_file("index.html")
+                .use_last_modified(true))
             .default_service(web::to(not_found))
-            .service(index).service(swagger_ui)
-            .service(actix_files::Files::new("/", "./static").show_files_listing())
             .service(get_products_handler)
             .service(post_products_handler)
             .service(get_stocks_handler)
