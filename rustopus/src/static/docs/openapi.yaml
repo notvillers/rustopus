@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RustOpus XML API
-  version: 0.1.0
+  version: 1.0.0
   description: Get Octopus 8 ERP SOAP XML with english tags instead of hungarians
 
 servers:
@@ -11,6 +11,8 @@ paths:
   /get-products:
     get:
       summary: Get product data (returns XML)
+      tags:
+        - Products
       parameters:
         - name: url
           in: query
@@ -38,6 +40,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProductResponse'
     post:
+      tags:
+        - Products
       summary: Post product request (JSON input, XML output)
       requestBody:
         required: true
@@ -56,6 +60,8 @@ paths:
   /get-stocks:
     get:
       summary: Get stock data (returns XML)
+      tags:
+        - Stocks
       parameters:
         - name: url
           in: query
@@ -84,6 +90,8 @@ paths:
                 $ref: '#/components/schemas/StockResponse'
     post:
       summary: Post stock request (JSON input, XML output)
+      tags:
+        - Stocks
       requestBody:
         required: true
         content:
