@@ -106,6 +106,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/StockResponse'
 
+  /get-prices:
+    get:
+      summary: Get price data (returns XML)
+      tags:
+        - Prices
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: Endpoint URL with the ```.asmx``` file
+          schema:
+            type: string
+        - name: authcode
+          in: query
+          required: true
+          description: Authorization code
+          schema:
+            type: string
+        - name: xmlns
+          in: query
+          required: false
+          description: Optional XML namespace
+          schema:
+            type: string
+        - name: pid
+          in: query
+          required: true
+          description: Partner ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: XML price list
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+    post:
+      summary: Post price request (JSON input, XML output)
+      tags:
+        - Prices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PriceQuery'
+      responses:
+        '200':
+          description: XML price list
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+        
+
 components:
   schemas:
     ProductQuery:
@@ -127,6 +183,18 @@ components:
           type: string
         xmlns:
           type: string
+    
+    PriceQuery:
+      type: object
+      properties:
+        url:
+          type: string
+        authcode:
+          type: string
+        xmlns:
+          type: string
+        pid:
+          type: integer
     
     ProductResponse:
       type: object
@@ -271,3 +339,73 @@ components:
           type: string
         stock:
           type: number
+    
+    PriceResponse:
+      type: object
+      xml:
+        name: Envelope
+      properties:
+        Body:
+          $ref: '#/components/schemas/price_Body'
+          
+    price_Body:
+      type: object
+      xml:
+        name: Body
+      properties:
+        GetPriceAuthResponse:
+          $ref: '#/components/schemas/GetPriceAuthResponse'
+          
+    GetPriceAuthResponse:
+      type: object
+      xml:
+        name: GetPriceAuthResponse
+      properties:
+        GetPriceAuthResult:
+          $ref: '#/components/schemas/GetPriceAuthResult'
+          
+    GetPriceAuthResult:
+      type: object
+      xml:
+        name: GetPriceAuthResult
+      properties:
+        price_Answer:
+          $ref: '#/components/schemas/price_Answer'
+          
+    price_Answer:
+      type: object
+      xml:
+        name: Answer
+      properties:
+        version:
+          type: string
+        prices:
+          type: object
+          properties:
+            price:
+              $ref: '#/components/schemas/price'
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+            description:
+              type: string
+              
+    price:
+      type: object
+      xml:
+        name: price
+      properties:
+        id:
+          type: integer
+        no:
+          type: string
+        list_prices:
+          type: number
+        price:
+          type: number
+        sale_price:
+          type: number
+        currency:
+          type: string

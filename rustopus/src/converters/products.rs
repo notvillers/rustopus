@@ -52,7 +52,7 @@ fn get_products_envelope(response_text: &str) -> Result<o8_xml::products::Envelo
 
 
 fn convert_products_envelope_to_xml(hu_envelope: o8_xml::products::Envelope) -> String {
-    let en_envelope = envelope_to_en(hu_envelope);
+    let en_envelope: partner_xml::products::Envelope = hu_envelope.into();
     let eng_xml = quick_xml::se::to_string(&en_envelope);
 
     match eng_xml {
@@ -63,78 +63,5 @@ fn convert_products_envelope_to_xml(hu_envelope: o8_xml::products::Envelope) -> 
             println!("Convert products error: {}", e);
             "<Envelope></Envelope>".to_string()
         }
-    }
-}
-
-
-fn envelope_to_en(envelope: o8_xml::products::Envelope) -> partner_xml::products::Envelope {
-    partner_xml::products::Envelope {
-        body: body_to_en(envelope.Body)
-    }
-}
-
-
-fn body_to_en(body: o8_xml::products::Body) -> partner_xml::products::Body {
-    partner_xml::products::Body {
-        response: response_to_en(body.GetCikkekAuthResponse)
-    }
-}
-
-
-fn response_to_en(response: o8_xml::products::GetCikkekAuthResponse) -> partner_xml::products::GetProductsAuthResponse {
-    partner_xml::products::GetProductsAuthResponse {
-        result: result_to_en(response.GetCikkekAuthResult)
-    }
-}
-
-
-fn result_to_en(result: o8_xml::products::GetCikkekAuthResult) -> partner_xml::products::GetProductsAuthResult {
-    partner_xml::products::GetProductsAuthResult {
-        answer: answer_to_en(result.valasz)
-    }
-}
-
-
-fn answer_to_en(answer: o8_xml::products::valasz) -> partner_xml::products::Answer {
-    partner_xml::products::Answer {
-        version: answer.verzio,
-        products: products_to_en(answer.cikk),
-        error: answer.hiba.map(|e| e.into())
-    }
-}
-
-
-fn products_to_en(prods: Vec<o8_xml::products::Cikk>) -> Vec<partner_xml::products::Product> {
-    let mut eng_products: Vec<partner_xml::products::Product> = Vec::new();
-    for prod in prods {
-        eng_products.push(product_to_en(prod));
-    }
-    eng_products
-}
-
-
-fn product_to_en(prod: o8_xml::products::Cikk) -> partner_xml::products::Product {
-    let prod_size = prod.meret.unwrap();
-    partner_xml::products::Product {
-        id: prod.cikkid,
-        no: prod.cikkszam,
-        name: prod.cikknev,
-        unit: prod.me,
-        base_unit: prod.alapme,
-        base_unit_qty: prod.alapmenny,
-        brand: prod.gyarto,
-        category_code: prod.cikkcsoportkod,
-        category_name: prod.cikkcsoportnev,
-        description: prod.leiras,
-        weight: prod.tomeg,
-        size: partner_xml::products::Size {
-            x: prod_size.xmeret,
-            y: prod_size.ymeret,
-            z: prod_size.zmeret
-        },
-        main_category_code: prod.focsoportkod,
-        main_category_name: prod.focsoportnev,
-        sell_unit: prod.ertmenny,
-        origin_country: prod.szarmorszag
     }
 }
