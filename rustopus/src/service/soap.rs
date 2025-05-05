@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use reqwest::Client;
 use reqwest::header::CONTENT_TYPE;
 use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
@@ -12,7 +14,17 @@ pub fn get_first_date() -> DateTime<Utc> {
 
 
 pub async fn get_response(url: &str, soap_request: String) -> String {
-    let client = Client::new();
+    let client = match Client::builder()
+        .timeout(Duration::from_secs(1200))
+        .build() {
+        Ok(client) => {
+            client
+        }
+        Err(e) => {
+            println!("Error creating reqwest client: {e}");
+            Client::new()
+        }
+    };
     match client
         .post(url)
         .header(CONTENT_TYPE, "text/xml; charset=utf-8")

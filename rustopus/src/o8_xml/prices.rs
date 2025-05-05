@@ -26,7 +26,7 @@ pub struct GetArlistaAuthResult {
 
 
 #[derive(Debug, Deserialize)]
-pub struct valasz  {
+pub struct valasz {
     #[serde(rename = "@verzio")]
     pub verzio: String,
     pub arak: arak,

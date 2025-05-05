@@ -5,7 +5,7 @@ use crate::o8_xml::{self, products::Hiba};
 
 #[derive(Serialize)]
 pub struct Envelope {
-    pub body: Body,
+    pub body: Body
 }
 
 impl From<o8_xml::products::Envelope> for Envelope {

@@ -9,11 +9,9 @@ mod partner_xml;
 
 mod routes;
 
-use actix_web::web::route;
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use actix_web::http::header;
 use actix_files::Files;
-use serde::Deserialize;
 mod converters;
 
 async fn not_found() -> impl Responder {
@@ -95,6 +93,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::stocks::post_stocks_handler)
             .service(routes::prices::get_prices_handler)
             .service(routes::prices::post_prices_handler)
+            .service(routes::bulk::get_bulk_handler)
     })
     .bind((host, port))?
     .run()

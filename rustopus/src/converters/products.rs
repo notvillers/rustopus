@@ -40,13 +40,13 @@ fn get_products_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode
 }
 
 
-async fn get_products_xml(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
+pub async fn get_products_xml(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
     let soap_request = get_products_request_string(xmlns, web_update, authcode);
     soap::get_response(url, soap_request).await
 }
 
 
-fn get_products_envelope(response_text: &str) -> Result<o8_xml::products::Envelope, quick_xml::DeError> {
+pub fn get_products_envelope(response_text: &str) -> Result<o8_xml::products::Envelope, quick_xml::DeError> {
     quick_xml::de::from_str(response_text)
 }
 

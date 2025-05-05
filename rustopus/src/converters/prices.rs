@@ -37,13 +37,13 @@ fn get_prices_request_string(xmlns: &str, authcode: &str, pid: &i64) -> String {
 }
 
 
-async fn get_prices_xml(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> String {
+pub async fn get_prices_xml(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> String {
     let soap_request = get_prices_request_string(xmlns, authcode, pid);
     soap::get_response(url, soap_request).await
 }
 
 
-fn get_prices_envelope(response_text: &str) -> Result<o8_xml::prices::Envelope, quick_xml::DeError> {
+pub fn get_prices_envelope(response_text: &str) -> Result<o8_xml::prices::Envelope, quick_xml::DeError> {
     quick_xml::de::from_str(response_text)
 }
 
