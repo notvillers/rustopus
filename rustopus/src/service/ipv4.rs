@@ -24,21 +24,27 @@ pub async fn get_ip() -> String {
 }
 
 pub async fn log_ip(req: HttpRequest) -> String {
-    match req.headers().get("X-Forwarder-For").and_then(|v| v.to_str().ok()) {
+    let ip = req
+    .headers()
+    .get("X-Forwarded-For")
+    .and_then(|v| v.to_str().ok())
+    .and_then(|s| s.split(',').next());
+
+    match ip {
         Some(ip) => {
-            ip.to_string()
+            ip.to_string() 
         }
         _ => {
             match req.peer_addr() {
                 Some(peer_address) => {
                     let ip = peer_address.ip().to_string();
                     if ip == get_ip().await {
-                        return format!("host ip: {}", ip).to_string()
+                        return format!("host ip: {}", ip)
                     }
-                    ip.to_string()
+                    ip
                 }
                 _ => {
-                    "unkown ip address".to_string()
+                    "unknown ip address".to_string()
                 }
             }
         }
