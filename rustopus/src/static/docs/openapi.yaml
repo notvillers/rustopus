@@ -160,8 +160,62 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/PriceResponse'
-        
-
+  /get-bulk:
+    get:
+      summary: Get bulk data (XML)
+      tags:
+        - Bulk
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: Endpoint URL with the ```.asmx``` file
+          schema:
+            type: string
+        - name: authcode
+          in: query
+          required: true
+          description: Authorization code
+          schema:
+            type: string
+        - name: xmlns
+          in: query
+          required: false
+          description: Optional XML namespace
+          schema:
+            type: string
+        - name: pid
+          in: query
+          required: true
+          description: Partner ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: XML bulk list
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/BulkResponse'
+    post:
+      tags:
+        - Bulk
+      summary: Get bulk data (XML)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkQuery'
+      responses:
+        '200':
+          description: XML bulk list
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/BulkResponse'
+      
+    
 components:
   schemas:
     ProductQuery:
@@ -409,3 +463,90 @@ components:
           type: number
         currency:
           type: string
+
+    BulkQuery:
+      type: object
+      properties:
+        url:
+          type: string
+        autchode:
+          type: string
+        xmlns:
+          type: string
+        pid:
+          type: integer
+
+    BulkResponse:
+      type: object
+      xml:
+        name: Envelope
+      properties:
+        body:
+          type: object
+          properties:
+            response:
+              type: object
+              properties:
+                result:
+                  type: object
+                  properties:
+                    answer:
+                      type: object
+                      properties:
+                        version:
+                          type: string
+                        product:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            no:
+                              type: string
+                            name:
+                              type: string
+                            unit:
+                              type: string
+                            base_unit:
+                              type: string
+                            base_unit_qty:
+                              type: string
+                            brand:
+                              type: string
+                            category_code:
+                              type: string
+                            category_name:
+                              type: string
+                            description:
+                              type: string
+                            weight:
+                              type: number
+                            size:
+                              type: object
+                              properties:
+                                x:
+                                  type: number
+                                y:
+                                  type: number
+                                z:
+                                  type: number
+                            main_category_code:
+                              type: string
+                            main_category_name:
+                              type: string
+                            sell_unit:
+                              type: number
+                            origin_country:
+                              type: string
+                            price:
+                              type: number
+                            currency:
+                              type: string
+                            stock:
+                              type: number
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: integer
+                            description:
+                              type: string

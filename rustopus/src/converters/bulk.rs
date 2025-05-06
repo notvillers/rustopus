@@ -48,7 +48,7 @@ fn create_xml(envelope: partner_xml::bulk::Envelope) -> String {
             xml
         }
         Err(e) => {
-            for cikk in envelope.body.response.result.answer.products {
+            for cikk in envelope.body.response.result.answer.products.product {
                 println!("{}, {:?}, {:?}", cikk.no, cikk.price, cikk.stock)
             }
             logger(format!("XML creating error {}", e));
@@ -129,11 +129,12 @@ fn create_answer(products: o8_xml::products::Envelope, prices: o8_xml::prices::E
 
     partner_xml::bulk::Answer {
         version: "1.0".to_string(),
-        products: create_products(
-            &products.Body.GetCikkekAuthResponse.GetCikkekAuthResult.valasz.cikk,
-            &prices.Body.GetArlistaAuthResponse.GetArlistaAuthResult.valasz.arak.ar,
-            &stocks.Body.GetCikkekKeszletValtozasAuthResponse.GetCikkekKeszletValtozasAuthResult.valasz.cikkek.cikk
-        ),
+        products: partner_xml::bulk::Products {
+            product: create_products(
+                &products.Body.GetCikkekAuthResponse.GetCikkekAuthResult.valasz.cikk,
+                &prices.Body.GetArlistaAuthResponse.GetArlistaAuthResult.valasz.arak.ar,
+                &stocks.Body.GetCikkekKeszletValtozasAuthResponse.GetCikkekKeszletValtozasAuthResult.valasz.cikkek.cikk)
+        },
         error: errors
     }
 

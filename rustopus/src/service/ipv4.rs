@@ -1,6 +1,5 @@
 use reqwest;
-use actix_web::{web::get, HttpRequest};
-use crate::service::log::logger;
+use actix_web::HttpRequest;
 
 pub async fn get_ip() -> String {
     let response = reqwest::get("https://ip.villers.website").await;

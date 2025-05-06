@@ -95,6 +95,8 @@ async fn main() -> std::io::Result<()> {
             .service(routes::prices::post_prices_handler)
             .service(routes::bulk::get_bulk_handler)
     })
+    .client_request_timeout(std::time::Duration::from_secs(1200))
+    .keep_alive(std::time::Duration::from_secs(1200))
     .bind((host, port))?
     .run()
     .await

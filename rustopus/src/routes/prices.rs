@@ -1,5 +1,4 @@
 use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
-use flexi_logger::writers::LogWriter;
 use serde::Deserialize;
 
 use crate::converters::prices::get_prices;

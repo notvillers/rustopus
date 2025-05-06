@@ -29,7 +29,7 @@ pub struct Result {
 #[derive(Serialize)]
 pub struct Answer {
     pub version: String,
-    pub products: Vec<Product>,
+    pub products: Products,
     pub error: Vec<Error>
 }
 
@@ -65,6 +65,11 @@ impl From<o8_xml::prices::Hiba> for Error {
             description: e.leiras
         }
     }
+}
+
+#[derive(Serialize)]
+pub struct Products {
+    pub product: Vec<Product>
 }
 
 
