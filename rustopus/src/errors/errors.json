@@ -1,0 +1,10 @@
+[
+    {"code": 2, "hu": "Nem engedélyezett IP", "en": "IP address not allowes"},
+    {"code": 3, "hu": "Túl sok kérés", "en": "Request limit exceeded"},
+    {"code": 4, "hu": "Nem engedélyezett partner/fizoszt/végf.", "en": "Not allowed partner/price/enduser"},
+    {"code": 5, "hu": "Ismeretlen hiba", "en": "Error unknown"},
+    {"code": 6, "hu": "A mezőt kötelező megadni: ", "en": "The field is required: "},
+    {"code": 7, "hu": "Hibás formátum: ", "en": "Incorrect format: "},
+    {"code": 8, "hu": "Authentikációs hiba", "en": "Authentication error"},
+    {"code": 9, "hu": "Karbantartás alatt", "en": "Under maintenance"}
+]
