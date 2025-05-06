@@ -1,8 +1,7 @@
-use actix_web::web::Query;
 use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
 use serde::Deserialize;
 use crate::service::soap::get_first_date;
-use crate::service::log::logger;
+use crate::service::log::log_with_ip;
 use crate::ipv4::log_ip;
 
 use crate::converters::bulk::get_bulk;
@@ -14,7 +13,6 @@ fn raise_read_instruction() -> HttpResponse {
         .body("Please read '/docs' for instructions!")
 }
 
-
 #[derive(Deserialize)]
 pub struct BulkRequest {
     pub authcode: Option<String>,
@@ -25,11 +23,11 @@ pub struct BulkRequest {
 
 async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
     let ip_address = log_ip(req);
-    logger(format!("Bulk request from '{}'", ip_address));
+    log_with_ip(&ip_address, "Bulk request");
     let authcode = match params.authcode {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
-            logger(format!("Authcode missing for bulk request '{}'", ip_address));
+            log_with_ip(&ip_address, "Authcode missing for bulk request");
             return raise_read_instruction()
         }
     };
@@ -37,7 +35,7 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
     let url = match params.url {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
-            logger(format!("URL missing for bulk request '{}'", ip_address));
+            log_with_ip(&ip_address, "URL missing for bulk request");
             return raise_read_instruction()
         }
     };
@@ -53,14 +51,14 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
     let pid = match params.pid {
         Some(ref s) => s,
         _ => {
-            logger(format!("PID missing for bulk request '{}'", ip_address));
+            log_with_ip(&ip_address, "PID missing for bulk request");
             return raise_read_instruction()
         }
     };
 
-    logger(format!("Getting bulk request '{}'", ip_address));
+    log_with_ip(&ip_address, "Getting bulk request");
     let xml = get_bulk(&url, &xmlns, &authcode, &get_first_date(), &pid).await;
-    logger(format!("Bulk request got '{}'", ip_address));
+    log_with_ip(&ip_address, "Bulk request got");
 
     HttpResponse::Ok()
         .content_type("application/xml")
@@ -68,9 +66,12 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
 }
 
 
-#[get("get-bulk")]
+#[get("/get-bulk")]
 pub async fn get_bulk_handler(req: HttpRequest, query: web::Query<BulkRequest>) -> impl Responder {
-    let params = query.into_inner();
+    bulk_handler(req, query.into_inner()).await
+}
 
-    bulk_handler(req, params).await
+#[post("/get-bulk")]
+pub async fn post_bulk_handler(req: HttpRequest, json: web::Json<BulkRequest>) -> impl Responder {
+    bulk_handler(req, json.into_inner()).await
 }

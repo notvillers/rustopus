@@ -1,8 +1,11 @@
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
 use serde::Deserialize;
 
 use crate::converters::stocks::get_stocks;
 use crate::soap::get_first_date;
+
+use crate::service::ipv4::log_ip;
+use crate::service::log::log_with_ip;
 
 fn raise_read_instruction() -> HttpResponse {
     HttpResponse::Ok()
@@ -19,15 +22,23 @@ pub struct StockRequest {
 }
 
 
-async fn stocks_handler(params: StockRequest) -> impl Responder {
+async fn stocks_handler(req: HttpRequest, params: StockRequest) -> impl Responder {
+    let ip_address = log_ip(req);
+    log_with_ip(&ip_address, "Stocks request");
     let authcode = match params.authcode {
         Some(ref s) if !s.trim().is_empty() => s,
-        _ => return raise_read_instruction()
+        _ => {
+            log_with_ip(&ip_address, "Authcode missing for stocks request");
+            return raise_read_instruction()
+        }
     };
 
     let url = match params.url {
         Some(ref s) if !s.trim().is_empty() => s,
-        _ => return raise_read_instruction()
+        _ => {
+            log_with_ip(&ip_address, "URL missing for stocks request");
+            return raise_read_instruction()
+        }
     };
 
     let mut xmlns = params.xmlns.unwrap_or_default();
@@ -38,7 +49,9 @@ async fn stocks_handler(params: StockRequest) -> impl Responder {
         }
     }
 
+    log_with_ip(&ip_address, "Getting stocks request");
     let xml = get_stocks(url, &xmlns, authcode, &get_first_date()).await;
+    log_with_ip(&ip_address, "Stocks request got");
 
     HttpResponse::Ok()
         .content_type("application/xml")
@@ -47,16 +60,12 @@ async fn stocks_handler(params: StockRequest) -> impl Responder {
 
 
 #[get("/get-stocks")]
-async fn get_stocks_handler(query: web::Query<StockRequest>) -> impl Responder {
-    let params = query.into_inner();
-
-    stocks_handler(params).await
+async fn get_stocks_handler(req: HttpRequest, query: web::Query<StockRequest>) -> impl Responder {
+    stocks_handler(req, query.into_inner()).await
 }
 
 
 #[post("/get-stocks")]
-async fn post_stocks_handler(json: web::Json<StockRequest>) -> impl Responder {
-    let params = json.into_inner();
-
-    stocks_handler(params).await
+async fn post_stocks_handler(req: HttpRequest, json: web::Json<StockRequest>) -> impl Responder {
+    stocks_handler(req, json.into_inner()).await
 }

@@ -31,3 +31,8 @@ pub fn logger<S: AsRef<str>>(message: S) {
         }
     }
 }
+
+
+pub fn log_with_ip<S: AsRef<str>>(ip_address: &str, message: S) {
+    logger(format!("|{}| {}", ip_address, message.as_ref()));
+}

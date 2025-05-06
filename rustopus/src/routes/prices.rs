@@ -1,7 +1,10 @@
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
+use flexi_logger::writers::LogWriter;
 use serde::Deserialize;
 
 use crate::converters::prices::get_prices;
+use crate::service::ipv4::log_ip;
+use crate::service::log::log_with_ip;
 
 fn raise_read_instruction() -> HttpResponse {
     HttpResponse::Ok()
@@ -19,15 +22,23 @@ pub struct PriceRequest {
 }
 
 
-async fn prices_handler(params: PriceRequest) -> impl Responder {
+async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responder {
+    let ip_address = log_ip(req);
+    log_with_ip(&ip_address, "Price request");
     let authcode = match params.authcode {
         Some(ref s) if !s.trim().is_empty() => s,
-        _ => return raise_read_instruction()
+        _ => {
+            log_with_ip(&ip_address, "Authcode missing for price request");
+            return raise_read_instruction()
+        }
     };
 
     let url = match params.url {
         Some(ref s) if !s.trim().is_empty() => s,
-        _ => return raise_read_instruction()
+        _ => {
+            log_with_ip(&ip_address, "URL missing for price request");
+            return raise_read_instruction()
+        }
     };
 
     let mut xmlns = params.xmlns.unwrap_or_default();
@@ -40,10 +51,15 @@ async fn prices_handler(params: PriceRequest) -> impl Responder {
 
     let pid = match params.pid {
         Some(ref s) => s,
-        _ => return raise_read_instruction()
+        _ => {
+            log_with_ip(&ip_address, "PID missing for price request");
+            return raise_read_instruction()
+        }
     };
     
+    log_with_ip(&ip_address, "Getting prices request");
     let xml = get_prices(url, &xmlns, pid, authcode).await;
+    log_with_ip(&ip_address, "Prices request got");
 
     HttpResponse::Ok()
         .content_type("application/xml")
@@ -52,16 +68,12 @@ async fn prices_handler(params: PriceRequest) -> impl Responder {
 
 
 #[get("/get-prices")]
-async fn get_prices_handler(query: web::Query<PriceRequest>) -> impl Responder {
-    let params = query.into_inner();
-
-    prices_handler(params).await
+async fn get_prices_handler(req: HttpRequest, query: web::Query<PriceRequest>) -> impl Responder {
+    prices_handler(req, query.into_inner()).await
 }
 
 
 #[post("/get-prices")]
-async fn post_prices_handler(json: web::Json<PriceRequest>) -> impl Responder {
-    let params = json.into_inner();
-
-    prices_handler(params).await
+async fn post_prices_handler(req: HttpRequest, json: web::Json<PriceRequest>) -> impl Responder {
+    prices_handler(req, json.into_inner()).await
 }

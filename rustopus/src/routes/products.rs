@@ -1,8 +1,11 @@
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
 use serde::Deserialize;
 
 use crate::converters::products::get_products;
 use crate::soap::get_first_date;
+
+use crate::service::ipv4::log_ip;
+use crate::service::log::log_with_ip;
 
 fn raise_read_instruction() -> HttpResponse {
     HttpResponse::Ok()
@@ -19,20 +22,20 @@ pub struct ProductRequest {
 }
 
 
-async fn products_handler(params: ProductRequest) -> impl Responder {
+async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Responder {
+    let ip_address = log_ip(req);
+    log_with_ip(&ip_address, "Products request");
     let authcode = match params.authcode {
-        Some(ref s) if !s.trim().is_empty() => {
-            s
-        }
+        Some(ref s) if !s.trim().is_empty() => s,
         _ => {
+            log_with_ip(&ip_address, "Authcode missing for products request");
             return raise_read_instruction()
         }
     };
     let url = match params.url {
-        Some(ref s) if !s.trim().is_empty() => {
-            s
-        }
+        Some(ref s) if !s.trim().is_empty() => s,
         _ =>  {
+            log_with_ip(&ip_address, "URL missing for products request");
             return raise_read_instruction()
         }
     };
@@ -45,7 +48,9 @@ async fn products_handler(params: ProductRequest) -> impl Responder {
         }
     }
 
+    log_with_ip(&ip_address, "Getting products request");
     let xml = get_products(url, &xmlns, authcode, &get_first_date()).await;
+    log_with_ip(&ip_address, "Products request got");
 
     HttpResponse::Ok()
         .content_type("application/xml")
@@ -54,12 +59,12 @@ async fn products_handler(params: ProductRequest) -> impl Responder {
 
 
 #[get("/get-products")]
-pub async fn get_products_handler(query: web::Query<ProductRequest>) -> impl Responder {
-    products_handler(query.into_inner()).await
+pub async fn get_products_handler(req: HttpRequest, query: web::Query<ProductRequest>) -> impl Responder {
+    products_handler(req, query.into_inner()).await
 }
 
 
 #[post("get-products")]
-pub async fn post_products_handler(json: web::Json<ProductRequest>) -> impl Responder {
-    products_handler(json.into_inner()).await
+pub async fn post_products_handler(req: HttpRequest, json: web::Json<ProductRequest>) -> impl Responder {
+    products_handler(req, json.into_inner()).await
 }
