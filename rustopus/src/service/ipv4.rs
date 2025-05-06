@@ -33,7 +33,7 @@ pub async fn log_ip(req: HttpRequest) -> String {
                 Some(peer_address) => {
                     let ip = peer_address.ip().to_string();
                     if ip == get_ip().await {
-                        return "unknown ip address (maybe host?)".to_string()
+                        return format!("host ip: {}", ip).to_string()
                     }
                     ip.to_string()
                 }
