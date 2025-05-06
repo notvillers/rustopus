@@ -1,5 +1,5 @@
 use reqwest;
-use actix_web::HttpRequest;
+use actix_web::{web::get, HttpRequest};
 use crate::service::log::logger;
 
 pub async fn get_ip() -> String {
@@ -23,13 +23,24 @@ pub async fn get_ip() -> String {
     "unknown ipv4 address".to_string()
 }
 
-pub fn log_ip(req: HttpRequest) -> String {
-    match req.peer_addr() {
-        Some(peer_address) => {
-            peer_address.ip().to_string()
+pub async fn log_ip(req: HttpRequest) -> String {
+    match req.headers().get("X-Forwarder-For").and_then(|v| v.to_str().ok()) {
+        Some(ip) => {
+            ip.to_string()
         }
         _ => {
-            "unknown IP address".to_string()
+            match req.peer_addr() {
+                Some(peer_address) => {
+                    let ip = peer_address.ip().to_string();
+                    if ip == get_ip().await {
+                        return "unknown ip address (maybe host?)".to_string()
+                    }
+                    ip.to_string()
+                }
+                _ => {
+                    "unkown ip address".to_string()
+                }
+            }
         }
     }
 }

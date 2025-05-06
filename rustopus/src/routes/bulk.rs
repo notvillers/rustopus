@@ -22,7 +22,7 @@ pub struct BulkRequest {
 }
 
 async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
-    let ip_address = log_ip(req);
+    let ip_address = log_ip(req).await;
     log_with_ip(&ip_address, "Bulk request");
     let authcode = match params.authcode {
         Some(ref s) if !s.trim().is_empty() => s,
