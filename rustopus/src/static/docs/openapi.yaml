@@ -495,54 +495,57 @@ components:
                       properties:
                         version:
                           type: string
-                        product:
+                        products:
                           type: object
                           properties:
-                            id:
-                              type: integer
-                            no:
-                              type: string
-                            name:
-                              type: string
-                            unit:
-                              type: string
-                            base_unit:
-                              type: string
-                            base_unit_qty:
-                              type: string
-                            brand:
-                              type: string
-                            category_code:
-                              type: string
-                            category_name:
-                              type: string
-                            description:
-                              type: string
-                            weight:
-                              type: number
-                            size:
+                            product:
                               type: object
                               properties:
-                                x:
+                                id:
+                                  type: integer
+                                no:
+                                  type: string
+                                name:
+                                  type: string
+                                unit:
+                                  type: string
+                                base_unit:
+                                  type: string
+                                base_unit_qty:
+                                  type: string
+                                brand:
+                                  type: string
+                                category_code:
+                                  type: string
+                                category_name:
+                                  type: string
+                                description:
+                                  type: string
+                                weight:
                                   type: number
-                                y:
+                                size:
+                                  type: object
+                                  properties:
+                                    x:
+                                      type: number
+                                    y:
+                                      type: number
+                                    z:
+                                      type: number
+                                main_category_code:
+                                  type: string
+                                main_category_name:
+                                  type: string
+                                sell_unit:
                                   type: number
-                                z:
+                                origin_country:
+                                  type: string
+                                price:
                                   type: number
-                            main_category_code:
-                              type: string
-                            main_category_name:
-                              type: string
-                            sell_unit:
-                              type: number
-                            origin_country:
-                              type: string
-                            price:
-                              type: number
-                            currency:
-                              type: string
-                            stock:
-                              type: number
+                                currency:
+                                  type: string
+                                stock:
+                                  type: number
                         error:
                           type: object
                           properties:
