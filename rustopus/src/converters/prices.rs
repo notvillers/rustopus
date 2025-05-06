@@ -2,6 +2,7 @@ use crate::o8_xml;
 use crate::partner_xml;
 use crate::service::soap;
 use quick_xml;
+use crate::service::log::logger;
 
 
 pub async fn get_prices(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> String {
@@ -12,7 +13,7 @@ pub async fn get_prices(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> St
             convert_prices_envelope_to_xml(hu_envelope)
         }
         Err(e) => {
-            println!("Get prices: error {}", e);
+            logger(format!("Get prices: error {}", e));
             "<Envelope></Envelope>".to_string()
         }
     }
@@ -57,7 +58,7 @@ fn convert_prices_envelope_to_xml(hu_envelope: o8_xml::prices::Envelope) -> Stri
             eng_xml
         }
         Err(e) => {
-            println!("Convert prices error: {}", e);
+            logger(format!("Convert prices error: {}", e));
             "<Envelope></Envelope>".to_string()
         }
     }

@@ -4,6 +4,7 @@ use crate::o8_xml;
 use crate::partner_xml;
 use crate::service::soap;
 use quick_xml;
+use crate::service::log::logger;
 
 
 pub async fn get_products(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
@@ -14,7 +15,7 @@ pub async fn get_products(url: &str, xmlns: &str, authcode: &str, web_update: &D
             convert_products_envelope_to_xml(hu_envelope)
         }
         Err(e) => {
-            println!("Get products error: {}", e);
+            logger(format!("Get products error: {}", e));
             "<Envelope></Envelope>".to_string()
         }
     }
@@ -60,7 +61,7 @@ fn convert_products_envelope_to_xml(hu_envelope: o8_xml::products::Envelope) -> 
             eng_xml
         }
         Err(e) => {
-            println!("Convert products error: {}", e);
+            logger(format!("Convert products error: {}", e));
             "<Envelope></Envelope>".to_string()
         }
     }

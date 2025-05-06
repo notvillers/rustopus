@@ -3,39 +3,36 @@ use quick_xml;
 use crate::converters;
 use crate::o8_xml;
 use crate::partner_xml;
+use crate::service::log::logger;
 
 pub async fn get_bulk(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>, pid: &i64) -> String {
-    println!("Getting products");
     let products = get_products(url, xmlns, authcode, web_update).await;
     let products_env: o8_xml::products::Envelope = match products {
         Ok(products) => {
             products
         },
         Err(e) => {
-            println!("Bulk get product error {}", e);
+            logger(format!("Bulk get product error {}", e));
             return format!("<Envelope>{}</Envelope>", e)
         }
     };
-    println!("Getting stocks");
     let stocks = get_stocks(url, xmlns, authcode, web_update).await;
     let stocks_env: o8_xml::stocks::Envelope = match stocks {
         Ok(stocks) => {
             stocks
         },
         Err(e) => {
-            println!("Bulk get stocks error: {}", e);
+            logger(format!("Bulk get stocks error: {}", e));
             return format!("<Envelope>{}</Envelope>", e)
         }
     };
-    println!("Getting prices");
     let prices = get_prices(url, xmlns, pid, authcode).await;
     let prices_env: o8_xml::prices::Envelope = match prices {
         Ok(prices) => {
             prices
         }
         Err(e) => {
-            println!("Bulk get prices error: {}", e);
-            // TODO: itt a hiba
+            logger(format!("Bulk get prices error: {}", e));
             return format!("<Envelope>{}</Envelope>", e)
         }
     };
@@ -54,7 +51,7 @@ fn create_xml(envelope: partner_xml::bulk::Envelope) -> String {
             for cikk in envelope.body.response.result.answer.products {
                 println!("{}, {:?}, {:?}", cikk.no, cikk.price, cikk.stock)
             }
-            println!("XML creating error {}", e);
+            logger(format!("XML creating error {}", e));
             format!("<Envelope>{}</Envelope>", e)
         }
     }
@@ -74,7 +71,7 @@ async fn get_stocks(url: &str, xmlns: &str, authcode: &str, web_update: &DateTim
 
 
 async fn get_prices(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> Result<o8_xml::prices::Envelope, quick_xml::DeError> {
-    let prices_response = converters::prices::get_prices(url, xmlns, pid, authcode).await;
+    let prices_response = converters::prices::get_prices_xml(url, xmlns, pid, authcode).await;
     converters::prices::get_prices_envelope(&prices_response)
 }
 

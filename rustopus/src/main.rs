@@ -1,7 +1,7 @@
 mod service;
 use std::{env, path::PathBuf};
 
-use crate::service::{soap, ipv4};
+use crate::service::{soap, ipv4, log::logger};
 
 mod o8_xml;
 
@@ -74,7 +74,7 @@ async fn main() -> std::io::Result<()> {
     let host = "0.0.0.0";
     let port = config.server.port;
 
-    println!("Running on '{}:{}'", host, port);
+    logger(format!("Running on '{}:{}'", host, port));
 
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let docs_dir: PathBuf;
