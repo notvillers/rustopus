@@ -48,9 +48,9 @@ async fn stocks_handler(req: HttpRequest, params: StockRequest) -> impl Responde
         }
     }
 
-    log_with_ip(&ip_address, format!("Getting stock request, url: {}, auth: {}", url, authcode));
+    log_with_ip(&ip_address, format!("Before getting stock request, url: {}, auth: {}", url, authcode));
     let xml = get_stocks(url, &xmlns, authcode, &get_first_date()).await;
-    log_with_ip(&ip_address, "Stocks request got");
+    log_with_ip(&ip_address, "After stocks request got");
 
     HttpResponse::Ok()
         .content_type("application/xml")

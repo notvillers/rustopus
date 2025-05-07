@@ -47,9 +47,9 @@ async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Resp
         }
     }
 
-    log_with_ip(&ip_address, format!("Getting products request, url: {}, auth: {}", url, authcode));
+    log_with_ip(&ip_address, format!("Before getting products request, url: {}, auth: {}", url, authcode));
     let xml = get_products(url, &xmlns, authcode, &get_first_date()).await;
-    log_with_ip(&ip_address, "Products request got");
+    log_with_ip(&ip_address, "After products request got");
 
     HttpResponse::Ok()
         .content_type("application/xml")

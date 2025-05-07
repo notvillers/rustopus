@@ -55,9 +55,9 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
         }
     };
 
-    log_with_ip(&ip_address, format!("Getting bulk request, url: {}, auth: {}, pid: {}", url, authcode, pid));
+    log_with_ip(&ip_address, format!("Before getting bulk request, url: {}, auth: {}, pid: {}", url, authcode, pid));
     let xml = get_bulk(&url, &xmlns, &authcode, &get_first_date(), &pid).await;
-    log_with_ip(&ip_address, "Bulk request got");
+    log_with_ip(&ip_address, "After bulk request got");
 
     HttpResponse::Ok()
         .content_type("application/xml")
