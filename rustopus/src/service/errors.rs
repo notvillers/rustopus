@@ -54,7 +54,7 @@ pub fn read_errors() -> Vec<ErrorMessage> {
 
 
 pub fn translate_error(hungarian_error: &str) -> String {
-    if let Some(error) = &global::errors::ERRORS.iter().find(|e | hungarian_error.starts_with(&e.hu)) {
+    if let Some(error) = &global::errors::ERRORS.iter().find(|e| hungarian_error.starts_with(&e.hu)) {
         return error.en.clone()
     }
     hungarian_error.to_string()
