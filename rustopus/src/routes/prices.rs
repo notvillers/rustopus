@@ -56,7 +56,7 @@ async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responde
         }
     };
     
-    log_with_ip(&ip_address, "Getting prices request");
+    log_with_ip(&ip_address, format!("Getting prices request, url: {}, auth: {}, pid: {}", url, authcode, pid));
     let xml = get_prices(url, &xmlns, pid, authcode).await;
     log_with_ip(&ip_address, "Prices request got");
 
