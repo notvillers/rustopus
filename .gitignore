@@ -4,3 +4,4 @@ rustopus/target
 *.log
 test.bat
 test.ps1
+*bulk_test.sh*
