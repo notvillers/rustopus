@@ -1,5 +1,7 @@
 use serde::Serialize;
+
 use crate::o8_xml;
+use crate::service::errors;
 
 #[derive(Serialize)]
 pub struct Envelope {
@@ -86,7 +88,7 @@ impl From<o8_xml::stocks::Hiba> for Error {
     fn from(hiba: o8_xml::stocks::Hiba) -> Self {
         Error {
             code: hiba.kod,
-            description: hiba.leiras
+            description: errors::translate_error(&hiba.leiras)
         }
     }
 }

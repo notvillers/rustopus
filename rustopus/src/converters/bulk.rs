@@ -48,9 +48,6 @@ fn create_xml(envelope: partner_xml::bulk::Envelope) -> String {
             xml
         }
         Err(e) => {
-            for cikk in envelope.body.response.result.answer.products.product {
-                println!("{}, {:?}, {:?}", cikk.no, cikk.price, cikk.stock)
-            }
             logger(format!("XML creating error {}", e));
             format!("<Envelope>{}</Envelope>", e)
         }

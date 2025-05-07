@@ -9,8 +9,7 @@ use crate::service::log::logger;
 
 pub async fn get_products(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
     let hu_products_xml = get_products_xml(url, xmlns, authcode, web_update).await;
-    let hu_envelope = get_products_envelope(&hu_products_xml);
-    match hu_envelope {
+    match get_products_envelope(&hu_products_xml) {
         Ok(hu_envelope) => {
             convert_products_envelope_to_xml(hu_envelope)
         }
@@ -54,9 +53,7 @@ pub fn get_products_envelope(response_text: &str) -> Result<o8_xml::products::En
 
 fn convert_products_envelope_to_xml(hu_envelope: o8_xml::products::Envelope) -> String {
     let en_envelope: partner_xml::products::Envelope = hu_envelope.into();
-    let eng_xml = quick_xml::se::to_string(&en_envelope);
-
-    match eng_xml {
+    match quick_xml::se::to_string(&en_envelope) {
         Ok(eng_xml) => {
             eng_xml
         }

@@ -24,7 +24,6 @@ pub struct ProductRequest {
 
 async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Responder {
     let ip_address = log_ip(req).await;
-    log_with_ip(&ip_address, "Products request");
     let authcode = match params.authcode {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {

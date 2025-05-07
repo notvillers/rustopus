@@ -7,8 +7,7 @@ use crate::service::log::logger;
 
 pub async fn get_stocks(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
     let hu_stocks_xml = get_stocks_xml(url, xmlns, authcode, web_update).await;
-    let hu_envelope = get_stocks_envelope(&hu_stocks_xml);
-    match hu_envelope {
+    match get_stocks_envelope(&hu_stocks_xml) {
         Ok(hu_envelope) => {
             convert_stocks_envelope_to_xml(hu_envelope)
         }
@@ -51,9 +50,7 @@ pub fn get_stocks_envelope(response_text: &str) -> Result<o8_xml::stocks::Envelo
 
 fn convert_stocks_envelope_to_xml(hu_envelope: o8_xml::stocks::Envelope) -> String {
     let en_envelope: partner_xml::stocks::Envelope = hu_envelope.into();
-    let eng_xml = quick_xml::se::to_string(&en_envelope);
-
-    match eng_xml {
+    match quick_xml::se::to_string(&en_envelope) {
         Ok(eng_xml) => {
             eng_xml
         }

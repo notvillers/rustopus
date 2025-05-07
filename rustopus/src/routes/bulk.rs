@@ -23,7 +23,6 @@ pub struct BulkRequest {
 
 async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
     let ip_address = log_ip(req).await;
-    log_with_ip(&ip_address, "Bulk request");
     let authcode = match params.authcode {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
@@ -70,6 +69,7 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
 pub async fn get_bulk_handler(req: HttpRequest, query: web::Query<BulkRequest>) -> impl Responder {
     bulk_handler(req, query.into_inner()).await
 }
+
 
 #[post("/get-bulk")]
 pub async fn post_bulk_handler(req: HttpRequest, json: web::Json<BulkRequest>) -> impl Responder {

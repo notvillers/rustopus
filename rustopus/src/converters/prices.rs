@@ -7,8 +7,7 @@ use crate::service::log::logger;
 
 pub async fn get_prices(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> String {
     let hu_prices_xml = get_prices_xml(url, xmlns, pid, authcode).await;
-    let hu_envelope = get_prices_envelope(&hu_prices_xml);
-    match hu_envelope {
+    match get_prices_envelope(&hu_prices_xml) {
         Ok(hu_envelope) => {
             convert_prices_envelope_to_xml(hu_envelope)
         }
@@ -51,9 +50,7 @@ pub fn get_prices_envelope(response_text: &str) -> Result<o8_xml::prices::Envelo
 
 fn convert_prices_envelope_to_xml(hu_envelope: o8_xml::prices::Envelope) -> String {
     let en_envelope: partner_xml::prices::Envelope = hu_envelope.into();
-    let eng_xml = quick_xml::se::to_string(&en_envelope);
-
-    match eng_xml {
+    match quick_xml::se::to_string(&en_envelope) {
         Ok(eng_xml) => {
             eng_xml
         }

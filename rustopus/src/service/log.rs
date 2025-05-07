@@ -1,33 +1,38 @@
-use std::env;
 use std::io::Write;
 use chrono::Local;
 use std::fs::OpenOptions;
+use crate::service::path::get_current_or_root_dir;
 
 pub fn logger<S: AsRef<str>>(message: S) {
-    let current_dir = env::current_dir().expect("Failed to get current directory");
-    let log_dir = current_dir.join("src").join("log");
-    if !log_dir.exists() {
-        std::fs::create_dir_all(&log_dir).expect("Failed to create log directory");
-    }
-    let now = Local::now();
-    let filename = format!("{}.log", now.format("%Y_%m_%d"));
-    let filepath = log_dir.join(filename);
+    let content = format!("[{}] {}", Local::now().format("%Y-%m-%d %H:%M:%S").to_string(), message.as_ref());
 
-    let mut file = OpenOptions::new()
+    let log_dir = get_current_or_root_dir().join("src").join("log");
+    if !log_dir.exists() {
+        match std::fs::create_dir_all(&log_dir) {
+            Ok(_) => {},
+            Err(e) => {
+                println!("Failed to create log directory '{}', content '{}', error '{}'", &log_dir.to_string_lossy(), content, e);
+                return
+            }
+        }
+    }
+    match OpenOptions::new()
         .create(true)
         .append(true)
-        .open(filepath)
-        .expect("Failed to open log file");
+        .open(log_dir.join(format!("{}.log", Local::now().format("%Y_%m_%d")))) {
+        Ok(mut file) => {
 
-    let timestamp = now.format("%Y-%m-%d %H:%M:%S").to_string();
-    let content = format!("[{}] {}", timestamp, message.as_ref());
-
-    match writeln!(file, "{}", content) {
-        Ok(_) => {
-            println!("{}", content);
+            match writeln!(file, "{}", content) {
+                Ok(_) => {
+                    println!("{}", content);
+                }
+                Err(e) => {
+                    println!("Failed to log content '{}', error '{}'", content, e);
+                }
+            }
         }
         Err(e) => {
-            println!("Failed to log: '{}', error: {}", content, e);
+            println!("Failed to open logfile '{}', content '{}', error '{}'", &log_dir.to_string_lossy(), content, e);
         }
     }
 }

@@ -24,7 +24,6 @@ pub struct StockRequest {
 
 async fn stocks_handler(req: HttpRequest, params: StockRequest) -> impl Responder {
     let ip_address = log_ip(req).await;
-    log_with_ip(&ip_address, "Stocks request");
     let authcode = match params.authcode {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {

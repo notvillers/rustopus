@@ -23,7 +23,6 @@ pub struct PriceRequest {
 
 async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responder {
     let ip_address = log_ip(req).await;
-    log_with_ip(&ip_address, "Price request");
     let authcode = match params.authcode {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {

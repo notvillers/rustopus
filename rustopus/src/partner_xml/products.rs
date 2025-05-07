@@ -1,9 +1,6 @@
-use std::collections::HashMap;
-
-use actix_web::cookie::time::error;
 use serde::Serialize;
 
-use crate::o8_xml::{self, products::Hiba};
+use crate::o8_xml;
 use crate::service::errors;
 
 
@@ -90,9 +87,8 @@ pub struct Error {
     pub description: String
 }
 
-
-impl From<Hiba> for Error {
-    fn from(hiba: Hiba) -> Self {
+impl From<o8_xml::products::Hiba> for Error {
+    fn from(hiba: o8_xml::products::Hiba) -> Self {
         Error {
             code: hiba.kod,
             description: errors::translate_error(&hiba.leiras)
