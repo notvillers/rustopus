@@ -1,6 +1,10 @@
+use std::collections::HashMap;
+
+use actix_web::cookie::time::error;
 use serde::Serialize;
 
 use crate::o8_xml::{self, products::Hiba};
+use crate::service::errors;
 
 
 #[derive(Serialize)]
@@ -91,7 +95,7 @@ impl From<Hiba> for Error {
     fn from(hiba: Hiba) -> Self {
         Error {
             code: hiba.kod,
-            description: hiba.leiras
+            description: errors::translate_error(&hiba.leiras)
         }
     }
 }

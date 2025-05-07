@@ -9,7 +9,8 @@ pub struct Settings {
 
 #[derive(Debug, Deserialize)]
 pub struct ServerConfig {
-    pub port: u16
+    pub port: u16,
+    pub timeout: u64
 }
 
 
@@ -36,7 +37,8 @@ pub fn get_settings() -> Settings {
     }
     Settings { 
         server: ServerConfig { 
-            port: 8080
+            port: 8080,
+            timeout: 1200
         }
     }
 }

@@ -1730,6 +1730,7 @@ dependencies = [
  "dotenv",
  "flexi_logger",
  "log",
+ "once_cell",
  "quick-xml",
  "reqwest",
  "serde",

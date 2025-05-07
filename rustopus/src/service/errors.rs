@@ -5,6 +5,8 @@ use std::io::BufReader;
 
 use crate::service::log::logger;
 
+use crate::global;
+
 #[derive(Debug, Deserialize)]
 pub struct ErrorMessage {
     pub code: u64,
@@ -48,4 +50,13 @@ pub fn read_errors() -> Vec<ErrorMessage> {
             get_dummy_errors()
         }
     }
+}
+
+
+pub fn translate_error(hungarian_error: &str) -> String {
+    let errors = &global::errors::ERRORS;
+    if let Some(error) = errors.iter().find(|e | hungarian_error.starts_with(&e.hu)) {
+        return error.en.clone()
+    }
+    hungarian_error.to_string()
 }

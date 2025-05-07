@@ -4,6 +4,8 @@ use reqwest::Client;
 use reqwest::header::CONTENT_TYPE;
 use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 
+use crate::service::config;
+
 pub fn get_first_date() -> DateTime<Utc> {
     let naive_datetime = NaiveDateTime::new(
         chrono::NaiveDate::from_ymd_opt(2000, 1, 1).expect("Invalid date provided"), 
@@ -14,8 +16,9 @@ pub fn get_first_date() -> DateTime<Utc> {
 
 
 pub async fn get_response(url: &str, soap_request: String) -> String {
+    let timeout = config::get_settings().server.timeout;
     let client = match Client::builder()
-        .timeout(Duration::from_secs(1200))
+        .timeout(Duration::from_secs(timeout))
         .build() {
         Ok(client) => {
             client

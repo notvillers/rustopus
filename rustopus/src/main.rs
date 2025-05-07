@@ -9,6 +9,8 @@ mod partner_xml;
 
 mod routes;
 
+mod global;
+
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use actix_web::http::header;
 use actix_files::Files;
@@ -21,47 +23,8 @@ async fn not_found() -> impl Responder {
 }
 
 
-fn raise_read_instruction() -> HttpResponse {
-    HttpResponse::Ok()
-        .content_type("text/plain")
-        .body("Read index for instructions!")
-}
-
-
 #[get("/")]
 async fn index() -> impl Responder {
-    let index_str = format!(r#"RustOpus @ Villers
-__________________
-
-Solution to convert hungarian Octopus 8 ERP SOAP's XML tags to english.
-Some Octopus partner limits the IP addresses, if needed, give them '{}'
-
-APIs
-    /get-products
-        methods
-            GET
-            POST
-        arguments
-            url
-            authcode
-            xmlns (optional)
-        example
-            GET
-                curl "https://octopus.villers.website/get-products?url=https://domain.com/services/vision.asmx&authcode=your_auth_code"
-
-    /get-stocks
-        methods
-            GET
-            POST
-        arguments
-            url
-            authcode
-            xmlns (optional)
-        example
-            GET
-                curl "https://octopus.villers.website/get-stocks?url=https://domain.com/services/vision.asmx&authcode=your_auth_code""#, 
-            ipv4::get_ip().await);
-    //HttpResponse::Ok().body(index_str)
     HttpResponse::Found()
         .append_header((header::LOCATION, "/docs/"))
         .finish()
@@ -79,7 +42,6 @@ async fn main() -> std::io::Result<()> {
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let docs_dir: PathBuf;
     docs_dir = current_dir.join("src").join("static").join("docs");
-
     HttpServer::new(move || {
         App::new()
             .service(index)
