@@ -9,6 +9,7 @@ pub struct Settings {
 
 #[derive(Debug, Deserialize)]
 pub struct ServerConfig {
+    pub host: String,
     pub port: u16,
     pub timeout: u64
 }
@@ -32,7 +33,8 @@ pub fn get_settings() -> Settings {
         }
     }
     Settings { 
-        server: ServerConfig { 
+        server: ServerConfig {
+            host: "0.0.0.0".to_string(),
             port: 8080,
             timeout: 1200
         }

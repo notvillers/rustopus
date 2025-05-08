@@ -34,10 +34,8 @@ async fn index() -> impl Responder {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let config = service::config::get_settings();
-    let host = "0.0.0.0";
-    let port = config.server.port;
 
-    logger(format!("Running on '{}:{}'", host, port));
+    logger(format!("Running on '{}:{}'", config.server.host, config.server.port));
 
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let docs_dir = current_dir.join("src").join("static").join("docs");
@@ -58,7 +56,7 @@ async fn main() -> std::io::Result<()> {
     })
         .client_request_timeout(std::time::Duration::from_secs(1200))
         .keep_alive(std::time::Duration::from_secs(1200))
-        .bind((host, port))?
+        .bind((config.server.host, config.server.port))?
         .run()
         .await
 }

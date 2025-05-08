@@ -9,7 +9,6 @@ use crate::global;
 
 #[derive(Debug, Deserialize)]
 pub struct ErrorMessage {
-    pub code: u64,
     pub hu: String,
     pub en: String
 }
@@ -31,25 +30,23 @@ pub fn read_errors() -> Vec<ErrorMessage> {
                     let json: Result<Vec<ErrorMessage>, serde_json::Error> = serde_json::from_reader(reader);
                     match json {
                         Ok(errors) => {
-                            errors
+                            return errors
                         },
                         Err(e) => {
                             logger(format!("errors.json file error: {}, returning dummy", e));
-                            get_dummy_errors()
                         }
                     }
                 }
                 Err(e) => {
                     logger(format!("errors.json file error: {}, returning dummy", e));
-                    get_dummy_errors()
                 }
             }
         }
         Err(e) => {
             logger(format!("errors.json file error: {}, returning dummy", e));
-            get_dummy_errors()
         }
     }
+    get_dummy_errors()
 }
 
 
