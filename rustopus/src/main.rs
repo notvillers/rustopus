@@ -1,5 +1,5 @@
 mod service;
-use std::{env, path::PathBuf};
+use std::env;
 
 use crate::service::{soap, ipv4, log::logger};
 
