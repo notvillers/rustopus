@@ -2,8 +2,7 @@ use reqwest;
 use actix_web::HttpRequest;
 
 pub async fn get_ip() -> String {
-    let response = reqwest::get("https://ip.villers.website").await;
-    match response {
+    match reqwest::get("https://ip.villers.website").await {
         Ok(response) => {
             let body = response.text().await;
             match body {
@@ -24,10 +23,10 @@ pub async fn get_ip() -> String {
 
 pub async fn log_ip(req: HttpRequest) -> String {
     let ip = req
-    .headers()
-    .get("X-Forwarded-For")
-    .and_then(|v| v.to_str().ok())
-    .and_then(|s| s.split(',').next());
+        .headers()
+        .get("X-Forwarded-For")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.split(',').next());
 
     match ip {
         Some(ip) => {

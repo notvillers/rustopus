@@ -68,6 +68,7 @@ impl From<o8_xml::prices::Hiba> for Error {
     }
 }
 
+
 #[derive(Serialize)]
 pub struct Products {
     pub product: Vec<Product>

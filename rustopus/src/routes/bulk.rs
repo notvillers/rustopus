@@ -13,6 +13,7 @@ fn raise_read_instruction() -> HttpResponse {
         .body("Please read '/docs' for instructions!")
 }
 
+
 #[derive(Deserialize)]
 pub struct BulkRequest {
     pub authcode: Option<String>,

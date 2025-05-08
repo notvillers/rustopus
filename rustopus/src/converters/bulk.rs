@@ -6,8 +6,7 @@ use crate::partner_xml;
 use crate::service::log::logger;
 
 pub async fn get_bulk(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>, pid: &i64) -> String {
-    let products = get_products(url, xmlns, authcode, web_update).await;
-    let products_env: o8_xml::products::Envelope = match products {
+    let products_env: o8_xml::products::Envelope = match get_products(url, xmlns, authcode, web_update).await {
         Ok(products) => {
             products
         },
@@ -16,8 +15,7 @@ pub async fn get_bulk(url: &str, xmlns: &str, authcode: &str, web_update: &DateT
             return format!("<Envelope>{}</Envelope>", e)
         }
     };
-    let stocks = get_stocks(url, xmlns, authcode, web_update).await;
-    let stocks_env: o8_xml::stocks::Envelope = match stocks {
+    let stocks_env: o8_xml::stocks::Envelope = match get_stocks(url, xmlns, authcode, web_update).await {
         Ok(stocks) => {
             stocks
         },
@@ -26,8 +24,7 @@ pub async fn get_bulk(url: &str, xmlns: &str, authcode: &str, web_update: &DateT
             return format!("<Envelope>{}</Envelope>", e)
         }
     };
-    let prices = get_prices(url, xmlns, pid, authcode).await;
-    let prices_env: o8_xml::prices::Envelope = match prices {
+    let prices_env: o8_xml::prices::Envelope = match get_prices(url, xmlns, pid, authcode).await {
         Ok(prices) => {
             prices
         }

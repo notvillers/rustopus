@@ -43,8 +43,7 @@ pub async fn get_response(url: &str, soap_request: String) -> String {
         .header(CONTENT_TYPE, "text/xml; charset=utf-8")
         .body(soap_request)
         .send()
-        .await
-    {
+        .await {
         Ok(resp) => match resp.text().await {
             Ok(text) => text,
             Err(e) => {

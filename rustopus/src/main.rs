@@ -40,8 +40,7 @@ async fn main() -> std::io::Result<()> {
     logger(format!("Running on '{}:{}'", host, port));
 
     let current_dir = env::current_dir().expect("Failed to get current directory");
-    let docs_dir: PathBuf;
-    docs_dir = current_dir.join("src").join("static").join("docs");
+    let docs_dir = current_dir.join("src").join("static").join("docs");
     HttpServer::new(move || {
         App::new()
             .service(index)
@@ -57,9 +56,9 @@ async fn main() -> std::io::Result<()> {
             .service(routes::prices::post_prices_handler)
             .service(routes::bulk::get_bulk_handler)
     })
-    .client_request_timeout(std::time::Duration::from_secs(1200))
-    .keep_alive(std::time::Duration::from_secs(1200))
-    .bind((host, port))?
-    .run()
-    .await
+        .client_request_timeout(std::time::Duration::from_secs(1200))
+        .keep_alive(std::time::Duration::from_secs(1200))
+        .bind((host, port))?
+        .run()
+        .await
 }
