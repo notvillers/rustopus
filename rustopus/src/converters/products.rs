@@ -20,8 +20,7 @@ use crate::service::log::logger;
 /// let products_string: String = get_products(url, xmlns, authcode, web_update).await;
 /// ```
 pub async fn get_products(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
-    let hu_products_xml = get_products_xml(url, xmlns, authcode, web_update).await;
-    match get_products_envelope(&hu_products_xml) {
+    match get_products_envelope(&get_products_xml(url, xmlns, authcode, web_update).await) {
         Ok(hu_envelope) => {
             convert_products_envelope_to_xml(hu_envelope)
         }
