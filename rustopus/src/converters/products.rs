@@ -7,6 +7,18 @@ use quick_xml;
 use crate::service::log::logger;
 
 
+/// `async` Gets the products into string
+/// # Parameters
+/// * url: `&str`
+/// * xmlns: `&str`
+/// * authcode: `&str`
+/// * web_update: `&DateTime<Utc>`
+/// # Returns
+/// `String`
+/// # Example
+/// ```rust
+/// let products_string: String = get_products(url, xmlns, authcode, web_update).await;
+/// ```
 pub async fn get_products(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
     let hu_products_xml = get_products_xml(url, xmlns, authcode, web_update).await;
     match get_products_envelope(&hu_products_xml) {
@@ -21,6 +33,17 @@ pub async fn get_products(url: &str, xmlns: &str, authcode: &str, web_update: &D
 }
 
 
+/// Get the string for the request
+/// # Parameters
+/// * xmlns: `&str`
+/// * web_update: `&DateTime<Utc>`
+/// * authcode: `&str`
+/// # Returns
+/// `String`
+/// # Example
+/// ```rust
+/// let soap_request: String = get_products_request_string(xmlns, web_update, authcode);
+/// ```
 fn get_products_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
     format!(
         r#"<?xml version="1.0" encoding="utf-8"?>
@@ -40,17 +63,55 @@ fn get_products_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode
 }
 
 
+/// `async` Get products request
+/// # Parameters
+/// * url: `&str`
+/// * xmlns: `&str`
+/// * authcode: `&str`
+/// * web_update: `&DateTime<Utc>`
+/// # Returns
+/// `String`
+/// # Example
+/// ```rust
+/// let request_string: Stirng = get_products_xml(url, xmlns, autchode, web_update).await;
+/// ```
 pub async fn get_products_xml(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
     let soap_request = get_products_request_string(xmlns, web_update, authcode);
     soap::get_response(url, soap_request).await
 }
 
 
+/// Get envelope from xml string
+/// # Parameters
+/// * response_text: `&str`
+/// # Returns
+/// `Result<o8_xml::products::Envelope, quick_xml::DeError>`
+/// # Example
+/// ```rust
+///    match get_products_envelope(&hu_products_xml) {
+///        Ok(hu_envelope) => {
+///            convert_products_envelope_to_xml(hu_envelope)
+///        }
+///        Err(_) => {
+///            "<Envelope></Envelope>".to_string()
+///        }
+///    }
+///}
+/// ```
 pub fn get_products_envelope(response_text: &str) -> Result<o8_xml::products::Envelope, quick_xml::DeError> {
     quick_xml::de::from_str(response_text)
 }
 
 
+/// Converts products envelope to string
+/// # Parameters
+/// * hu_envelope: `o8_xml::products::Envelope`
+/// # Returns
+/// `String`
+/// # Example
+/// ```rust
+/// let xml_string: String = convert_products_envelope_to_xml(hu_envelope);
+/// ```
 fn convert_products_envelope_to_xml(hu_envelope: o8_xml::products::Envelope) -> String {
     let en_envelope: partner_xml::products::Envelope = hu_envelope.into();
     match quick_xml::se::to_string(&en_envelope) {
