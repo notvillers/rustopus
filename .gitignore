@@ -2,5 +2,5 @@ rustopus/target
 *.xml
 *.env
 *.log
-test.bat
-test.ps1
+*test*
+rustopus/rustopus
