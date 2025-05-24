@@ -6,7 +6,6 @@ use crate::ipv4::log_ip;
 
 use crate::converters::bulk::get_bulk;
 
-
 fn raise_read_instruction() -> HttpResponse {
     HttpResponse::Ok()
         .content_type("text/plain")
@@ -21,6 +20,7 @@ pub struct BulkRequest {
     pub xmlns: Option<String>,
     pub pid: Option<i64>
 }
+
 
 async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
     let ip_address = log_ip(req).await;

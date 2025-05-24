@@ -21,6 +21,7 @@ pub async fn get_ip() -> String {
     "unknown ipv4 address".to_string()
 }
 
+
 pub async fn log_ip(req: HttpRequest) -> String {
     let ip = req
         .headers()

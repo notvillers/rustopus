@@ -21,7 +21,6 @@ pub fn logger<S: AsRef<str>>(message: S) {
         .append(true)
         .open(log_dir.join(format!("{}.log", Local::now().format("%Y_%m_%d")))) {
         Ok(mut file) => {
-
             match writeln!(file, "{}", content) {
                 Ok(_) => {
                     println!("{}", content);
