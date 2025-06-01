@@ -35,7 +35,7 @@ async fn index() -> impl Responder {
 async fn main() -> std::io::Result<()> {
     let config = service::config::get_settings();
 
-    logger(format!("Running on '{}:{}'", config.server.host, config.server.port));
+    logger(format!("Running on '{}:{}', with {}. worker(s)", config.server.host, config.server.port, config.server.workers));
 
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let docs_dir = current_dir.join("src").join("static").join("docs");
@@ -57,6 +57,7 @@ async fn main() -> std::io::Result<()> {
         .client_request_timeout(std::time::Duration::from_secs(1200))
         .keep_alive(std::time::Duration::from_secs(1200))
         .bind((config.server.host, config.server.port))?
+        .workers(config.server.workers)
         .run()
         .await
 }

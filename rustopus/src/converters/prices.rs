@@ -21,15 +21,16 @@ pub async fn get_prices(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> St
 
 fn get_prices_request_string(xmlns: &str, authcode: &str, pid: &i64) -> String {
     format!(r#"<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:Body>
-    <GetArlistaAuth xmlns="{}">
-      <pid>{}</pid>
-      <partnerkod>{}</partnerkod>
-      <authcode>{}</authcode>
-    </GetArlistaAuth>
-  </soap:Body>
-</soap:Envelope>"#,
+                <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                <soap:Body>
+                    <GetArlistaAuth xmlns="{}">
+                    <pid>{}</pid>
+                    <partnerkod>{}</partnerkod>
+                    <authcode>{}</authcode>
+                    </GetArlistaAuth>
+                </soap:Body>
+                </soap:Envelope>
+            "#,
         xmlns,
         pid,
         "",

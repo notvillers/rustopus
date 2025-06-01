@@ -1,5 +1,6 @@
 use config::Config;
 use serde::Deserialize;
+use std::thread::available_parallelism;
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
@@ -11,7 +12,8 @@ pub struct Settings {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
-    pub timeout: u64
+    pub timeout: u64,
+    pub workers: usize
 }
 
 
@@ -36,7 +38,11 @@ pub fn get_settings() -> Settings {
         server: ServerConfig {
             host: "0.0.0.0".to_string(),
             port: 8080,
-            timeout: 1200
+            timeout: 1200,
+            workers: match available_parallelism() {
+                Ok(w) => w.into(),
+                Err(_) => 1
+            }
         }
     }
 }
