@@ -3,43 +3,44 @@ use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")] // Handle PascalCase names
+#[serde(rename_all = "PascalCase")]
 pub struct Envelope {
-    pub Body: Body,
+    pub body: Body,
 }
 
 impl Envelope {
     pub fn has_error(&self) -> bool {
-        self.Body
-            .GetCikkekAuthResponse
-            .GetCikkekAuthResult
+        self.body
+            .get_cikkek_auth_response
+            .get_cikkek_auth_result
             .valasz
             .hiba
             .is_some()
     }
 }
 
-
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct Body {
-    pub GetCikkekAuthResponse: GetCikkekAuthResponse
+    pub get_cikkek_auth_response: GetCikkekAuthResponse
 }
 
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct GetCikkekAuthResponse {
-    pub GetCikkekAuthResult: GetCikkekAuthResult,
+    pub get_cikkek_auth_result: GetCikkekAuthResult,
 }
 
 
 #[derive(Debug, Deserialize)]
 pub struct GetCikkekAuthResult {
-    pub valasz: valasz,
+    pub valasz: Valasz,
 }
 
 
 #[derive(Debug, Deserialize)]
-pub struct valasz {
+pub struct Valasz {
     #[serde(rename = "@verzio")]
     pub verzio: String,
 
