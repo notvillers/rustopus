@@ -98,8 +98,8 @@ pub struct Product {
     pub stock: Option<f64>
 }
 
-impl From<(&o8_xml::products::Cikk, Option<&o8_xml::prices::ar>, Option<&o8_xml::stocks::cikk>)> for Product {
-    fn from((c, a, k): (&o8_xml::products::Cikk, Option<&o8_xml::prices::ar>, Option<&o8_xml::stocks::cikk>)) -> Self {
+impl From<(&o8_xml::products::Cikk, Option<&o8_xml::prices::Ar>, Option<&o8_xml::stocks::Cikk>)> for Product {
+    fn from((c, a, k): (&o8_xml::products::Cikk, Option<&o8_xml::prices::Ar>, Option<&o8_xml::stocks::Cikk>)) -> Self {
         Product {
             id: c.cikkid,
             no: c.cikkszam.clone(),

@@ -3,17 +3,17 @@ use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")] // Handle PascalCase names
+#[serde(rename_all = "PascalCase")]
 pub struct Envelope {
-    pub Body: Body,
+    pub body: Body,
 }
 
 
 impl Envelope {
     pub fn has_error(&self) -> bool {
-        self.Body
-            .GetCikkekKeszletValtozasAuthResponse
-            .GetCikkekKeszletValtozasAuthResult
+        self.body
+            .get_cikkek_keszlet_valtozas_auth_response
+            .get_cikkek_keszlet_valtozas_auth_result
             .valasz
             .hiba
             .is_some()
@@ -22,28 +22,30 @@ impl Envelope {
 
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct Body {
-    pub GetCikkekKeszletValtozasAuthResponse: GetCikkekKeszletValtozasAuthResponse,
+    pub get_cikkek_keszlet_valtozas_auth_response: GetCikkekKeszletValtozasAuthResponse,
 }
 
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct GetCikkekKeszletValtozasAuthResponse {
-    pub GetCikkekKeszletValtozasAuthResult: GetCikkekKeszletValtozasAuthResult,
+    pub get_cikkek_keszlet_valtozas_auth_result: GetCikkekKeszletValtozasAuthResult,
 }
 
 
 #[derive(Debug, Deserialize)]
 pub struct GetCikkekKeszletValtozasAuthResult {
-    pub valasz: valasz,
+    pub valasz: Valasz,
 }
 
 
 #[derive(Debug, Deserialize)]
-pub struct valasz {
+pub struct Valasz {
     #[serde(rename = "@verzio")]
     pub verzio: String,
-    pub cikkek: cikkek,
+    pub cikkek: Cikkek,
     #[serde(rename = "hiba")]
     pub hiba: Option<Hiba>
 }
@@ -57,14 +59,14 @@ pub struct Hiba {
 
 
 #[derive(Debug, Deserialize)]
-pub struct cikkek {
-    pub cikk: Vec<cikk>
+pub struct Cikkek {
+    pub cikk: Vec<Cikk>
 }
 
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub struct cikk {
+pub struct Cikk {
     pub cikkid: u64,
     pub cikkszam: String,
     #[serde(deserialize_with = "parse_comma_f64", default)]

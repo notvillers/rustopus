@@ -11,7 +11,7 @@ pub struct Envelope {
 impl From<o8_xml::stocks::Envelope> for Envelope {
     fn from(e: o8_xml::stocks::Envelope) -> Self {
         Envelope {
-            body: e.Body.into()
+            body: e.body.into()
         }
     }
 }
@@ -25,7 +25,7 @@ pub struct Body {
 impl From<o8_xml::stocks::Body> for Body {
     fn from(b: o8_xml::stocks::Body) -> Self {
         Body {
-            response: b.GetCikkekKeszletValtozasAuthResponse.into()
+            response: b.get_cikkek_keszlet_valtozas_auth_response.into()
         }
     }
 }
@@ -40,7 +40,7 @@ pub struct GetStockChangeAuthResponse {
 impl From<o8_xml::stocks::GetCikkekKeszletValtozasAuthResponse> for GetStockChangeAuthResponse {
     fn from(r: o8_xml::stocks::GetCikkekKeszletValtozasAuthResponse) -> Self {
         GetStockChangeAuthResponse {
-            result: r.GetCikkekKeszletValtozasAuthResult.into()
+            result: r.get_cikkek_keszlet_valtozas_auth_result.into()
         }
     }
 }
@@ -67,8 +67,8 @@ pub struct Answer {
     pub error: Option<Error>
 }
 
-impl From<o8_xml::stocks::valasz> for Answer {
-    fn from(v: o8_xml::stocks::valasz) -> Self {
+impl From<o8_xml::stocks::Valasz> for Answer {
+    fn from(v: o8_xml::stocks::Valasz) -> Self {
         Answer {
             version: v.verzio,
             products: v.cikkek.into(),
@@ -99,8 +99,8 @@ pub struct Products {
     pub product: Vec<Product>
 }
 
-impl From<o8_xml::stocks::cikkek> for Products {
-    fn from(c: o8_xml::stocks::cikkek) -> Self {
+impl From<o8_xml::stocks::Cikkek> for Products {
+    fn from(c: o8_xml::stocks::Cikkek) -> Self {
         Products {
             product: c.cikk
                         .into_iter()
@@ -118,8 +118,8 @@ pub struct Product {
     pub stock: Option<f64>
 }
 
-impl From<o8_xml::stocks::cikk> for Product {
-    fn from(c: o8_xml::stocks::cikk) -> Self {
+impl From<o8_xml::stocks::Cikk> for Product {
+    fn from(c: o8_xml::stocks::Cikk) -> Self {
         Product {
             id: c.cikkid,
             no: c.cikkszam, 

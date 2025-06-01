@@ -12,7 +12,7 @@ pub struct Envelope {
 impl From<o8_xml::products::Envelope> for Envelope {
     fn from(e: o8_xml::products::Envelope) -> Self {
         Envelope {
-            body: e.Body.into()
+            body: e.body.into()
         }
     }
 }
@@ -26,7 +26,7 @@ pub struct Body {
 impl From<o8_xml::products::Body> for Body {
     fn from(b: o8_xml::products::Body) -> Self {
         Body {
-            response: b.GetCikkekAuthResponse.into()
+            response: b.get_cikkek_auth_response.into()
         }
     }
 }
@@ -40,7 +40,7 @@ pub struct GetProductsAuthResponse {
 impl From<o8_xml::products::GetCikkekAuthResponse> for GetProductsAuthResponse {
     fn from(r: o8_xml::products::GetCikkekAuthResponse) -> Self {
         GetProductsAuthResponse {
-            result: r.GetCikkekAuthResult.into()
+            result: r.get_cikkek_auth_result.into()
         }
     }
 }
@@ -67,8 +67,8 @@ pub struct Answer {
     pub error: Option<Error>
 }
 
-impl From<o8_xml::products::valasz> for Answer {
-    fn from(v: o8_xml::products::valasz) -> Self {
+impl From<o8_xml::products::Valasz> for Answer {
+    fn from(v: o8_xml::products::Valasz) -> Self {
         Answer {
             version: v.verzio,
             products: v.cikk

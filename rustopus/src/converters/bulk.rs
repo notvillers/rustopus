@@ -99,21 +99,21 @@ fn create_result(products: o8_xml::products::Envelope, prices: o8_xml::prices::E
 
 fn create_answer(products: o8_xml::products::Envelope, prices: o8_xml::prices::Envelope, stocks: o8_xml::stocks::Envelope) -> partner_xml::bulk::Answer {
     let mut errors: Vec<partner_xml::bulk::Error> = Vec::new();
-    match products.Body.GetCikkekAuthResponse.GetCikkekAuthResult.valasz.hiba {
+    match products.body.get_cikkek_auth_response.get_cikkek_auth_result.valasz.hiba {
         Some(e) => {
             let error: partner_xml::bulk::Error = e.into();
             errors.push(error);
         }
         _ => {}
     }
-    match prices.Body.GetArlistaAuthResponse.GetArlistaAuthResult.valasz.hiba {
+    match prices.body.get_arlista_auth_response.get_arlista_auth_result.valasz.hiba {
         Some(e) => {
             let error: partner_xml::bulk::Error = e.into();
             errors.push(error);
         }
         _ => {}
     }
-    match stocks.Body.GetCikkekKeszletValtozasAuthResponse.GetCikkekKeszletValtozasAuthResult.valasz.hiba {
+    match stocks.body.get_cikkek_keszlet_valtozas_auth_response.get_cikkek_keszlet_valtozas_auth_result.valasz.hiba {
         Some(e) => {
             let error: partner_xml::bulk::Error = e.into();
             errors.push(error);
@@ -125,9 +125,9 @@ fn create_answer(products: o8_xml::products::Envelope, prices: o8_xml::prices::E
         version: "1.0".to_string(),
         products: partner_xml::bulk::Products {
             product: create_products(
-                &products.Body.GetCikkekAuthResponse.GetCikkekAuthResult.valasz.cikk,
-                &prices.Body.GetArlistaAuthResponse.GetArlistaAuthResult.valasz.arak.ar,
-                &stocks.Body.GetCikkekKeszletValtozasAuthResponse.GetCikkekKeszletValtozasAuthResult.valasz.cikkek.cikk)
+                &products.body.get_cikkek_auth_response.get_cikkek_auth_result.valasz.cikk,
+                &prices.body.get_arlista_auth_response.get_arlista_auth_result.valasz.arak.ar,
+                &stocks.body.get_cikkek_keszlet_valtozas_auth_response.get_cikkek_keszlet_valtozas_auth_result.valasz.cikkek.cikk)
         },
         error: errors
     }
@@ -135,7 +135,7 @@ fn create_answer(products: o8_xml::products::Envelope, prices: o8_xml::prices::E
 }
 
 
-fn create_products(products: &Vec<o8_xml::products::Cikk>, prices: &Vec<o8_xml::prices::ar>, stocks: &Vec<o8_xml::stocks::cikk>) -> Vec<partner_xml::bulk::Product> {
+fn create_products(products: &Vec<o8_xml::products::Cikk>, prices: &Vec<o8_xml::prices::Ar>, stocks: &Vec<o8_xml::stocks::Cikk>) -> Vec<partner_xml::bulk::Product> {
     let mut bulk_products: Vec<partner_xml::bulk::Product> = Vec::new();
     for product in products {
         let price = prices.iter().find(|price| price.cikkid == product.cikkid);
@@ -146,7 +146,7 @@ fn create_products(products: &Vec<o8_xml::products::Cikk>, prices: &Vec<o8_xml::
 }
 
 
-fn create_product(product: &o8_xml::products::Cikk, price: Option<&o8_xml::prices::ar>, stock: Option<&o8_xml::stocks::cikk>) -> partner_xml::bulk::Product {
+fn create_product(product: &o8_xml::products::Cikk, price: Option<&o8_xml::prices::Ar>, stock: Option<&o8_xml::stocks::Cikk>) -> partner_xml::bulk::Product {
     let product: partner_xml::bulk::Product = (product, price, stock).into();
     product
 }
