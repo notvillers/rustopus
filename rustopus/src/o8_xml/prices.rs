@@ -2,34 +2,36 @@ use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")] // Handle PascalCase names
+#[serde(rename_all = "PascalCase")]
 pub struct Envelope {
-    pub Body: Body,
+    pub body: Body,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct Body {
-    pub GetArlistaAuthResponse: GetArlistaAuthResponse 
+    pub get_arlista_auth_response: GetArlistaAuthResponse 
 }
 
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct GetArlistaAuthResponse {
-    pub GetArlistaAuthResult: GetArlistaAuthResult
+    pub get_arlista_auth_result: GetArlistaAuthResult
 }
 
 
 #[derive(Debug, Deserialize)]
 pub struct GetArlistaAuthResult {
-    pub valasz: valasz
+    pub valasz: Valasz
 }
 
 
 #[derive(Debug, Deserialize)]
-pub struct valasz {
+pub struct Valasz {
     #[serde(rename = "@verzio")]
     pub verzio: String,
-    pub arak: arak,
+    pub arak: Arak,
     #[serde(rename = "hiba")]
     pub hiba: Option<Hiba>
 }
@@ -43,13 +45,13 @@ pub struct Hiba {
 
 
 #[derive(Debug, Deserialize)]
-pub struct arak {
-    pub ar: Vec<ar>
+pub struct Arak {
+    pub ar: Vec<Ar>
 }
 
 
 #[derive(Debug, Deserialize)]
-pub struct ar {
+pub struct Ar {
     pub cikkid: u64,
     pub cikkszam: String,
     #[serde(deserialize_with = "parse_comma_f64", default)]
