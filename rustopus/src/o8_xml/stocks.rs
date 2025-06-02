@@ -1,4 +1,3 @@
-use chrono::NaiveDate;
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
@@ -6,18 +5,6 @@ use std::str::FromStr;
 #[serde(rename_all = "PascalCase")]
 pub struct Envelope {
     pub body: Body,
-}
-
-
-impl Envelope {
-    pub fn has_error(&self) -> bool {
-        self.body
-            .get_cikkek_keszlet_valtozas_auth_response
-            .get_cikkek_keszlet_valtozas_auth_result
-            .valasz
-            .hiba
-            .is_some()
-    }
 }
 
 
@@ -86,24 +73,6 @@ where
             f64::from_str(&value.replace(",", "."))
                 .map(Some)
                 .map_err(|_| serde::de::Error::custom("invalid float format"))
-        }
-        None => Ok(None)
-    }
-}
-
-
-// Parse NaiveDate from String and return Option<NaiveDate>
-fn parse_date<'de, D>(deserializer: D) -> Result<Option<NaiveDate>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let date_str: Option<String> = Option::deserialize(deserializer)?;
-    match date_str {
-        Some(date) if date.is_empty() => Ok(None),
-        Some(date) => {
-            NaiveDate::parse_from_str(&date.replace(" ", ""), "%Y. %m. %d.")
-                .map(Some)
-                .map_err(|_| serde::de::Error::custom("invalid date format"))
         }
         None => Ok(None)
     }
