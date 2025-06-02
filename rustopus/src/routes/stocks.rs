@@ -43,7 +43,9 @@ async fn stocks_handler(req: HttpRequest, params: StockRequest) -> impl Responde
 
     log_with_ip(&ip_address, format!("Before getting stock request, url: {}, auth: {}", url, authcode));
     let xml = get_stocks(url, &xmlns, authcode, &get_first_date()).await;
+    std::mem::drop(xmlns);
     log_with_ip(&ip_address, "After stocks request got");
+    std::mem::drop(ip_address);
 
     HttpResponse::Ok()
         .content_type("application/xml")

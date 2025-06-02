@@ -51,7 +51,9 @@ async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responde
     
     log_with_ip(&ip_address, format!("Before getting prices request, url: {}, auth: {}, pid: {}", url, authcode, pid));
     let xml = get_prices(url, &xmlns, pid, authcode).await;
+    std::mem::drop(xmlns);
     log_with_ip(&ip_address, "After prices request got");
+    std::mem::drop(ip_address);
 
     HttpResponse::Ok()
         .content_type("application/xml")
