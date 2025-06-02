@@ -1,17 +1,11 @@
 use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
 use serde::Deserialize;
+
+use crate::routes;
 use crate::service::soap::get_first_date;
 use crate::service::log::log_with_ip;
 use crate::ipv4::log_ip;
-
 use crate::converters::bulk::get_bulk;
-
-fn raise_read_instruction() -> HttpResponse {
-    HttpResponse::Ok()
-        .content_type("text/plain")
-        .body("Please read '/docs' for instructions!")
-}
-
 
 #[derive(Deserialize)]
 pub struct BulkRequest {
@@ -28,7 +22,7 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
             log_with_ip(&ip_address, "Authcode missing for bulk request");
-            return raise_read_instruction()
+            return routes::default::raise_read_instruction()
         }
     };
 
@@ -36,7 +30,7 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
             log_with_ip(&ip_address, "URL missing for bulk request");
-            return raise_read_instruction()
+            return routes::default::raise_read_instruction()
         }
     };
 
@@ -52,7 +46,7 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
         Some(ref s) => s,
         _ => {
             log_with_ip(&ip_address, "PID missing for bulk request");
-            return raise_read_instruction()
+            return routes::default::raise_read_instruction()
         }
     };
 

@@ -3,16 +3,9 @@ use serde::Deserialize;
 
 use crate::converters::products::get_products;
 use crate::soap::get_first_date;
-
 use crate::service::ipv4::log_ip;
 use crate::service::log::log_with_ip;
-
-fn raise_read_instruction() -> HttpResponse {
-    HttpResponse::Ok()
-        .content_type("text/plain")
-        .body("Please read '/docs' for instructions!")
-}
-
+use crate::routes;
 
 #[derive(Deserialize)]
 pub struct ProductRequest {
@@ -28,14 +21,14 @@ async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Resp
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
             log_with_ip(&ip_address, "Authcode missing for products request");
-            return raise_read_instruction()
+            return routes::default::raise_read_instruction()
         }
     };
     let url = match params.url {
         Some(ref s) if !s.trim().is_empty() => s,
         _ =>  {
             log_with_ip(&ip_address, "URL missing for products request");
-            return raise_read_instruction()
+            return routes::default::raise_read_instruction()
         }
     };
 

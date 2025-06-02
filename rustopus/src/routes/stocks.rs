@@ -3,16 +3,9 @@ use serde::Deserialize;
 
 use crate::converters::stocks::get_stocks;
 use crate::soap::get_first_date;
-
 use crate::service::ipv4::log_ip;
 use crate::service::log::log_with_ip;
-
-fn raise_read_instruction() -> HttpResponse {
-    HttpResponse::Ok()
-        .content_type("text/plain")
-        .body("Please read '/docs' for instructions!")
-}
-
+use crate::routes;
 
 #[derive(Deserialize)]
 pub struct StockRequest {
@@ -28,7 +21,7 @@ async fn stocks_handler(req: HttpRequest, params: StockRequest) -> impl Responde
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
             log_with_ip(&ip_address, "Authcode missing for stocks request");
-            return raise_read_instruction()
+            return routes::default::raise_read_instruction()
         }
     };
 
@@ -36,7 +29,7 @@ async fn stocks_handler(req: HttpRequest, params: StockRequest) -> impl Responde
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
             log_with_ip(&ip_address, "URL missing for stocks request");
-            return raise_read_instruction()
+            return routes::default::raise_read_instruction()
         }
     };
 
