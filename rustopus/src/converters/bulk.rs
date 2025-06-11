@@ -7,27 +7,22 @@ use crate::service::log::logger;
 
 pub async fn get_bulk(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>, pid: &i64) -> String {
     let products_env: o8_xml::products::Envelope = match get_products(url, xmlns, authcode, web_update).await {
-        Ok(products) => {
-            products
-        },
+        Ok(products) => products,
         Err(e) => {
             logger(format!("Bulk get product error {}", e));
             return format!("<Envelope>{}</Envelope>", e)
         }
     };
     let stocks_env: o8_xml::stocks::Envelope = match get_stocks(url, xmlns, authcode, web_update).await {
-        Ok(stocks) => {
-            stocks
-        },
+        Ok(stocks) => stocks,
         Err(e) => {
+            // TODO: itt a hiba
             logger(format!("Bulk get stocks error: {}", e));
             return format!("<Envelope>{}</Envelope>", e)
         }
     };
     let prices_env: o8_xml::prices::Envelope = match get_prices(url, xmlns, pid, authcode).await {
-        Ok(prices) => {
-            prices
-        }
+        Ok(prices) => prices,
         Err(e) => {
             logger(format!("Bulk get prices error: {}", e));
             return format!("<Envelope>{}</Envelope>", e)
@@ -41,9 +36,7 @@ pub async fn get_bulk(url: &str, xmlns: &str, authcode: &str, web_update: &DateT
 
 fn create_xml(envelope: partner_xml::bulk::Envelope) -> String {
     match quick_xml::se::to_string(&envelope) {
-        Ok(xml) => {
-            xml
-        }
+        Ok(xml) => xml,
         Err(e) => {
             logger(format!("XML creating error {}", e));
             format!("<Envelope>{}</Envelope>", e)
