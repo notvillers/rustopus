@@ -66,6 +66,7 @@ pub struct Cikk {
     #[serde(deserialize_with = "parse_comma_f64", default)]
     pub tomeg: Option<f64>,
     pub meret: Option<Meret>,
+    pub gycikkszam: String,
     pub focsoportkod: String,
     pub focsoportnev: String,
     #[serde(deserialize_with = "parse_comma_f64", default)]

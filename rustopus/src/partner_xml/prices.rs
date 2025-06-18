@@ -132,3 +132,27 @@ impl From<o8_xml::prices::Ar> for Price {
         }
     }
 }
+
+
+pub fn error_struct(code: u64, description: &str) -> Envelope {
+    Envelope {
+        body: Body {
+            response: GetPriceAuthResponse {
+                result: GetPriceAuthResult {
+                    answer: Answer {
+                        version: "1.0".to_string(),
+                        prices: Prices {
+                            price: Vec::new()
+                        },
+                        error: Some(
+                            Error {
+                                code: code,
+                                description: description.to_string()
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

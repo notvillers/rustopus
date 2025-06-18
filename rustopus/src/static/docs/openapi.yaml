@@ -5,7 +5,7 @@ info:
   description: Get Octopus 8 ERP SOAP XML with english tags instead of hungarians
 
 servers:
-  - url: https://octopus.villers.website
+  - url: https://api.orinkhungary.hu
 
 paths:
   /get-products:

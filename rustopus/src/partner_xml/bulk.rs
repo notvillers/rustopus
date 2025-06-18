@@ -84,6 +84,7 @@ pub struct Product {
     pub base_unit: String,
     pub base_unit_qty: Option<f64>,
     pub brand: String,
+    pub oem_code: String,
     pub category_code: String,
     pub category_name: String,
     pub description: String,
@@ -113,6 +114,7 @@ impl From<(&o8_xml::products::Cikk, Option<&o8_xml::prices::Ar>, Option<&o8_xml:
             description: c.leiras.clone(),
             weight: c.tomeg,
             size: c.meret.as_ref().map(|s| s.into()),
+            oem_code: c.gycikkszam.clone(),
             main_category_code: c.focsoportkod.clone(),
             main_category_name: c.focsoportnev.clone(),
             sell_unit: c.ertmenny,
@@ -138,6 +140,25 @@ impl From<&o8_xml::products::Meret> for Size {
             x: m.xmeret,
             y: m.ymeret,
             z: m.zmeret
+        }
+    }
+}
+
+
+pub fn error_struct(errors: Vec<Error>) -> Envelope {
+    Envelope {
+        body: Body {
+            response: Response {
+                result: Result {
+                    answer: Answer {
+                        version: "1.0".to_string(),
+                        products: Products {
+                            product: Vec::new()
+                        },
+                        error: errors
+                    }
+                }
+            }
         }
     }
 }

@@ -111,6 +111,7 @@ pub struct Product {
     pub description: String,
     pub weight: Option<f64>,
     pub size: Option<Size>,
+    pub oem_code: String,
     pub main_category_code: String,
     pub main_category_name: String,
     pub sell_unit: Option<f64>,
@@ -132,6 +133,7 @@ impl From<o8_xml::products::Cikk> for Product {
             description: c.leiras,
             weight: c.tomeg,
             size: c.meret.map(|s| s.into()),
+            oem_code: c.gycikkszam,
             main_category_code: c.focsoportkod,
             main_category_name: c.focsoportnev,
             sell_unit: c.ertmenny,
@@ -154,6 +156,28 @@ impl From<o8_xml::products::Meret> for Size {
             x: meret.xmeret,
             y: meret.ymeret,
             z: meret.zmeret
+        }
+    }
+}
+
+
+pub fn error_struct(code: u64, description: &str) -> Envelope {
+    Envelope {
+        body: Body {
+            response: GetProductsAuthResponse {
+                result: GetProductsAuthResult {
+                    answer: Answer {
+                        version: "1.0".to_string(),
+                        products: Vec::new(),
+                        error: Some(
+                            Error {
+                                code: code,
+                                description: description.to_string()
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }

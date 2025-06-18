@@ -127,3 +127,27 @@ impl From<o8_xml::stocks::Cikk> for Product {
         }
     }
 }
+
+
+pub fn error_struct(code: u64, description: &str) -> Envelope {
+    Envelope {
+        body: Body {
+            response: GetStockChangeAuthResponse {
+                result: GetStockChangeAuthResult {
+                    answer: Answer {
+                        version: "1.0".to_string(),
+                        products: Products {
+                            product: Vec::new()
+                        },
+                        error: Some(
+                            Error {
+                                code: code,
+                                description: description.to_string()
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
