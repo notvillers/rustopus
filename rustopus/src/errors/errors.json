@@ -1,5 +1,5 @@
 [
-    {"hu": "Nem engedélyezett IP", "en": "IP address not allowes"},
+    {"hu": "Nem engedélyezett IP", "en": "IP address not allowed"},
     {"hu": "Túl sok kérés", "en": "Request limit exceeded"},
     {"hu": "Nem engedélyezett partner/fizoszt/végf.", "en": "Not allowed partner/price/enduser"},
     {"hu": "Ismeretlen hiba", "en": "Error unknown"},

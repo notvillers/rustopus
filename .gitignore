@@ -1,6 +1,7 @@
-rustopus/target
 *.xml
 *.env
 *.log
 *test*
+rustopus/target
 rustopus/rustopus
+soap.json

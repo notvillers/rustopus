@@ -5,6 +5,7 @@ use crate::routes;
 use crate::converters::prices::get_prices;
 use crate::service::ipv4::log_ip;
 use crate::service::log::log_with_ip;
+use crate::service::soap_config::get_default_url;
 
 #[derive(Deserialize)]
 pub struct PriceRequest {
@@ -21,15 +22,23 @@ async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responde
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
             log_with_ip(&ip_address, "Authcode missing for price request");
-            return routes::default::raise_read_instruction()
+            return routes::default::bad_user_request(None)
         }
     };
 
     let url = match params.url {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
-            log_with_ip(&ip_address, "URL missing for price request");
-            return routes::default::raise_read_instruction()
+            &match get_default_url() {
+                Some(default_url) => {
+                    log_with_ip(&ip_address, format!("Using default url: '{}'", default_url));
+                    default_url
+                }
+                _ => {
+                    log_with_ip(&ip_address, "URL missing for products request and default not found");
+                    return routes::default::bad_user_request(None)
+                }
+            }
         }
     };
 

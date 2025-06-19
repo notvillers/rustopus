@@ -5,6 +5,7 @@ use crate::converters::stocks::get_stocks;
 use crate::soap::get_first_date;
 use crate::service::ipv4::log_ip;
 use crate::service::log::log_with_ip;
+use crate::service::soap_config::get_default_url;
 use crate::routes;
 
 #[derive(Deserialize)]
@@ -20,16 +21,26 @@ async fn stocks_handler(req: HttpRequest, params: StockRequest) -> impl Responde
     let authcode = match params.authcode {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
-            log_with_ip(&ip_address, "Authcode missing for stocks request");
-            return routes::default::raise_read_instruction()
+            let err_msg = "Authcode missing for stocks request";
+            log_with_ip(&ip_address, err_msg);
+            return routes::default::bad_user_request(Some(err_msg.to_string()))
         }
     };
 
     let url = match params.url {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
-            log_with_ip(&ip_address, "URL missing for stocks request");
-            return routes::default::raise_read_instruction()
+            &match get_default_url() {
+                Some(default_url) => {
+                    log_with_ip(&ip_address, format!("Using default url: '{}'", default_url));
+                    default_url
+                }
+                _ => {
+                    let err_msg = "URL missing for stocks request";
+                    log_with_ip(&ip_address, err_msg);
+                    return routes::default::bad_user_request(Some(err_msg.to_string()))
+                }
+            }
         }
     };
 
