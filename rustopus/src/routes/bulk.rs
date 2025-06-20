@@ -1,11 +1,12 @@
-use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpRequest, Responder};
 use serde::Deserialize;
 
-use crate::routes;
+use crate::routes::default::send_xml;
 use crate::service::soap::get_first_date;
 use crate::service::log::log_with_ip;
 use crate::ipv4::log_ip;
-use crate::converters::bulk::get_bulk;
+use crate::converters::bulk::{get_data, send_error_xml};
+use crate::global::errors;
 
 #[derive(Deserialize)]
 pub struct BulkRequest {
@@ -16,21 +17,25 @@ pub struct BulkRequest {
 }
 
 
+const REQUEST_NAME: &'static str = "BULK REQUEST";
+
 async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
     let ip_address = log_ip(req).await;
     let authcode = match params.authcode {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
-            log_with_ip(&ip_address, "Authcode missing for bulk request");
-            return routes::default::raise_read_instruction()
+            let error = errors::GLOBAL_AUTH_ERROR;
+            log_with_ip(&ip_address, format!("{}: {} ({})", error.code, error.description, REQUEST_NAME));
+            return send_xml(send_error_xml(error.code, error.description));
         }
     };
 
     let url = match params.url {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
-            log_with_ip(&ip_address, "URL missing for bulk request");
-            return routes::default::raise_read_instruction()
+            let error = errors::GLOBAL_URL_ERROR;
+            log_with_ip(&ip_address, format!("{}: {}({})", error.code, error.description, REQUEST_NAME));
+            return send_xml(send_error_xml(error.code, error.description));
         }
     };
 
@@ -45,20 +50,19 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
     let pid = match params.pid {
         Some(ref s) => s,
         _ => {
-            log_with_ip(&ip_address, "PID missing for bulk request");
-            return routes::default::raise_read_instruction()
+            let error = errors::GLOBAL_PID_ERROR;
+            log_with_ip(&ip_address, format!("{}: {} ({})", error.code, error.description, REQUEST_NAME));
+            return send_xml(send_error_xml(error.code, error.description));
         }
     };
 
     log_with_ip(&ip_address, format!("Before getting bulk request, url: {}, auth: {}, pid: {}", url, authcode, pid));
-    let xml = get_bulk(&url, &xmlns, &authcode, &get_first_date(), &pid).await;
+    let xml = get_data(&url, &xmlns, &authcode, &get_first_date(), &pid).await;
     std::mem::drop(xmlns);
     log_with_ip(&ip_address, "After bulk request got");
     std::mem::drop(ip_address);
 
-    HttpResponse::Ok()
-        .content_type("application/xml")
-        .body(xml)
+    send_xml(xml)
 }
 
 

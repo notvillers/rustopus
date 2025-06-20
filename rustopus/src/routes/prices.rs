@@ -1,11 +1,12 @@
-use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpRequest, Responder};
 use serde::Deserialize;
 
-use crate::routes;
-use crate::converters::prices::get_prices;
+use crate::routes::default::send_xml;
+use crate::converters::prices::{get_data, send_error_xml};
 use crate::service::ipv4::log_ip;
 use crate::service::log::log_with_ip;
 use crate::service::soap_config::get_default_url;
+use crate::global::errors;
 
 #[derive(Deserialize)]
 pub struct PriceRequest {
@@ -21,8 +22,9 @@ async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responde
     let authcode = match params.authcode {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
-            log_with_ip(&ip_address, "Authcode missing for price request");
-            return routes::default::bad_user_request(None)
+            let error = errors::GLOBAL_AUTH_ERROR;
+            log_with_ip(&ip_address, format!("{}: {}", error.code, error.description));
+            return send_xml(send_error_xml(error.code, error.description))
         }
     };
 
@@ -35,8 +37,9 @@ async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responde
                     default_url
                 }
                 _ => {
-                    log_with_ip(&ip_address, "URL missing for products request and default not found");
-                    return routes::default::bad_user_request(None)
+                    let error = errors::GLOBAL_URL_ERROR;
+                    log_with_ip(&ip_address, format!("{}: {}", error.code, error.description));
+                    return send_xml(send_error_xml(error.code, error.description))
                 }
             }
         }
@@ -53,20 +56,19 @@ async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responde
     let pid = match params.pid {
         Some(ref s) => s,
         _ => {
-            log_with_ip(&ip_address, "PID missing for price request");
-            return routes::default::raise_read_instruction()
+            let error = errors::GLOBAL_PID_ERROR;
+            log_with_ip(&ip_address, format!("{}: {}", error.code, error.description));
+            return send_xml(send_error_xml(error.code, error.description))
         }
     };
     
     log_with_ip(&ip_address, format!("Before getting prices request, url: {}, auth: {}, pid: {}", url, authcode, pid));
-    let xml = get_prices(url, &xmlns, pid, authcode).await;
+    let xml = get_data(url, &xmlns, pid, authcode).await;
     std::mem::drop(xmlns);
     log_with_ip(&ip_address, "After prices request got");
     std::mem::drop(ip_address);
 
-    HttpResponse::Ok()
-        .content_type("application/xml")
-        .body(xml)
+    send_xml(xml)
 }
 
 

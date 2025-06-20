@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use crate::o8_xml;
-use crate::service::errors;
+use crate::partner_xml;
 
 #[derive(Serialize)]
 pub struct Envelope {
@@ -63,7 +63,7 @@ impl From<o8_xml::images::GetCikkKepekAuthResult> for GetProductImagesAuthResult
 pub struct Answer {
     pub version: String,
     pub product: Vec<Product>,
-    pub error: Option<Error>
+    pub error: Option<partner_xml::defaults::Error>
 }
 
 impl From<o8_xml::images::Valasz> for Answer {
@@ -75,22 +75,6 @@ impl From<o8_xml::images::Valasz> for Answer {
                         .map(|c| c.into())
                         .collect(),
             error: v.hiba.map(|e| e.into())
-        }
-    }
-}
-
-
-#[derive(Serialize)]
-pub struct Error {
-    pub code: u64,
-    pub description: String
-}
-
-impl From<o8_xml::images::Hiba> for Error {
-    fn from(hiba: o8_xml::images::Hiba) -> Self {
-        Error {
-            code: hiba.kod,
-            description: errors::translate_error(&hiba.leiras)
         }
     }
 }
@@ -156,10 +140,7 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
                         version: "1.0".to_string(), 
                         product: Vec::new(),
                         error: Some(
-                            Error {
-                                code: code,
-                                description: description.to_string() 
-                            }
+                            partner_xml::defaults::Error::load(code, description)
                         )
                     }
                 }

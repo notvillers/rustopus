@@ -5,7 +5,7 @@ use quick_xml;
 use crate::service::log::logger;
 
 
-pub async fn get_prices(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> String {
+pub async fn get_data(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> String {
     let hu_prices_xml = get_prices_xml(url, xmlns, pid, authcode).await;
     match get_prices_envelope(&hu_prices_xml) {
         Ok(hu_envelope) => {
@@ -57,6 +57,19 @@ fn convert_prices_envelope_to_xml(hu_envelope: o8_xml::prices::Envelope) -> Stri
         }
         Err(e) => {
             logger(format!("Convert prices error: {}", e));
+            "<Envelope></Envelope>".to_string()
+        }
+    }
+}
+
+
+pub fn send_error_xml(code: u64, description: &str) -> String {
+    match quick_xml::se::to_string(&partner_xml::prices::error_struct(code, description)) {
+        Ok(e_xml) => {
+            e_xml
+        }
+        Err(e) => {
+            logger(format!("{}: {}", description, e));
             "<Envelope></Envelope>".to_string()
         }
     }

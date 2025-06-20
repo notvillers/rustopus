@@ -19,7 +19,7 @@ use crate::service::log::logger;
 /// ```rust
 /// let products_string: String = get_products(url, xmlns, authcode, web_update).await;
 /// ```
-pub async fn get_products(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
+pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
     match get_products_envelope(&get_products_xml(url, xmlns, authcode, web_update).await) {
         Ok(hu_envelope) => {
             convert_products_envelope_to_xml(hu_envelope)
@@ -119,6 +119,19 @@ fn convert_products_envelope_to_xml(hu_envelope: o8_xml::products::Envelope) -> 
         }
         Err(e) => {
             logger(format!("Convert products error: {}", e));
+            "<Envelope></Envelope>".to_string()
+        }
+    }
+}
+
+
+pub fn send_error_xml(code: u64, description: &str) -> String {
+    match quick_xml::se::to_string(&partner_xml::products::error_struct(code, description)) {
+        Ok(e_xml) => {
+            e_xml
+        }
+        Err(e) => {
+            logger(format!("{}: {}", description, e));
             "<Envelope></Envelope>".to_string()
         }
     }

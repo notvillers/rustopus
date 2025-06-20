@@ -1,12 +1,13 @@
-use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpRequest, Responder};
 use serde::Deserialize;
 
-use crate::converters::products::get_products;
+use crate::converters::products::{get_data, send_error_xml};
 use crate::soap::get_first_date;
 use crate::service::ipv4::log_ip;
 use crate::service::log::log_with_ip;
 use crate::service::soap_config::{get_default_url};
-use crate::routes;
+use crate::routes::default::send_xml;
+use crate::global::errors;
 
 #[derive(Deserialize)]
 pub struct ProductRequest {
@@ -22,9 +23,9 @@ async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Resp
     let authcode = match params.authcode {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
-            let err_msg = "Authcode missing for products request";
-            log_with_ip(&ip_address, err_msg);
-            return routes::default::bad_user_request(Some(err_msg.to_string()))
+            let error = errors::GLOBAL_AUTH_ERROR;
+            log_with_ip(&ip_address, format!("{}: {}", error.code, error.description));
+            return send_xml(send_error_xml(error.code, error.description))
         }
     };
     
@@ -37,9 +38,9 @@ async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Resp
                     default_url
                 },
                 _ => {
-                    let err_msg = "URL missing for products request and default not found";
-                    log_with_ip(&ip_address, err_msg);
-                    return routes::default::bad_user_request(Some(err_msg.to_string()))
+                    let error = errors::GLOBAL_URL_ERROR;
+                    log_with_ip(&ip_address, format!("{}: {}", error.code, error.description));
+                    return send_xml(send_error_xml(error.code, error.description))
                 }
             }
         }
@@ -54,14 +55,12 @@ async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Resp
     };
 
     log_with_ip(&ip_address, format!("Before getting products request, url: {}, auth: {}", url, authcode));
-    let xml = get_products(url, &xmlns, authcode, &get_first_date()).await;
+    let xml = get_data(url, &xmlns, authcode, &get_first_date()).await;
     std::mem::drop(xmlns);
     log_with_ip(&ip_address, "After products request got");
     std::mem::drop(ip_address);
 
-    HttpResponse::Ok()
-        .content_type("application/xml")
-        .body(xml)
+    send_xml(xml)
 }
 
 

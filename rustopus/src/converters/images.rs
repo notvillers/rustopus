@@ -6,7 +6,7 @@ use crate::service::soap;
 use quick_xml;
 use crate::service::log::logger;
 
-pub async fn get_images(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
+pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
     match get_images_envelope(&get_images_xml(url, xmlns, authcode, web_update).await) {
         Ok(hu_envelope) => {
             convert_images_envelope_to_xml(hu_envelope)
@@ -66,7 +66,7 @@ fn convert_images_envelope_to_xml(hu_envelope: o8_xml::images::Envelope) -> Stri
 }
 
 
-fn send_error_xml(code: u64, description: &str) -> String {
+pub fn send_error_xml(code: u64, description: &str) -> String {
     match quick_xml::se::to_string(&partner_xml::images::error_struct(code, description)) {
         Ok(e_xml) => {
             e_xml

@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use crate::o8_xml;
-use crate::service::errors;
+use crate::partner_xml;
 
 #[derive(Serialize)]
 pub struct Envelope {
@@ -31,41 +31,7 @@ pub struct Result {
 pub struct Answer {
     pub version: String,
     pub products: Products,
-    pub error: Vec<Error>
-}
-
-
-#[derive(Serialize)]
-pub struct Error {
-    pub code: u64,
-    pub description: String
-}
-
-impl From<o8_xml::products::Hiba> for Error {
-    fn from(hiba: o8_xml::products::Hiba) -> Self {
-        Error {
-            code: hiba.kod,
-            description: errors::translate_error(&hiba.leiras)
-        }
-    }
-}
-
-impl From<o8_xml::stocks::Hiba> for Error {
-    fn from(hiba: o8_xml::stocks::Hiba) -> Self {
-        Error {
-            code: hiba.kod,
-            description: errors::translate_error(&hiba.leiras)
-        }
-    }
-}
-
-impl From<o8_xml::prices::Hiba> for Error {
-    fn from(hiba: o8_xml::prices::Hiba) -> Self {
-        Error {
-            code: hiba.kod,
-            description: errors::translate_error(&hiba.leiras)
-        }
-    }
+    pub error: Vec<partner_xml::defaults::Error>
 }
 
 
@@ -145,7 +111,7 @@ impl From<&o8_xml::products::Meret> for Size {
 }
 
 
-pub fn error_struct(errors: Vec<Error>) -> Envelope {
+pub fn error_struct(errors: Vec<partner_xml::defaults::Error>) -> Envelope {
     Envelope {
         body: Body {
             response: Response {

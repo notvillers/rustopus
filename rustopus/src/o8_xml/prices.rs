@@ -1,4 +1,5 @@
 use serde::{Deserialize, Deserializer};
+use crate::o8_xml;
 use std::str::FromStr;
 
 #[derive(Debug, Deserialize)]
@@ -33,14 +34,7 @@ pub struct Valasz {
     pub verzio: String,
     pub arak: Arak,
     #[serde(rename = "hiba")]
-    pub hiba: Option<Hiba>
-}
-
-
-#[derive(Debug, Deserialize)]
-pub struct Hiba {
-    pub kod: u64,
-    pub leiras: String,
+    pub hiba: Option<o8_xml::defaults::Hiba>
 }
 
 

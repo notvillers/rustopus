@@ -5,7 +5,7 @@ use crate::o8_xml;
 use crate::partner_xml;
 use crate::service::log::logger;
 
-pub async fn get_bulk(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>, pid: &i64) -> String {
+pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>, pid: &i64) -> String {
     let products_env: o8_xml::products::Envelope = match get_products(url, xmlns, authcode, web_update).await {
         Ok(products) => products,
         Err(e) => {
@@ -16,7 +16,6 @@ pub async fn get_bulk(url: &str, xmlns: &str, authcode: &str, web_update: &DateT
     let stocks_env: o8_xml::stocks::Envelope = match get_stocks(url, xmlns, authcode, web_update).await {
         Ok(stocks) => stocks,
         Err(e) => {
-            // TODO: itt a hiba
             logger(format!("Bulk get stocks error: {}", e));
             return format!("<Envelope>{}</Envelope>", e)
         }
@@ -91,24 +90,24 @@ fn create_result(products: o8_xml::products::Envelope, prices: o8_xml::prices::E
 }
 
 fn create_answer(products: o8_xml::products::Envelope, prices: o8_xml::prices::Envelope, stocks: o8_xml::stocks::Envelope) -> partner_xml::bulk::Answer {
-    let mut errors: Vec<partner_xml::bulk::Error> = Vec::new();
+    let mut errors: Vec<partner_xml::defaults::Error> = Vec::new();
     match products.body.get_cikkek_auth_response.get_cikkek_auth_result.valasz.hiba {
         Some(e) => {
-            let error: partner_xml::bulk::Error = e.into();
+            let error: partner_xml::defaults::Error = e.into();
             errors.push(error);
         }
         _ => {}
     }
     match prices.body.get_arlista_auth_response.get_arlista_auth_result.valasz.hiba {
         Some(e) => {
-            let error: partner_xml::bulk::Error = e.into();
+            let error: partner_xml::defaults::Error = e.into();
             errors.push(error);
         }
         _ => {}
     }
     match stocks.body.get_cikkek_keszlet_valtozas_auth_response.get_cikkek_keszlet_valtozas_auth_result.valasz.hiba {
         Some(e) => {
-            let error: partner_xml::bulk::Error = e.into();
+            let error: partner_xml::defaults::Error = e.into();
             errors.push(error);
         }
         _ => {}
@@ -142,4 +141,22 @@ fn create_products(products: &Vec<o8_xml::products::Cikk>, prices: &Vec<o8_xml::
 fn create_product(product: &o8_xml::products::Cikk, price: Option<&o8_xml::prices::Ar>, stock: Option<&o8_xml::stocks::Cikk>) -> partner_xml::bulk::Product {
     let product: partner_xml::bulk::Product = (product, price, stock).into();
     product
+}
+
+pub fn send_error_xml(code: u64, description: &str) -> String {
+    let errors: Vec<partner_xml::defaults::Error> = vec![
+        partner_xml::defaults::Error {
+            code: code,
+            description: description.to_string()
+        }
+    ];
+    match quick_xml::se::to_string(&partner_xml::bulk::error_struct(errors)) {
+        Ok(e_xml) => {
+            e_xml
+        }
+        Err(e) => {
+            logger(format!("{}: {}", description, e));
+            "<Envelope></Envelope>".to_string()
+        }
+    }
 }

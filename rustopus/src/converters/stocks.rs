@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use crate::service::soap;
 use crate::service::log::logger;
 
-pub async fn get_stocks(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
+pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
     let hu_stocks_xml = get_stocks_xml(url, xmlns, authcode, web_update).await;
     match get_stocks_envelope(&hu_stocks_xml) {
         Ok(hu_envelope) => {
@@ -56,6 +56,19 @@ fn convert_stocks_envelope_to_xml(hu_envelope: o8_xml::stocks::Envelope) -> Stri
         }
         Err(e) => {
             logger(format!("Convert stocks error: {}", e));
+            "<Envelope></Envelope>".to_string()
+        }
+    }
+}
+
+
+pub fn send_error_xml(code: u64, description: &str) -> String {
+    match quick_xml::se::to_string(&partner_xml::stocks::error_struct(code, description)) {
+        Ok(e_xml) => {
+            e_xml
+        }
+        Err(e) => {
+            logger(format!("{}: {}", description, e));
             "<Envelope></Envelope>".to_string()
         }
     }
