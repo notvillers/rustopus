@@ -17,6 +17,8 @@ pub struct ProductRequest {
 }
 
 
+const REQUEST_NAME: &'static str = "PRODUCTS REQUEST";
+
 async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Responder {
     let ip_address = log_ip(req).await;
 
@@ -24,7 +26,7 @@ async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Resp
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
             let error = errors::GLOBAL_AUTH_ERROR;
-            log_with_ip(&ip_address, format!("{}: {}", error.code, error.description));
+            log_with_ip(&ip_address, format!("{}: {} ({})", error.code, error.description, REQUEST_NAME));
             return send_xml(send_error_xml(error.code, error.description))
         }
     };
@@ -39,7 +41,7 @@ async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Resp
                 },
                 _ => {
                     let error = errors::GLOBAL_URL_ERROR;
-                    log_with_ip(&ip_address, format!("{}: {}", error.code, error.description));
+                    log_with_ip(&ip_address, format!("{}: {} ({})", error.code, error.description, REQUEST_NAME));
                     return send_xml(send_error_xml(error.code, error.description))
                 }
             }

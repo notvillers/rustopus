@@ -17,13 +17,15 @@ pub struct PriceRequest {
 }
 
 
+const REQUEST_NAME: &'static str = "PRICES REQUEST";
+
 async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responder {
     let ip_address = log_ip(req).await;
     let authcode = match params.authcode {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
             let error = errors::GLOBAL_AUTH_ERROR;
-            log_with_ip(&ip_address, format!("{}: {}", error.code, error.description));
+            log_with_ip(&ip_address, format!("{}: {} ({})", error.code, error.description, REQUEST_NAME));
             return send_xml(send_error_xml(error.code, error.description))
         }
     };
@@ -38,7 +40,7 @@ async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responde
                 }
                 _ => {
                     let error = errors::GLOBAL_URL_ERROR;
-                    log_with_ip(&ip_address, format!("{}: {}", error.code, error.description));
+                    log_with_ip(&ip_address, format!("{}: {} ({})", error.code, error.description, REQUEST_NAME));
                     return send_xml(send_error_xml(error.code, error.description))
                 }
             }
