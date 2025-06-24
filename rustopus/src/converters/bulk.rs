@@ -163,7 +163,7 @@ fn create_answer(products: o8_xml::products::Envelope, prices: Option<o8_xml::pr
 
 
 fn create_products(products: &Vec<o8_xml::products::Cikk>, prices: &Vec<o8_xml::prices::Ar>, stocks: &Vec<o8_xml::stocks::Cikk>) -> Vec<partner_xml::bulk::Product> {
-    let mut bulk_products: Vec<partner_xml::bulk::Product> = Vec::new();
+    let mut bulk_products: Vec<partner_xml::bulk::Product> = vec![];
     for product in products {
         let price = prices.iter().find(|price| price.cikkid == product.cikkid);
         let stock = stocks.iter().find(|stock| stock.cikkid == product.cikkid);
