@@ -22,17 +22,11 @@ pub fn logger<S: AsRef<str>>(message: S) {
         .open(log_dir.join(format!("{}.log", Local::now().format("%Y_%m_%d")))) {
         Ok(mut file) => {
             match writeln!(file, "{}", content) {
-                Ok(_) => {
-                    println!("{}", content);
-                }
-                Err(e) => {
-                    println!("Failed to log content '{}', error '{}'", content, e);
-                }
+                Ok(_) => println!("{}", content),
+                Err(e) => println!("Failed to log content '{}', error '{}'", content, e)
             }
         }
-        Err(e) => {
-            println!("Failed to open logfile '{}', content '{}', error '{}'", &log_dir.to_string_lossy(), content, e);
-        }
+        Err(e) => println!("Failed to open logfile '{}', content '{}', error '{}'", &log_dir.to_string_lossy(), content, e)
     }
 }
 

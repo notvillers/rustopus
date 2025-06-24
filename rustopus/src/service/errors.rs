@@ -29,22 +29,14 @@ pub fn read_errors() -> Vec<ErrorMessage> {
                     let reader = BufReader::new(file);
                     let json: Result<Vec<ErrorMessage>, serde_json::Error> = serde_json::from_reader(reader);
                     match json {
-                        Ok(errors) => {
-                            return errors
-                        },
-                        Err(e) => {
-                            logger(format!("errors.json file error: {}, returning dummy", e));
-                        }
+                        Ok(errors) => return errors,
+                        Err(e) => logger(format!("errors.json file error: {}, returning dummy", e))
                     }
                 }
-                Err(e) => {
-                    logger(format!("errors.json file error: {}, returning dummy", e));
-                }
+                Err(e) => logger(format!("errors.json file error: {}, returning dummy", e))
             }
         }
-        Err(e) => {
-            logger(format!("errors.json file error: {}, returning dummy", e));
-        }
+        Err(e) => logger(format!("errors.json file error: {}, returning dummy", e))
     }
     get_dummy_errors()
 }

@@ -22,17 +22,11 @@ pub fn get_settings() -> Settings {
         Ok(config) => {
             let settings: Result<Settings, config::ConfigError> = config.try_deserialize();
             match settings {
-                Ok(settings) => {
-                    return settings
-                }
-                Err(e) => {
-                    println!("Config settings error: {}", e);
-                }
+                Ok(settings) => return settings,
+                Err(e) => println!("Config settings error: {}", e)
             }
         }
-        Err(e) => {
-            println!("Config config error: {}", e);
-        }
+        Err(e) => println!("Config config error: {}", e)
     }
     Settings { 
         server: ServerConfig {

@@ -9,12 +9,8 @@ use crate::global::errors;
 pub async fn get_data(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> String {
     let hu_prices_xml = get_prices_xml(url, xmlns, pid, authcode).await;
     match get_prices_envelope(&hu_prices_xml) {
-        Ok(hu_envelope) => {
-            convert_prices_envelope_to_xml(hu_envelope)
-        }
-        Err(de_error) => {
-            log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR)
-        }
+        Ok(hu_envelope) => convert_prices_envelope_to_xml(hu_envelope),
+        Err(de_error) => log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR)
     }
 }
 
@@ -52,12 +48,8 @@ pub fn get_prices_envelope(response_text: &str) -> Result<o8_xml::prices::Envelo
 fn convert_prices_envelope_to_xml(hu_envelope: o8_xml::prices::Envelope) -> String {
     let en_envelope: partner_xml::prices::Envelope = hu_envelope.into();
     match quick_xml::se::to_string(&en_envelope) {
-        Ok(eng_xml) => {
-            eng_xml
-        }
-        Err(de_error) => {
-            log_and_send_error_xml(de_error, errors::GLOBAL_CONVERT_ERROR)
-        }
+        Ok(eng_xml) => eng_xml,
+        Err(de_error) => log_and_send_error_xml(de_error, errors::GLOBAL_CONVERT_ERROR)
     }
 }
 
@@ -76,9 +68,7 @@ fn log_and_send_error_xml(de_error: quick_xml::DeError, error: errors::RustopusE
 
 pub fn send_error_xml(code: u64, description: &str) -> String {
     match quick_xml::se::to_string(&partner_xml::prices::error_struct(code, description)) {
-        Ok(e_xml) => {
-            e_xml
-        }
+        Ok(e_xml) => e_xml,
         Err(e) => {
             logger(format!("{}: {}", description, e));
             "<Envelope></Envelope>".to_string()

@@ -9,12 +9,8 @@ use crate::global::errors;
 
 pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
     match get_images_envelope(&get_images_xml(url, xmlns, authcode, web_update).await) {
-        Ok(hu_envelope) => {
-            convert_images_envelope_to_xml(hu_envelope)
-        }
-        Err(de_error) => {
-            log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR)
-        }
+        Ok(hu_envelope) => convert_images_envelope_to_xml(hu_envelope),
+        Err(de_error) => log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR)
     }
 }
 
@@ -51,12 +47,8 @@ pub fn get_images_envelope(response_text: &str) -> Result<o8_xml::images::Envelo
 fn convert_images_envelope_to_xml(hu_envelope: o8_xml::images::Envelope) -> String {
     let en_envelope: partner_xml::images::Envelope = hu_envelope.into();
     match quick_xml::se::to_string(&en_envelope) {
-        Ok(eng_xml) => {
-            eng_xml
-        }
-        Err(de_error) => {
-            log_and_send_error_xml(de_error, errors::GLOBAL_CONVERT_ERROR)
-        }
+        Ok(eng_xml) => eng_xml,
+        Err(de_error) => log_and_send_error_xml(de_error, errors::GLOBAL_CONVERT_ERROR)
     }
 }
 
@@ -75,9 +67,7 @@ fn log_and_send_error_xml(de_error: quick_xml::DeError, error: errors::RustopusE
 
 pub fn send_error_xml(code: u64, description: &str) -> String {
     match quick_xml::se::to_string(&partner_xml::images::error_struct(code, description)) {
-        Ok(e_xml) => {
-            e_xml
-        }
+        Ok(e_xml) => e_xml,
         Err(e) => {
             logger(format!("{}: {}", description, e));
             "<Envelope></Envelope>".to_string()

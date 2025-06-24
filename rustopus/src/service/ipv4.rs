@@ -6,17 +6,11 @@ pub async fn get_ip() -> String {
         Ok(response) => {
             let body = response.text().await;
             match body {
-                Ok(body) => {
-                    return body.trim().to_string()
-                }
-                Err(e) => {
-                    println!("ipv4 error: {}", e)
-                }
+                Ok(body) => return body.trim().to_string(),
+                Err(e) => println!("ipv4 error: {}", e)
             }
         }
-        Err(e) => {
-            println!("ipv4 error: {}", e)
-        }
+        Err(e) => println!("ipv4 error: {}", e)
     }
     "unknown ipv4 address".to_string()
 }
@@ -30,9 +24,7 @@ pub async fn log_ip(req: HttpRequest) -> String {
         .and_then(|s| s.split(',').next());
 
     match ip {
-        Some(ip) => {
-            ip.to_string() 
-        }
+        Some(ip) => ip.to_string(),
         _ => {
             match req.peer_addr() {
                 Some(peer_address) => {
@@ -42,9 +34,7 @@ pub async fn log_ip(req: HttpRequest) -> String {
                     }
                     ip
                 }
-                _ => {
-                    "unknown ip address".to_string()
-                }
+                _ => "unknown ip address".to_string()
             }
         }
     }

@@ -181,12 +181,8 @@ fn create_product(product: &o8_xml::products::Cikk, price: Option<&o8_xml::price
 
 fn log_error(de_error: quick_xml::DeError, error: &errors::RustopusError, description_info: Option<&str>) {
     let concat_description = match description_info {
-        Some(info) => {
-            format!("{} - {}", error.description, info)
-        }
-        _ => {
-            error.description.to_string()
-        }
+        Some(info) => format!("{} - {}", error.description, info),
+        _ => error.description.to_string()
     };
     logger(format!("{}: {} ({})", error.code, concat_description, de_error));
 }
@@ -213,9 +209,7 @@ pub fn send_error_xml(code: u64, description: &str) -> String {
         }
     ];
     match quick_xml::se::to_string(&partner_xml::bulk::error_struct(errors)) {
-        Ok(e_xml) => {
-            e_xml
-        }
+        Ok(e_xml) => e_xml,
         Err(e) => {
             logger(format!("{}: {}", description, e));
             "<Envelope></Envelope>".to_string()

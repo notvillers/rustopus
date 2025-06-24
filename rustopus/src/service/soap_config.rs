@@ -29,28 +29,15 @@ impl SoapConfig {
             match fs::read_to_string(&path) {
                 Ok(content) => {
                     match serde_json::from_str::<SoapConfig>(&content) {
-                        Ok(json) => {
-                            return json
-                        }
-                        Err(error) => {
-                            logger(format!("Can't read dict data from '{:#?}': {}", path, error));
-                            SoapConfig {
-                                url: None
-                            }
-                        }
+                        Ok(json) => return json,
+                        Err(error) => logger(format!("Can't read dict data from '{:#?}': {}", path, error))
                     }
                 }
-                Err(error) => {
-                    logger(format!("Can't read '{:#?}': {}. (Do not bother this message if you are not willing to work with static 'url'.)", path, error));
-                    SoapConfig {
-                        url: None
-                    }
-                }
+                Err(error) => logger(format!("Can't read '{:#?}': {}. (Do not bother this message if you are not willing to work with static 'url'.)", path, error))
             }
-        } else {
-            SoapConfig {
-                url: None
-            }
+        }
+        SoapConfig {
+            url: None
         }
     }
 }
