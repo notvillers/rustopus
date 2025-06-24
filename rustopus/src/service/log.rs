@@ -8,12 +8,9 @@ pub fn logger<S: AsRef<str>>(message: S) {
 
     let log_dir = get_current_or_root_dir().join("src").join("log");
     if !log_dir.exists() {
-        match std::fs::create_dir_all(&log_dir) {
-            Ok(_) => {},
-            Err(e) => {
-                println!("Failed to create log directory '{}', content '{}', error '{}'", &log_dir.to_string_lossy(), content, e);
-                return
-            }
+        if let Err(e) = std::fs::create_dir_all(&log_dir) {
+            println!("Failed to create log directory '{}', content '{}', error '{}'", &log_dir.to_string_lossy(), content, e);
+            return
         }
     }
     match OpenOptions::new()

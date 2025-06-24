@@ -96,21 +96,15 @@ partner_xml::bulk::Result {
 
 fn create_answer(products: o8_xml::products::Envelope, prices: Option<o8_xml::prices::Envelope>, stocks: Option<o8_xml::stocks::Envelope>) -> partner_xml::bulk::Answer {
     let mut errors: Vec<partner_xml::defaults::Error> = vec![];
-    match products.body.get_cikkek_auth_response.get_cikkek_auth_result.valasz.hiba {
-        Some(e) => {
-            let error: partner_xml::defaults::Error = e.into();
-            errors.push(error);
-        }
-        _ => {}
+    if let Some(e) = products.body.get_cikkek_auth_response.get_cikkek_auth_result.valasz.hiba {
+        let error: partner_xml::defaults::Error = e.into();
+        errors.push(error);
     }
     match &prices {
         Some(prices) => {
-            match &prices.body.get_arlista_auth_response.get_arlista_auth_result.valasz.hiba {
-                Some(e) => {
-                    let error: partner_xml::defaults::Error = e.into();
-                    errors.push(error);
-                }
-                _ => {}
+            if let Some(e) = &prices.body.get_arlista_auth_response.get_arlista_auth_result.valasz.hiba {
+                let error: partner_xml::defaults::Error = e.into();
+                errors.push(error);
             }
         }
         _ => {
@@ -124,12 +118,9 @@ fn create_answer(products: o8_xml::products::Envelope, prices: Option<o8_xml::pr
     }
     match &stocks {
         Some(stocks) => {
-            match &stocks.body.get_cikkek_keszlet_valtozas_auth_response.get_cikkek_keszlet_valtozas_auth_result.valasz.hiba {
-                Some(e) => {
-                    let error: partner_xml::defaults::Error = e.into();
-                    errors.push(error);
-                }
-                _ => {}
+            if let Some(e) = &stocks.body.get_cikkek_keszlet_valtozas_auth_response.get_cikkek_keszlet_valtozas_auth_result.valasz.hiba {
+                let error: partner_xml::defaults::Error = e.into();
+                errors.push(error);
             }
         }
         _ => {
@@ -191,12 +182,8 @@ fn log_error(de_error: quick_xml::DeError, error: &errors::RustopusError, descri
 fn log_and_send_error_xml(de_error: quick_xml::DeError, error: errors::RustopusError, description_info: Option<&str>) -> String {
     log_error(de_error, &error, description_info);
     match description_info {
-        Some(info) => {
-            return send_error_xml(error.code, &format!("{} - {}", error.description, info))
-        }
-        _ => {
-            return send_error_xml(error.code, error.description)
-        }
+        Some(info) => return send_error_xml(error.code, &format!("{} - {}", error.description, info)),
+        _ => return send_error_xml(error.code, error.description)
     };
 }
 
