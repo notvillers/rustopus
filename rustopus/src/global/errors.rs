@@ -42,3 +42,21 @@ pub const GLOBAL_CONVERT_ERROR: RustopusError = RustopusError {
     code: 105,
     description: "Envelope convert error"
 };
+
+
+pub const BULK_GET_PRODUCTS_ERROR: RustopusError = RustopusError {
+    code: 106,
+    description: "Bulk products error"
+};
+
+
+pub const BULK_GET_PRICES_ERROR: RustopusError = RustopusError {
+    code: 107,
+    description: "Bulk prices error"
+};
+
+
+pub const BULK_GET_STOCKS_ERROR: RustopusError = RustopusError {
+    code: 108,
+    description: "Bulk stocks error"
+};

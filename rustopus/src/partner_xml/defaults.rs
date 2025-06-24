@@ -35,3 +35,12 @@ impl From<global::errors::RustopusError> for Error {
         }
     }
 }
+
+impl From<&o8_xml::defaults::Hiba> for Error {
+    fn from(e: &o8_xml::defaults::Hiba) -> Self {
+        Error {
+            code: e.kod,
+            description: e.leiras.clone()
+        }
+    }
+}

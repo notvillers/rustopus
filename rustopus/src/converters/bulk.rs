@@ -6,26 +6,33 @@ use crate::partner_xml;
 use crate::service::log::logger;
 use crate::global::errors;
 
+fn auth_err_str(error: errors::RustopusError, authcode: &str) -> String {
+    format!("{}, {}: {}", authcode, error.code, error.description)
+}
+
+
 pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>, pid: &i64) -> String {
     let products_env: o8_xml::products::Envelope = match get_products(url, xmlns, authcode, web_update).await {
         Ok(products) => products,
         Err(de_error) => {
-            return log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR, Some("get products"))
+            return log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR, Some(&auth_err_str(errors::BULK_GET_PRODUCTS_ERROR, authcode)))
         }
     };
-    let stocks_env: o8_xml::stocks::Envelope = match get_stocks(url, xmlns, authcode, web_update).await {
-        Ok(stocks) => stocks,
+    let stocks_env: Option<o8_xml::stocks::Envelope> = match get_stocks(url, xmlns, authcode, web_update).await {
+        Ok(stocks) => Some(stocks),
         Err(de_error) => {
-            return log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR, Some("get stocks"))
+            log_error(de_error, &errors::GLOBAL_GET_DATA_ERROR, Some(&auth_err_str(errors::BULK_GET_STOCKS_ERROR, authcode)));
+            None
         }
     };
-    let prices_env: o8_xml::prices::Envelope = match get_prices(url, xmlns, pid, authcode).await {
-        Ok(prices) => prices,
+    let prices_env: Option<o8_xml::prices::Envelope> = match get_prices(url, xmlns, pid, authcode).await {
+        Ok(prices) => Some(prices),
         Err(de_error) => {
-            return log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR, Some("get prices"))
+            log_error(de_error, &errors::GLOBAL_GET_DATA_ERROR, Some(&auth_err_str(errors::BULK_GET_PRICES_ERROR, authcode)));
+            None
         }
     };
-    // IMAGES HERE
+    // TODO: Images
 
     let bulk_env = create_envelope(products_env, prices_env, stocks_env);
     create_xml(bulk_env)
@@ -60,35 +67,35 @@ async fn get_prices(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> Result
 }
 
 
-fn create_envelope(products: o8_xml::products::Envelope, prices: o8_xml::prices::Envelope, stocks: o8_xml::stocks::Envelope) -> partner_xml::bulk::Envelope {
+fn create_envelope(products: o8_xml::products::Envelope, prices: Option<o8_xml::prices::Envelope>, stocks: Option<o8_xml::stocks::Envelope>) -> partner_xml::bulk::Envelope {
     partner_xml::bulk::Envelope {
         body: create_body(products, prices, stocks)
     }
 }
 
 
-fn create_body(products: o8_xml::products::Envelope, prices: o8_xml::prices::Envelope, stocks: o8_xml::stocks::Envelope) -> partner_xml::bulk::Body {
+fn create_body(products: o8_xml::products::Envelope, prices: Option<o8_xml::prices::Envelope>, stocks: Option<o8_xml::stocks::Envelope>) -> partner_xml::bulk::Body {
     partner_xml::bulk::Body {
         response: create_response(products, prices, stocks)
     }
 }
 
 
-fn create_response(products: o8_xml::products::Envelope, prices: o8_xml::prices::Envelope, stocks: o8_xml::stocks::Envelope) -> partner_xml::bulk::Response {
+fn create_response(products: o8_xml::products::Envelope, prices: Option<o8_xml::prices::Envelope>, stocks: Option<o8_xml::stocks::Envelope>) -> partner_xml::bulk::Response {
     partner_xml::bulk::Response {
         result: create_result(products, prices, stocks)
     }
 }
 
 
-fn create_result(products: o8_xml::products::Envelope, prices: o8_xml::prices::Envelope, stocks: o8_xml::stocks::Envelope) -> partner_xml::bulk::Result {
-    partner_xml::bulk::Result {
+fn create_result(products: o8_xml::products::Envelope, prices: Option<o8_xml::prices::Envelope>, stocks: Option<o8_xml::stocks::Envelope>) -> partner_xml::bulk::Result {
+partner_xml::bulk::Result {
         answer: create_answer(products, prices, stocks)
     }
 }
 
-fn create_answer(products: o8_xml::products::Envelope, prices: o8_xml::prices::Envelope, stocks: o8_xml::stocks::Envelope) -> partner_xml::bulk::Answer {
-    let mut errors: Vec<partner_xml::defaults::Error> = Vec::new();
+fn create_answer(products: o8_xml::products::Envelope, prices: Option<o8_xml::prices::Envelope>, stocks: Option<o8_xml::stocks::Envelope>) -> partner_xml::bulk::Answer {
+    let mut errors: Vec<partner_xml::defaults::Error> = vec![];
     match products.body.get_cikkek_auth_response.get_cikkek_auth_result.valasz.hiba {
         Some(e) => {
             let error: partner_xml::defaults::Error = e.into();
@@ -96,19 +103,43 @@ fn create_answer(products: o8_xml::products::Envelope, prices: o8_xml::prices::E
         }
         _ => {}
     }
-    match prices.body.get_arlista_auth_response.get_arlista_auth_result.valasz.hiba {
-        Some(e) => {
-            let error: partner_xml::defaults::Error = e.into();
-            errors.push(error);
+    match &prices {
+        Some(prices) => {
+            match &prices.body.get_arlista_auth_response.get_arlista_auth_result.valasz.hiba {
+                Some(e) => {
+                    let error: partner_xml::defaults::Error = e.into();
+                    errors.push(error);
+                }
+                _ => {}
+            }
         }
-        _ => {}
+        _ => {
+            errors.push(
+                partner_xml::defaults::Error {
+                    code: errors::BULK_GET_PRICES_ERROR.code,
+                    description: errors::BULK_GET_PRICES_ERROR.description.to_string()
+                }
+            );
+        }
     }
-    match stocks.body.get_cikkek_keszlet_valtozas_auth_response.get_cikkek_keszlet_valtozas_auth_result.valasz.hiba {
-        Some(e) => {
-            let error: partner_xml::defaults::Error = e.into();
-            errors.push(error);
+    match &stocks {
+        Some(stocks) => {
+            match &stocks.body.get_cikkek_keszlet_valtozas_auth_response.get_cikkek_keszlet_valtozas_auth_result.valasz.hiba {
+                Some(e) => {
+                    let error: partner_xml::defaults::Error = e.into();
+                    errors.push(error);
+                }
+                _ => {}
+            }
         }
-        _ => {}
+        _ => {
+            errors.push(
+                partner_xml::defaults::Error {
+                    code: errors::BULK_GET_STOCKS_ERROR.code,
+                    description: errors::BULK_GET_STOCKS_ERROR.description.to_string()
+                }
+            );
+        }
     }
 
     partner_xml::bulk::Answer {
@@ -116,12 +147,18 @@ fn create_answer(products: o8_xml::products::Envelope, prices: o8_xml::prices::E
         products: partner_xml::bulk::Products {
             product: create_products(
                 &products.body.get_cikkek_auth_response.get_cikkek_auth_result.valasz.cikk,
-                &prices.body.get_arlista_auth_response.get_arlista_auth_result.valasz.arak.ar,
-                &stocks.body.get_cikkek_keszlet_valtozas_auth_response.get_cikkek_keszlet_valtozas_auth_result.valasz.cikkek.cikk)
+                &match prices {
+                    Some(prices) => prices.body.get_arlista_auth_response.get_arlista_auth_result.valasz.arak.ar,
+                    _ => vec![]
+                },
+                &match stocks {
+                    Some(stocks) => stocks.body.get_cikkek_keszlet_valtozas_auth_response.get_cikkek_keszlet_valtozas_auth_result.valasz.cikkek.cikk,
+                    _ => vec![]
+                }
+            )
         },
         error: errors
     }
-
 }
 
 
@@ -142,7 +179,7 @@ fn create_product(product: &o8_xml::products::Cikk, price: Option<&o8_xml::price
 }
 
 
-fn log_and_send_error_xml(de_error: quick_xml::DeError, error: errors::RustopusError, description_info: Option<&str>) -> String {
+fn log_error(de_error: quick_xml::DeError, error: &errors::RustopusError, description_info: Option<&str>) {
     let concat_description = match description_info {
         Some(info) => {
             format!("{} - {}", error.description, info)
@@ -152,7 +189,19 @@ fn log_and_send_error_xml(de_error: quick_xml::DeError, error: errors::RustopusE
         }
     };
     logger(format!("{}: {} ({})", error.code, concat_description, de_error));
-    send_error_xml(error.code, &concat_description)
+}
+
+
+fn log_and_send_error_xml(de_error: quick_xml::DeError, error: errors::RustopusError, description_info: Option<&str>) -> String {
+    log_error(de_error, &error, description_info);
+    match description_info {
+        Some(info) => {
+            return send_error_xml(error.code, &format!("{} - {}", error.description, info))
+        }
+        _ => {
+            return send_error_xml(error.code, error.description)
+        }
+    };
 }
 
 
