@@ -25,6 +25,7 @@ pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateT
             return log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR, Some("get prices"))
         }
     };
+    // IMAGES HERE
 
     let bulk_env = create_envelope(products_env, prices_env, stocks_env);
     create_xml(bulk_env)
