@@ -1,11 +1,12 @@
 use actix_web::{get, post, web, HttpRequest, Responder};
 use serde::Deserialize;
 
+use crate::converters::bulk::{get_data, send_error_xml};
 use crate::routes::default::send_xml;
 use crate::service::soap::get_first_date;
-use crate::service::log::log_with_ip;
 use crate::ipv4::log_ip;
-use crate::converters::bulk::{get_data, send_error_xml};
+use crate::service::log::log_with_ip;
+use crate::service::soap_config::get_default_url;
 use crate::global::errors;
 
 #[derive(Deserialize)]
@@ -33,9 +34,17 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
     let url = match params.url {
         Some(ref s) if !s.trim().is_empty() => s,
         _ => {
-            let error = errors::GLOBAL_URL_ERROR;
-            log_with_ip(&ip_address, format!("{}: {}({})", error.code, error.description, REQUEST_NAME));
-            return send_xml(send_error_xml(error.code, error.description));
+            &match get_default_url() {
+                Some(default_url) => {
+                    log_with_ip(&ip_address, format!("Using default url: '{}'", default_url));
+                    default_url
+                }
+                _ => {
+                    let error = errors::GLOBAL_URL_ERROR;
+                    log_with_ip(&ip_address, format!("{}: {} ({})", error.code, error.description, REQUEST_NAME));
+                    return send_xml(send_error_xml(error.code, error.description))
+                }
+            }
         }
     };
 

@@ -16,6 +16,8 @@ use actix_web::http::header;
 use actix_files::Files;
 mod converters;
 
+use crate::service::soap_config::{get_soap_path, check_soap_config};
+
 async fn not_found() -> impl Responder {
     HttpResponse::NotFound()
         .content_type("text/plain")
@@ -34,6 +36,10 @@ async fn index() -> impl Responder {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let config = service::config::get_settings();
+
+    if !check_soap_config() {
+        logger(format!("'{:#?}' not found. (Do not bother this message if you are not willing to work with static 'url'.)", get_soap_path()));
+    }
 
     logger(format!("Running on '{}:{}', with {}. worker(s)", config.server.host, config.server.port, config.server.workers));
 
