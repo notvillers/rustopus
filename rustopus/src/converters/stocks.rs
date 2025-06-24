@@ -4,6 +4,7 @@ use quick_xml;
 use chrono::{DateTime, Utc};
 use crate::service::soap;
 use crate::service::log::logger;
+use crate::global::errors;
 
 pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
     let hu_stocks_xml = get_stocks_xml(url, xmlns, authcode, web_update).await;
@@ -11,9 +12,8 @@ pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateT
         Ok(hu_envelope) => {
             convert_stocks_envelope_to_xml(hu_envelope)
         }
-        Err(e) => {
-            logger(format!("Get stocks error: {}", e));
-            "<Envelope></Envelope>".to_string()
+        Err(de_error) => {
+            log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR)
         }
     }
 }
@@ -54,11 +54,16 @@ fn convert_stocks_envelope_to_xml(hu_envelope: o8_xml::stocks::Envelope) -> Stri
         Ok(eng_xml) => {
             eng_xml
         }
-        Err(e) => {
-            logger(format!("Convert stocks error: {}", e));
-            "<Envelope></Envelope>".to_string()
+        Err(de_error) => {
+            log_and_send_error_xml(de_error, errors::GLOBAL_CONVERT_ERROR)
         }
     }
+}
+
+
+fn log_and_send_error_xml(de_error: quick_xml::DeError, error: errors::RustopusError) -> String {
+    logger(format!("{}: {} ({})", error.code, error.description, de_error));
+    send_error_xml(error.code, error.description)
 }
 
 

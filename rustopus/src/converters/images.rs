@@ -5,17 +5,15 @@ use crate::partner_xml;
 use crate::service::soap;
 use quick_xml;
 use crate::service::log::logger;
+use crate::global::errors;
 
 pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
     match get_images_envelope(&get_images_xml(url, xmlns, authcode, web_update).await) {
         Ok(hu_envelope) => {
             convert_images_envelope_to_xml(hu_envelope)
         }
-        Err(e) => {
-            let error_code = 102;
-            let error_description = "Server error: Get images envelope error";
-            logger(format!("{}: Get images envelope error: {}", error_description, e));
-            send_error_xml(error_code, error_description)
+        Err(de_error) => {
+            log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR)
         }
     }
 }
@@ -56,13 +54,22 @@ fn convert_images_envelope_to_xml(hu_envelope: o8_xml::images::Envelope) -> Stri
         Ok(eng_xml) => {
             eng_xml
         }
-        Err(e) => {
-            let error_code = 101;
-            let error_description = "Server error: Convert error";
-            logger(format!("{}: {}", error_description, e));
-            send_error_xml(error_code, error_description)
+        Err(de_error) => {
+            log_and_send_error_xml(de_error, errors::GLOBAL_CONVERT_ERROR)
         }
     }
+}
+
+
+/// Logs error and send error struct xml
+/// # Parameters
+/// * de_error: `quick_xml::DeError`
+/// * error: `global::errors:RustopusError`
+/// # Returns
+/// `String`
+fn log_and_send_error_xml(de_error: quick_xml::DeError, error: errors::RustopusError) -> String {
+    logger(format!("{}: {} ({})", error.code, error.description, de_error));
+    send_error_xml(error.code, error.description)
 }
 
 

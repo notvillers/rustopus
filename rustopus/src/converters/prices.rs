@@ -3,6 +3,7 @@ use crate::partner_xml;
 use crate::service::soap;
 use quick_xml;
 use crate::service::log::logger;
+use crate::global::errors;
 
 
 pub async fn get_data(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> String {
@@ -11,9 +12,8 @@ pub async fn get_data(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> Stri
         Ok(hu_envelope) => {
             convert_prices_envelope_to_xml(hu_envelope)
         }
-        Err(e) => {
-            logger(format!("Get prices: error {}", e));
-            "<Envelope></Envelope>".to_string()
+        Err(de_error) => {
+            log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR)
         }
     }
 }
@@ -55,11 +55,22 @@ fn convert_prices_envelope_to_xml(hu_envelope: o8_xml::prices::Envelope) -> Stri
         Ok(eng_xml) => {
             eng_xml
         }
-        Err(e) => {
-            logger(format!("Convert prices error: {}", e));
-            "<Envelope></Envelope>".to_string()
+        Err(de_error) => {
+            log_and_send_error_xml(de_error, errors::GLOBAL_CONVERT_ERROR)
         }
     }
+}
+
+
+/// Logs error and send error struct xml
+/// # Parameters
+/// * de_error: `quick_xml::DeError`
+/// * error: `global::errors:RustopusError`
+/// # Returns
+/// `String`
+fn log_and_send_error_xml(de_error: quick_xml::DeError, error: errors::RustopusError) -> String {
+    logger(format!("{}: {} ({})", error.code, error.description, de_error));
+    send_error_xml(error.code, error.description)
 }
 
 

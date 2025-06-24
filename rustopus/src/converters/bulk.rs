@@ -4,27 +4,25 @@ use crate::converters;
 use crate::o8_xml;
 use crate::partner_xml;
 use crate::service::log::logger;
+use crate::global::errors;
 
 pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>, pid: &i64) -> String {
     let products_env: o8_xml::products::Envelope = match get_products(url, xmlns, authcode, web_update).await {
         Ok(products) => products,
-        Err(e) => {
-            logger(format!("Bulk get product error {}", e));
-            return format!("<Envelope>{}</Envelope>", e)
+        Err(de_error) => {
+            return log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR, Some("get products"))
         }
     };
     let stocks_env: o8_xml::stocks::Envelope = match get_stocks(url, xmlns, authcode, web_update).await {
         Ok(stocks) => stocks,
-        Err(e) => {
-            logger(format!("Bulk get stocks error: {}", e));
-            return format!("<Envelope>{}</Envelope>", e)
+        Err(de_error) => {
+            return log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR, Some("get stocks"))
         }
     };
     let prices_env: o8_xml::prices::Envelope = match get_prices(url, xmlns, pid, authcode).await {
         Ok(prices) => prices,
-        Err(e) => {
-            logger(format!("Bulk get prices error: {}", e));
-            return format!("<Envelope>{}</Envelope>", e)
+        Err(de_error) => {
+            return log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR, Some("get prices"))
         }
     };
 
@@ -36,9 +34,8 @@ pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateT
 fn create_xml(envelope: partner_xml::bulk::Envelope) -> String {
     match quick_xml::se::to_string(&envelope) {
         Ok(xml) => xml,
-        Err(e) => {
-            logger(format!("XML creating error {}", e));
-            format!("<Envelope>{}</Envelope>", e)
+        Err(de_error) => {
+            log_and_send_error_xml(de_error, errors::GLOBAL_CONVERT_ERROR, None)
         }
     }
 }
@@ -142,6 +139,21 @@ fn create_product(product: &o8_xml::products::Cikk, price: Option<&o8_xml::price
     let product: partner_xml::bulk::Product = (product, price, stock).into();
     product
 }
+
+
+fn log_and_send_error_xml(de_error: quick_xml::DeError, error: errors::RustopusError, description_info: Option<&str>) -> String {
+    let concat_description = match description_info {
+        Some(info) => {
+            format!("{} - {}", error.description, info)
+        }
+        _ => {
+            error.description.to_string()
+        }
+    };
+    logger(format!("{}: {} ({})", error.code, concat_description, de_error));
+    send_error_xml(error.code, &concat_description)
+}
+
 
 pub fn send_error_xml(code: u64, description: &str) -> String {
     let errors: Vec<partner_xml::defaults::Error> = vec![
