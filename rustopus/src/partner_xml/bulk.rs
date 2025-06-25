@@ -61,12 +61,20 @@ pub struct Product {
     pub sell_unit: Option<f64>,
     pub origin_country: String,
     pub price: Option<f64>,
-    pub currency: String,
-    pub stock: Option<f64>
+    pub currency: Option<String>,
+    pub stock: Option<f64>,
+    pub images: Vec<Image>
 }
 
-impl From<(&o8_xml::products::Cikk, Option<&o8_xml::prices::Ar>, Option<&o8_xml::stocks::Cikk>)> for Product {
-    fn from((c, a, k): (&o8_xml::products::Cikk, Option<&o8_xml::prices::Ar>, Option<&o8_xml::stocks::Cikk>)) -> Self {
+
+#[derive(Serialize)]
+pub struct Image {
+    pub url: String
+}
+
+
+impl From<(&o8_xml::products::Cikk, Option<&o8_xml::prices::Ar>, Option<&o8_xml::stocks::Cikk>, Option<&o8_xml::images::Cikk>)> for Product {
+    fn from((c, a, k, i): (&o8_xml::products::Cikk, Option<&o8_xml::prices::Ar>, Option<&o8_xml::stocks::Cikk>, Option<&o8_xml::images::Cikk>)) -> Self {
         Product {
             id: c.cikkid,
             no: c.cikkszam.clone(),
@@ -85,9 +93,18 @@ impl From<(&o8_xml::products::Cikk, Option<&o8_xml::prices::Ar>, Option<&o8_xml:
             main_category_name: c.focsoportnev.clone(),
             sell_unit: c.ertmenny,
             origin_country: c.szarmorszag.clone(),
-            price: a.as_ref().map_or(Some(0.0), |a| a.akcios_ar),
-            currency: a.map_or("".to_string(), |a| a.devizanem.clone()),
-            stock: k.map_or(Some(0.0), |k| k.szabad)
+            price: a.as_ref().map_or(None, |a| a.akcios_ar),
+            currency: a.map_or(None, |a| Some(a.devizanem.clone())),
+            stock: k.map_or(None, |k| k.szabad),
+            images: i.map(
+                |i_c| {
+                    i_c.kepek.kep.iter().map(
+                        |k| Image {
+                            url: k.url.clone()
+                        }
+                    ).collect::<Vec<Image>>()
+                }
+            ).unwrap_or_default()
         }
     }
 }

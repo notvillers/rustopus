@@ -1,12 +1,47 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 use crate::o8_xml;
+use crate::partner_xml;
+
+/// Get the string for the request
+/// # Parameters
+/// * xmlns: `&str`
+/// * web_update: `&DateTime<Utc>`
+/// * authcode: `&str`
+/// # Returns
+/// `String`
+pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
+    format!(
+        r#"<?xml version="1.0" encoding="utf-8"?>
+            <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+            <soap:Body>
+                <GetCikkekAuth xmlns="{}">
+                <web_update>{}</web_update>
+                <authcode>{}</authcode>
+                </GetCikkekAuth>
+            </soap:Body>
+            </soap:Envelope>
+        "#,
+        xmlns,
+        web_update.format("%Y-%m-%dT%H:%M:%S").to_string(),
+        authcode
+    )
+}
+
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Envelope {
     pub body: Body,
 }
+
+impl Envelope {
+    pub fn to_en(self) -> partner_xml::products::Envelope {
+        self.into()
+    }
+}
+
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]

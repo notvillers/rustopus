@@ -4,8 +4,7 @@ use actix_web::HttpRequest;
 pub async fn get_ip() -> String {
     match reqwest::get("https://ip.villers.website").await {
         Ok(response) => {
-            let body = response.text().await;
-            match body {
+            match response.text().await {
                 Ok(body) => return body.trim().to_string(),
                 Err(e) => println!("ipv4 error: {}", e)
             }

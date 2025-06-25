@@ -5,49 +5,53 @@ use quick_xml;
 use crate::service::log::logger;
 use crate::global::errors;
 
-
+/// `async` Get the data into reformatted string
+/// # Parameters
+/// * url: `&str`
+/// * xmlns: `&str`
+/// * authcode: `&str`
+/// * web_update `&DateTime<Utc>`
+/// # Return
+/// `String`
 pub async fn get_data(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> String {
-    let hu_prices_xml = get_prices_xml(url, xmlns, pid, authcode).await;
-    match get_prices_envelope(&hu_prices_xml) {
-        Ok(hu_envelope) => convert_prices_envelope_to_xml(hu_envelope),
+    let hu_prices_xml = get_xml(url, xmlns, pid, authcode).await;
+    match get_envelope(&hu_prices_xml) {
+        Ok(hu_envelope) => convert_envelope_to_xml(hu_envelope),
         Err(de_error) => log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR)
     }
 }
 
 
-fn get_prices_request_string(xmlns: &str, authcode: &str, pid: &i64) -> String {
-    format!(r#"<?xml version="1.0" encoding="utf-8"?>
-                <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-                <soap:Body>
-                    <GetArlistaAuth xmlns="{}">
-                    <pid>{}</pid>
-                    <partnerkod>{}</partnerkod>
-                    <authcode>{}</authcode>
-                    </GetArlistaAuth>
-                </soap:Body>
-                </soap:Envelope>
-            "#,
-        xmlns,
-        pid,
-        "",
-        authcode)
+/// `async` Get XML data
+/// # Parameters
+/// * url: `&str`
+/// * xmlns: `&str`
+/// * authcode: `&str`
+/// * web_update: `&DateTime<Utc>`
+/// # Returns
+/// `String`
+pub async fn get_xml(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> String {
+    soap::get_response(url, o8_xml::prices::get_request_string(xmlns, authcode, pid)).await
 }
 
 
-pub async fn get_prices_xml(url: &str, xmlns: &str, pid: &i64, authcode: &str) -> String {
-    let soap_request = get_prices_request_string(xmlns, authcode, pid);
-    soap::get_response(url, soap_request).await
-}
-
-
-pub fn get_prices_envelope(response_text: &str) -> Result<o8_xml::prices::Envelope, quick_xml::DeError> {
+/// Get envelope from xml string
+/// # Parameters
+/// * response_text: `&str`
+/// # Returns
+/// `Result<o8_xml::prices::Envelope, quick_xml::DeError>`
+pub fn get_envelope(response_text: &str) -> Result<o8_xml::prices::Envelope, quick_xml::DeError> {
     quick_xml::de::from_str(response_text)
 }
 
 
-fn convert_prices_envelope_to_xml(hu_envelope: o8_xml::prices::Envelope) -> String {
-    let en_envelope: partner_xml::prices::Envelope = hu_envelope.into();
-    match quick_xml::se::to_string(&en_envelope) {
+/// Converts envelope struct to string
+/// # Parameters
+/// * hu_envelope: `o8_xml::prices::Envelope`
+/// # Returns
+/// `String`
+fn convert_envelope_to_xml(hu_envelope: o8_xml::prices::Envelope) -> String {
+    match quick_xml::se::to_string(&hu_envelope.to_en()) {
         Ok(eng_xml) => eng_xml,
         Err(de_error) => log_and_send_error_xml(de_error, errors::GLOBAL_CONVERT_ERROR)
     }
@@ -66,6 +70,12 @@ fn log_and_send_error_xml(de_error: quick_xml::DeError, error: errors::RustopusE
 }
 
 
+/// Send error struct xml
+/// # Parameters
+/// * code: `u64`
+/// * description: `&str`
+/// # Returns
+/// `String`
 pub fn send_error_xml(code: u64, description: &str) -> String {
     match quick_xml::se::to_string(&partner_xml::prices::error_struct(code, description)) {
         Ok(e_xml) => e_xml,

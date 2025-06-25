@@ -1,11 +1,45 @@
 use serde::{Deserialize, Deserializer};
 use crate::o8_xml;
 use std::str::FromStr;
+use crate::partner_xml;
+
+/// Get the string for the request
+/// # Parameters
+/// * xmlns: `&str`
+/// * web_update: `&DateTime<Utc>`
+/// * authcode: `&str`
+/// # Returns
+/// `String`
+pub fn get_request_string(xmlns: &str, authcode: &str, pid: &i64) -> String {
+    format!(r#"<?xml version="1.0" encoding="utf-8"?>
+                <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                <soap:Body>
+                    <GetArlistaAuth xmlns="{}">
+                    <pid>{}</pid>
+                    <partnerkod>{}</partnerkod>
+                    <authcode>{}</authcode>
+                    </GetArlistaAuth>
+                </soap:Body>
+                </soap:Envelope>
+            "#,
+        xmlns,
+        pid,
+        "",
+        authcode
+    )
+}
+
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Envelope {
     pub body: Body,
+}
+
+impl Envelope {
+    pub fn to_en(self) -> partner_xml::prices::Envelope {
+        self.into()
+    }
 }
 
 #[derive(Debug, Deserialize)]
