@@ -14,9 +14,7 @@ fn auth_err_str(error: errors::RustopusError, authcode: &str) -> String {
 pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>, pid: &i64) -> String {
     let products_env: o8_xml::products::Envelope = match get_products(url, xmlns, authcode, web_update).await {
         Ok(products) => products,
-        Err(de_error) => {
-            return log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR, Some(&auth_err_str(errors::BULK_GET_PRODUCTS_ERROR, authcode)))
-        }
+        Err(de_error) => return log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR, Some(&auth_err_str(errors::BULK_GET_PRODUCTS_ERROR, authcode)))
     };
     let stocks_env: Option<o8_xml::stocks::Envelope> = match get_stocks(url, xmlns, authcode, web_update).await {
         Ok(stocks) => Some(stocks),
@@ -42,9 +40,7 @@ pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateT
 fn create_xml(envelope: partner_xml::bulk::Envelope) -> String {
     match quick_xml::se::to_string(&envelope) {
         Ok(xml) => xml,
-        Err(de_error) => {
-            log_and_send_error_xml(de_error, errors::GLOBAL_CONVERT_ERROR, None)
-        }
+        Err(de_error) => log_and_send_error_xml(de_error, errors::GLOBAL_CONVERT_ERROR, None)
     }
 }
 
