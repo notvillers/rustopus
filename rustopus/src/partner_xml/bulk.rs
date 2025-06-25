@@ -104,7 +104,7 @@ impl From<(&o8_xml::products::Cikk, Option<&o8_xml::prices::Ar>, Option<&o8_xml:
                         }
                     ).collect::<Vec<Image>>()
                 }
-            ).unwrap_or_default()
+            ).unwrap_or(vec![])
         }
     }
 }
