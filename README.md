@@ -16,7 +16,9 @@ Manages the defaults of the webserver
 
 Soap.json
 
-Manages the defaults of the xml handling. If the file exists in the [rustopus](rustopus/) directory, it searches for an "url" tag, if its given, then this url will be the default for the gets and posts used for url and xmlns.
+Manages the defaults of the xml handling.
+
+If the file exists in the [rustopus](rustopus/) directory, it searches for an "url" tag, if its given, then this url will be the default for the gets and posts used for url and xmlns.
 
 - `"url"`: Default wsdl url
 
