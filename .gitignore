@@ -3,6 +3,6 @@
 *.env
 *.log
 *test*
-rustopus/target
-rustopus/rustopus
+target/
+rustopus
 soap.json
