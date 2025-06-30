@@ -13,7 +13,7 @@ mod routes;
 
 mod global;
 
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder, dev::Service};
 use actix_web::http::header;
 use actix_files::Files;
 mod converters;
@@ -54,6 +54,10 @@ async fn main() -> std::io::Result<()> {
     let docs_dir = current_dir.join("src").join("static").join("docs");
     let server = HttpServer::new(move || {
         App::new()
+            .wrap_fn(|req, srv| {
+                logger(format!("Handling: {:?}", req.path()));
+                srv.call(req)
+            })
             .service(index)
             .service(Files::new("/docs/", docs_dir.clone())
                 .index_file("index.html")
