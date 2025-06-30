@@ -132,3 +132,5 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
         }
     }
 }
+
+// TODO: Products should be in <products><product/></Products>

@@ -255,92 +255,102 @@ components:
       xml:
         name: Envelope
       properties:
-        Body:
-          $ref: '#/components/schemas/Body'
-        
-    Body:
-      type: object
-      properties:
-        GetProductsAuthResponse:
-          $ref: '#/components/schemas/GetProductsAuthResponse'
-        
-    GetProductsAuthResponse:
-      type: object
-      properties:
-        GetProductsAuthResult:
-          $ref: '#/components/schemas/GetProductsAuthResult'
-        
-    GetProductsAuthResult:
-      type: object
-      properties:
-        Answer:
-          $ref: '#/components/schemas/Answer'
-        
-    Answer:
-      type: object
-      properties:
-        version:
-          type: string
-        Product:
-          $ref: '#/components/schemas/Product'
-        error:
+        body:
           type: object
           properties:
-            code:
-              type: integer
-            description:
-              type: string
-            
-    Product:
-      type: object
-      properties:
-        id:
-          type: integer
-        no:
-          type: string
-        name:
-          type: string
-        unit:
-          type: string
-        base_unit:
-          type: string
-        base_unit_qty:
-          type: string
-        brand:
-          type: string
-        category_code:
-          type: string
-        category_name:
-          type: string
-        description:
-          type: string
-        weight:
-          type: number
-        size:
-          type: object
-          properties:
-            x:
-              type: number
-            y:  
-              type: number
-            z:
-              type: number
-        main_category_code:
-          type: string
-        main_category_name:
-          type: string
-        sell_unit:
-          type: number
-        origin_country:
-          type: string
+            response:
+              type: object
+              properties:
+                result:
+                  type: object
+                  properties:
+                    answer:
+                      properties:
+                        version:
+                          type: string
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: number
+                            description:
+                              type: string
+                        products:
+                          type: object
+                          properties:
+                            id:
+                              type: number
+                            no:
+                              type: string
+                            name:
+                              type: string
+                            unit:
+                              type: string
+                            base_unit:
+                              type: string
+                            base_unit_qty:
+                              type: number
+                            brand:
+                              type: string
+                            category_code:
+                              type: string
+                            category_name:
+                              type: string
+                            description:
+                              type: string
+                            weight:
+                              type: number
+                            size:
+                              type: object
+                              properties:
+                                x:
+                                  type: number
+                                y:
+                                  type: number
+                                z:
+                                  type: number
+                            oem_code:
+                              type: string
+                            main_category_code:
+                              type: string
+                            main_category_name:
+                              type: string
+                            sell_unit:
+                              type: number
+                            origin_country:
+                              type: string
     
     StockResponse:
       type: object
       xml:
         name: Envelope
       properties:
-        Body:
-          $ref: '#/components/schemas/stock_Body'
+        body:
+          type: object
+          properties:
+            response:
+              type: object
+              properties:
+                result:
+                  type: object
+                  properties:
+                    answer:
+                      type: object
+                      properties:
+                        version:
+                          type: string
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: number
+                            description:
+                              type: string
+                        products:
+                          type: array
+                          items:
+                            type: string
+          
           
     stock_Body:
       type: object
