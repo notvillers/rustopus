@@ -278,47 +278,50 @@ components:
                         products:
                           type: object
                           properties:
-                            id:
-                              type: number
-                            no:
-                              type: string
-                            name:
-                              type: string
-                            unit:
-                              type: string
-                            base_unit:
-                              type: string
-                            base_unit_qty:
-                              type: number
-                            brand:
-                              type: string
-                            category_code:
-                              type: string
-                            category_name:
-                              type: string
-                            description:
-                              type: string
-                            weight:
-                              type: number
-                            size:
+                            product:
                               type: object
                               properties:
-                                x:
+                                id:
                                   type: number
-                                y:
+                                no:
+                                  type: string
+                                name:
+                                  type: string
+                                unit:
+                                  type: string
+                                base_unit:
+                                  type: string
+                                base_unit_qty:
                                   type: number
-                                z:
+                                brand:
+                                  type: string
+                                category_code:
+                                  type: string
+                                category_name:
+                                  type: string
+                                description:
+                                  type: string
+                                weight:
                                   type: number
-                            oem_code:
-                              type: string
-                            main_category_code:
-                              type: string
-                            main_category_name:
-                              type: string
-                            sell_unit:
-                              type: number
-                            origin_country:
-                              type: string
+                                size:
+                                  type: object
+                                  properties:
+                                    x:
+                                      type: number
+                                    y:
+                                      type: number
+                                    z:
+                                      type: number
+                                oem_code:
+                                  type: string
+                                main_category_code:
+                                  type: string
+                                main_category_name:
+                                  type: string
+                                sell_unit:
+                                  type: number
+                                origin_country:
+                                  type: string
     
     StockResponse:
       type: object
@@ -349,8 +352,20 @@ components:
                         products:
                           type: array
                           items:
-                            type: string
+                            $ref: '#/components/schemas/StockProducts'
           
+    StockProducts:
+      type: object
+      xml:
+        name: products
+      properties:
+        id:
+          type: number
+        no:
+          type: string
+        name:
+          type: string
+      
           
     stock_Body:
       type: object
