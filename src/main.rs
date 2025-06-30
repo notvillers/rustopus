@@ -1,3 +1,5 @@
+use std::panic;
+
 mod service;
 use std::env;
 
@@ -35,6 +37,11 @@ async fn index() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+
+    panic::set_hook(Box::new(|info| {
+        logger(format!("Panic: {:?}", info));
+    }));
+
     let config = service::config::get_settings();
 
     if !check_soap_config() {
