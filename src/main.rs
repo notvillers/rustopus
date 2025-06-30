@@ -14,7 +14,6 @@ mod global;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use actix_web::http::header;
 use actix_files::Files;
-use log::info;
 mod converters;
 
 use crate::service::soap_config::{get_soap_path, check_soap_config};
