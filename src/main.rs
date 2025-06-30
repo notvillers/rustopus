@@ -14,6 +14,7 @@ mod global;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use actix_web::http::header;
 use actix_files::Files;
+use log::info;
 mod converters;
 
 use crate::service::soap_config::{get_soap_path, check_soap_config};
@@ -45,7 +46,7 @@ async fn main() -> std::io::Result<()> {
 
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let docs_dir = current_dir.join("src").join("static").join("docs");
-    HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         App::new()
             .service(index)
             .service(Files::new("/docs/", docs_dir.clone())
@@ -67,6 +68,12 @@ async fn main() -> std::io::Result<()> {
         .keep_alive(std::time::Duration::from_secs(1200))
         .bind((config.server.host, config.server.port))?
         .workers(config.server.workers)
-        .run()
-        .await
+        .run();
+
+    match server.await {
+        Ok(_) => logger("Server stopped gracefully."),
+        Err(e) => logger(format!("Server exited, with error: {0}", e)),
+    };
+
+    Ok(())
 }
