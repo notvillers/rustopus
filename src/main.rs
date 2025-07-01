@@ -13,7 +13,7 @@ mod routes;
 
 mod global;
 
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder, dev::Service};
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use actix_web::http::header;
 use actix_files::Files;
 mod converters;
