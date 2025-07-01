@@ -6,3 +6,5 @@ target/
 rustopus
 soap.json
 ping/
+test.bat
+test.ps1
