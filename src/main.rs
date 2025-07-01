@@ -39,6 +39,7 @@ async fn index() -> impl Responder {
 async fn main() -> std::io::Result<()> {
 
     panic::set_hook(Box::new(|info| {
+        eprintln!("Panic: {:?}", info);
         logger(format!("Panic: {:?}", info));
     }));
 
@@ -64,15 +65,11 @@ async fn main() -> std::io::Result<()> {
                 .use_last_modified(true))
             .default_service(web::to(not_found))
             .service(routes::products::get_products_handler)
-            .service(routes::products::post_products_handler)
             .service(routes::stocks::get_stocks_handler)
-            .service(routes::stocks::post_stocks_handler)
             .service(routes::prices::get_prices_handler)
-            .service(routes::prices::post_prices_handler)
             .service(routes::images::get_images_handler)
-            .service(routes::images::post_images_handler)
             .service(routes::bulk::get_bulk_handler)
-            .service(routes::bulk::post_bulk_handler)
+            .service(routes::test::get_test)
     })
         .client_request_timeout(std::time::Duration::from_secs(1200))
         .keep_alive(std::time::Duration::from_secs(1200))
@@ -82,7 +79,10 @@ async fn main() -> std::io::Result<()> {
 
     match server.await {
         Ok(_) => logger("Server stopped gracefully."),
-        Err(e) => logger(format!("Server exited with error: {}", e))
+        Err(e) => {
+            eprintln!("Server exited with error: {}", e);
+            logger(format!("Server exited with error: {}", e))
+        }
     }
 
     Ok(())

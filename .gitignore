@@ -2,7 +2,6 @@
 *.xml
 *.env
 *.log
-*test*
 target/
 rustopus
 soap.json
