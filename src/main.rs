@@ -49,7 +49,7 @@ async fn main() -> std::io::Result<()> {
         logger(format!("'{:#?}' not found. (Do not bother this message if you are not willing to work with static 'url'.)", get_soap_path()));
     }
 
-    logger(format!("Running on '{}:{}', with {}. worker(s)", config.server.host, config.server.port, config.server.workers));
+    logger(format!("Running on '{}:{}', with {} worker(s)", config.server.host, config.server.port, config.server.workers));
 
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let docs_dir = current_dir.join("src").join("static").join("docs");
