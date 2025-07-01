@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, HttpRequest, Responder};
+use actix_web::{get, web, HttpRequest, Responder};
 use serde::Deserialize;
 
 use crate::routes::default::send_xml;
@@ -77,10 +77,4 @@ async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responde
 #[get("/get-prices")]
 async fn get_prices_handler(req: HttpRequest, query: web::Query<PriceRequest>) -> impl Responder {
     prices_handler(req, query.into_inner()).await
-}
-
-
-#[post("/get-prices")]
-async fn post_prices_handler(req: HttpRequest, json: web::Json<PriceRequest>) -> impl Responder {
-    prices_handler(req, json.into_inner()).await
 }

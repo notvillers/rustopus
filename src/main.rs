@@ -55,10 +55,10 @@ async fn main() -> std::io::Result<()> {
     let docs_dir = current_dir.join("src").join("static").join("docs");
     let server = HttpServer::new(move || {
         App::new()
-            .wrap_fn(|req, srv| {
-                logger(format!("Handling: {:?}", req.path()));
-                srv.call(req)
-            })
+            // .wrap_fn(|req, srv| {
+            //     logger(format!("Handling: {:?}", req.path()));
+            //     srv.call(req)
+            // })
             .service(index)
             .service(Files::new("/docs/", docs_dir.clone())
                 .index_file("index.html")

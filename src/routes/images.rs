@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, HttpRequest, Responder};
+use actix_web::{get, web, HttpRequest, Responder};
 use serde::Deserialize;
 
 use crate::converters::images::{get_data, send_error_xml};
@@ -68,10 +68,4 @@ async fn products_handler(req: HttpRequest, params: ImagesRequest) -> impl Respo
 #[get("/get-images")]
 pub async fn get_images_handler(req: HttpRequest, query: web::Query<ImagesRequest>) -> impl Responder {
     products_handler(req, query.into_inner()).await
-}
-
-
-#[post("get-images")]
-pub async fn post_images_handler(req: HttpRequest, json: web::Json<ImagesRequest>) -> impl Responder {
-    products_handler(req, json.into_inner()).await
 }

@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, HttpRequest, Responder};
+use actix_web::{get, web, HttpRequest, Responder};
 use serde::Deserialize;
 
 use crate::converters::products::{get_data, send_error_xml};
@@ -69,10 +69,4 @@ async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Resp
 #[get("/get-products")]
 pub async fn get_products_handler(req: HttpRequest, query: web::Query<ProductRequest>) -> impl Responder {
     products_handler(req, query.into_inner()).await
-}
-
-
-#[post("get-products")]
-pub async fn post_products_handler(req: HttpRequest, json: web::Json<ProductRequest>) -> impl Responder {
-    products_handler(req, json.into_inner()).await
 }

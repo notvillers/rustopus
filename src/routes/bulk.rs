@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, HttpRequest, Responder};
+use actix_web::{get, web, HttpRequest, Responder};
 use serde::Deserialize;
 
 use crate::converters::bulk::{get_data, send_error_xml};
@@ -78,10 +78,4 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
 #[get("/get-bulk")]
 pub async fn get_bulk_handler(req: HttpRequest, query: web::Query<BulkRequest>) -> impl Responder {
     bulk_handler(req, query.into_inner()).await
-}
-
-
-#[post("/get-bulk")]
-pub async fn post_bulk_handler(req: HttpRequest, json: web::Json<BulkRequest>) -> impl Responder {
-    bulk_handler(req, json.into_inner()).await
 }

@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, HttpRequest, Responder};
+use actix_web::{get, web, HttpRequest, Responder};
 use serde::Deserialize;
 
 use crate::converters::stocks::{get_data, send_error_xml};
@@ -68,10 +68,4 @@ async fn stocks_handler(req: HttpRequest, params: StockRequest) -> impl Responde
 #[get("/get-stocks")]
 async fn get_stocks_handler(req: HttpRequest, query: web::Query<StockRequest>) -> impl Responder {
     stocks_handler(req, query.into_inner()).await
-}
-
-
-#[post("/get-stocks")]
-async fn post_stocks_handler(req: HttpRequest, json: web::Json<StockRequest>) -> impl Responder {
-    stocks_handler(req, json.into_inner()).await
 }
