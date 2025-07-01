@@ -412,107 +412,15 @@ components:
               type: string
             stock:
               type: number
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-                              
-                              
-                              
-                              
-                              
-                              
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-                              
-                              
-                              
-                              
-                              
-                              
-                              
-                              
-                              
-                              
-                              
-                              
-                              
-                              
-                              
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-              
-              
-              
-              
+            images:
+              type: array
+              items:
+                $ref: '#/components/schemas/BulkImages'
+                
+    BulkImages:
+      type: object
+      xml:
+        name: images
+      properties:
+        url:
+          type: string
