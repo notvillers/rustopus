@@ -77,6 +77,7 @@ impl From<o8_xml::products::Valasz> for Answer {
     }
 }
 
+
 #[derive(Serialize)]
 pub struct Products {
     product: Vec<Product>
