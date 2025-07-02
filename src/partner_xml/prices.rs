@@ -126,7 +126,7 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
                     answer: Answer {
                         version: "1.0".to_string(),
                         prices: Prices {
-                            price: Vec::new()
+                            price: vec![]
                         },
                         error: Some(
                             partner_xml::defaults::Error::load(code, description)

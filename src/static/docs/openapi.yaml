@@ -4,13 +4,10 @@ info:
   version: 1.0.0
   description: Get Octopus 8 ERP SOAP XML with english tags instead of hungarians
 
-servers:
-  - url: https://example.com
-
 paths:
   /get-products:
     get:
-      summary: Get product data (returns XML)
+      summary: Get product data
       tags:
         - Products
       parameters:
@@ -42,7 +39,7 @@ paths:
 
   /get-stocks:
     get:
-      summary: Get stock data (returns XML)
+      summary: Get stock data
       tags:
         - Stocks
       parameters:
@@ -74,7 +71,7 @@ paths:
 
   /get-prices:
     get:
-      summary: Get price data (returns XML)
+      summary: Get price data
       tags:
         - Prices
       parameters:
@@ -109,6 +106,40 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/PriceResponse'
+  
+  /get-images:
+    get:
+      summary: Get image data
+      tags:
+        - Images
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: Endpoint URL with the ```.asmx``` file
+          schema:
+            type: string
+        - name: authcode
+          in: query
+          required: true
+          description: Authorization code
+          schema:
+            type: string
+        - name: xmlns
+          in: query
+          required: false
+          description: Optional XML namespace
+          schema:
+            type: string
+      responses:
+        '200':
+          description: XML image list
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ImageResponse'
+          
+          
   
   /get-bulk:
     get:
@@ -324,6 +355,67 @@ components:
             sale_price:
               type: number
             currency:
+              type: string
+              
+    ImageResponse:
+      type: object
+      xml:
+        name: Envelope
+      properties:
+        body:
+          type: object
+          properties:
+            response:
+              type: object
+              properties:
+                result:
+                  type: object
+                  properties:
+                    answer:
+                      type: object
+                      properties:
+                        version:
+                          type: string
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: number
+                            description:
+                              type: string
+                        products:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/ImageProducts'
+              
+    ImageProducts:
+      type: object
+      xml:
+        name: products
+      properties: 
+        product:
+          type: object
+          properties:
+            id:
+              type: number
+            no:
+              type: string
+            images:
+              type: array
+              items:
+                $ref: '#/components/schemas/ImageImages'
+                
+    ImageImages:
+      type: object
+      xml:
+        name: images
+      properties:
+        image:
+          type: object
+          properties:
+            gallery:
+              type: string
+            url:
               type: string
               
     BulkResponse:
