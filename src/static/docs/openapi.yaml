@@ -390,6 +390,33 @@ components:
               
     ImageProducts:
       type: object
+      xml:
+        name: products
+      properties: 
+        product:
+          type: object
+          properties:
+            id:
+              type: number
+            no:
+              type: string
+            images:
+              type: array
+              items:
+                $ref: '#/components/schemas/ImageImages'
+                
+    ImageImages:
+      type: object
+      xml:
+        name: images
+      properties:
+        image:
+          type: object
+          properties:
+            gallery:
+              type: string
+            url:
+              type: string
               
     BulkResponse:
       type: object
