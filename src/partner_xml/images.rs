@@ -62,7 +62,7 @@ impl From<o8_xml::images::GetCikkKepekAuthResult> for GetProductImagesAuthResult
 #[derive(Serialize)]
 pub struct Answer {
     pub version: String,
-    pub product: Vec<Product>,
+    pub products: Products,
     pub error: Option<partner_xml::defaults::Error>
 }
 
@@ -70,11 +70,27 @@ impl From<o8_xml::images::Valasz> for Answer {
     fn from(v: o8_xml::images::Valasz) -> Self {
         Answer {
             version: v.verzio,
-            product: v.cikk
+            products: v.cikk
                         .into_iter()
-                        .map(|c| c.into())
-                        .collect(),
+                        .collect::<Products>(),
             error: v.hiba.map(|e| e.into())
+        }
+    }
+}
+
+
+#[derive(Serialize)]
+pub struct Products {
+    pub product: Vec<Product>
+}
+
+impl FromIterator<o8_xml::images::Cikk> for Products {
+    fn from_iter<T: IntoIterator<Item = o8_xml::images::Cikk>>(iter: T) -> Self {
+        Products {
+            product: iter
+                        .into_iter()
+                        .map(|p| p.into())
+                        .collect()
         }
     }
 }
@@ -138,7 +154,9 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
                 result: GetProductImagesAuthResult { 
                     answer: Answer {
                         version: "1.0".to_string(), 
-                        product: Vec::new(),
+                        products: Products {
+                            product: vec![]
+                        },
                         error: Some(
                             partner_xml::defaults::Error::load(code, description)
                         )
