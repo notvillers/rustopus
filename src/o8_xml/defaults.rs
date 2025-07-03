@@ -1,3 +1,5 @@
+/// Default struct(s) for XML(s) got from the Octopus call
+
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]

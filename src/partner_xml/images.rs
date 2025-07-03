@@ -1,3 +1,5 @@
+/// Images english struct(s) for XML(s) got from the Octopus call
+
 use serde::Serialize;
 
 use crate::o8_xml;

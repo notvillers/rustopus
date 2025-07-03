@@ -1,3 +1,4 @@
+/// Structs for GetCikkekKeszletValtozasAuth's XML
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Deserializer};
@@ -89,7 +90,7 @@ pub struct Cikk {
 }
 
 
-// Octopus sends floats with ',', we need to convert it to '.'
+// Octopus sends floats (actually strings) with ',' separator, we need to convert it to '.' separator
 fn parse_comma_f64<'de, D>(deserializer: D) -> Result<Option<f64>, D::Error>
 where
     D: Deserializer<'de>,

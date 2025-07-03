@@ -1,3 +1,5 @@
+/// Bulk english struct(s) fro XML(s) got from the Octopus call
+
 use serde::Serialize;
 
 use crate::o8_xml;

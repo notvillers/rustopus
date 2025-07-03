@@ -84,12 +84,6 @@ pub struct Data {
 
 impl Data {
     pub fn load(ip: Option<String>, uuid: Option<String>) -> Self {
-        if ip.is_none() && uuid.is_none() {
-            return Data {
-                ip: None,
-                uuid: None
-            }
-        }
         Data {
             ip: ip,
             uuid: uuid

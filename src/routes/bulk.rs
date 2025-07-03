@@ -1,14 +1,13 @@
-use actix_web::{get, web, HttpRequest, Responder};
+use actix_web::{get, web::Query, HttpRequest, Responder};
 use serde::Deserialize;
 
-use crate::converters::bulk::{get_data, send_error_xml};
-use crate::routes::default::send_xml;
+use crate::routes::default::{GetResponse, GetPidResponse};
+use crate::routes::default::{send_xml, get_auth, get_url, get_xmlns, get_pid};
 use crate::service::soap::get_first_date;
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
-use crate::service::soap_config::get_default_url;
 use crate::ipv4::log_ip;
-use crate::global::errors;
+use crate::converters::bulk::{get_data, send_error_xml};
 
 #[derive(Deserialize)]
 pub struct BulkRequest {
@@ -24,50 +23,25 @@ const REQUEST_NAME: &'static str = "BULK REQUEST";
 async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
-    let authcode = match params.authcode {
-        Some(ref s) if !s.trim().is_empty() => s,
-        _ => {
-            let error = errors::GLOBAL_AUTH_ERROR;
-            log_with_ip_uuid(&ip_address, &uuid, format!("{}: {} ({})", error.code, error.description, REQUEST_NAME));
-            return send_xml(send_error_xml(error.code, error.description));
-        }
+
+    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, send_error_xml) {
+        GetResponse::Text(auth) => auth,
+        GetResponse::Response(response) => return response
     };
 
-    let url = match params.url {
-        Some(ref s) if !s.trim().is_empty() => s,
-        _ => {
-            &match get_default_url() {
-                Some(default_url) => {
-                    log_with_ip_uuid(&ip_address, &uuid, format!("Using default url: '{}'", default_url));
-                    default_url
-                }
-                _ => {
-                    let error = errors::GLOBAL_URL_ERROR;
-                    log_with_ip_uuid(&ip_address, &uuid, format!("{}: {} ({})", error.code, error.description, REQUEST_NAME));
-                    return send_xml(send_error_xml(error.code, error.description))
-                }
-            }
-        }
+    let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, send_error_xml) {
+        GetResponse::Text(url) => url,
+        GetResponse::Response(response) => return response
     };
 
-    let mut xmlns = params.xmlns.unwrap_or_default();
-    if xmlns.trim().is_empty() &&url.contains("/services/") {
-        if let Some(pos) = url.find("/services/") {
-            let end = pos + "/services/".len();
-            xmlns = url[..end].to_string();
-        }
-    }
+    let xmlns = get_xmlns(params.xmlns, &url);
 
-    let pid = match params.pid {
-        Some(ref s) => s,
-        _ => {
-            let error = errors::GLOBAL_PID_ERROR;
-            log_with_ip_uuid(&ip_address, &uuid, format!("{}: {} ({})", error.code, error.description, REQUEST_NAME));
-            return send_xml(send_error_xml(error.code, error.description));
-        }
+    let pid = match get_pid(REQUEST_NAME, &ip_address, &uuid, params.pid, send_error_xml) {
+        GetPidResponse::Number(pid) => pid,
+        GetPidResponse::Response(response) => return response
     };
 
-    log_with_ip_uuid(&ip_address, &uuid, format!("tBefore getting bulk request, url: {}, auth: {}, pid: {}", url, authcode, pid));
+    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting bulk request, url: {}, auth: {}, pid: {}", url, authcode, pid));
     let xml = get_data(&url, &xmlns, &authcode, &get_first_date(), &pid).await;
     log_with_ip_uuid(&ip_address, &uuid, "After bulk request got");
 
@@ -76,6 +50,6 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
 
 
 #[get("/get-bulk")]
-pub async fn get_bulk_handler(req: HttpRequest, query: web::Query<BulkRequest>) -> impl Responder {
+pub async fn get_bulk_handler(req: HttpRequest, query: Query<BulkRequest>) -> impl Responder {
     bulk_handler(req, query.into_inner()).await
 }

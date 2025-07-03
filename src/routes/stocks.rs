@@ -5,10 +5,9 @@ use crate::converters::stocks::{get_data, send_error_xml};
 use crate::soap::get_first_date;
 use crate::service::ipv4::log_ip;
 use crate::service::log::log_with_ip_uuid;
-use crate::service::soap_config::get_default_url;
 use crate::service::slave::get_uuid;
-use crate::routes::default::send_xml;
-use crate::global::errors;
+use crate::routes::default::GetResponse;
+use crate::routes::default::{send_xml, get_auth, get_url, get_xmlns};
 
 #[derive(Deserialize)]
 pub struct StockRequest {
@@ -23,42 +22,21 @@ const REQUEST_NAME: &'static str = "STOCKS REQUEST";
 async fn stocks_handler(req: HttpRequest, params: StockRequest) -> impl Responder {
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
-    let authcode = match params.authcode {
-        Some(ref s) if !s.trim().is_empty() => s,
-        _ => {
-            let error = errors::GLOBAL_AUTH_ERROR;
-            log_with_ip_uuid(&ip_address, &uuid, format!("{}: {} ({})", error.code, error.description, REQUEST_NAME));
-            return send_xml(send_error_xml(error.code, error.description))
-        }
+    
+    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, send_error_xml) {
+        GetResponse::Text(auth) => auth,
+        GetResponse::Response(response) => return response
     };
 
-    let url = match params.url {
-        Some(ref s) if !s.trim().is_empty() => s,
-        _ => {
-            &match get_default_url() {
-                Some(default_url) => {
-                    log_with_ip_uuid(&ip_address, &uuid, format!("Using default url: '{}'", default_url));
-                    default_url
-                }
-                _ => {
-                    let error = errors::GLOBAL_URL_ERROR;
-                    log_with_ip_uuid(&ip_address, &uuid, format!("{}: {} ({})", error.code, error.description, REQUEST_NAME));
-                    return send_xml(send_error_xml(error.code, error.description))
-                }
-            }
-        }
+    let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, send_error_xml) {
+        GetResponse::Text(url) => url,
+        GetResponse::Response(response) => return response
     };
 
-    let mut xmlns = params.xmlns.unwrap_or_default();
-    if xmlns.trim().is_empty() &&url.contains("/services/") {
-        if let Some(pos) = url.find("/services/") {
-            let end = pos + "/services/".len();
-            xmlns = url[..end].to_string();
-        }
-    }
+    let xmlns = get_xmlns(params.xmlns, &url);
 
     log_with_ip_uuid(&ip_address, &uuid, format!("Before getting stock request, url: {}, auth: {}", url, authcode));
-    let xml = get_data(url, &xmlns, authcode, &get_first_date()).await;
+    let xml = get_data(&url, &xmlns, &authcode, &get_first_date()).await;
     log_with_ip_uuid(&ip_address, &uuid, format!("{}\tAfter stocks request got", uuid));
 
     send_xml(xml)
