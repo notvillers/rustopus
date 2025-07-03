@@ -44,8 +44,5 @@ impl SoapConfig {
 
 
 pub fn get_default_url() -> Option<String> {
-    match SoapConfig::load().url {
-        Some(url) => Some(url),
-        _ => None
-    }
+    SoapConfig::load().url
 }
