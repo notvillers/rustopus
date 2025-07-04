@@ -64,7 +64,7 @@ fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
 }
 
 
-pub async fn get_products(call_data: o8_xml::defaults::CallData) -> partner_xml::products::Envelope {
+async fn get_products(call_data: o8_xml::defaults::CallData) -> partner_xml::products::Envelope {
     let request = o8_xml::products::get_request_string(&call_data.xmlns, &FIRST_DATE, &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
     let hu_envelope: o8_xml::products::Envelope = match quick_xml::de::from_str(&response) {
@@ -79,7 +79,7 @@ pub async fn get_products(call_data: o8_xml::defaults::CallData) -> partner_xml:
 }
 
 
-pub async fn get_stocks(call_data: o8_xml::defaults::CallData) -> partner_xml::stocks::Envelope {
+async fn get_stocks(call_data: o8_xml::defaults::CallData) -> partner_xml::stocks::Envelope {
     let request = o8_xml::stocks::get_request_string(&call_data.xmlns, &FIRST_DATE, &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
     let hu_envelope: o8_xml::stocks::Envelope = match quick_xml::de::from_str(&response) {
@@ -94,7 +94,7 @@ pub async fn get_stocks(call_data: o8_xml::defaults::CallData) -> partner_xml::s
 }
 
 
-pub async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::prices::Envelope {
+async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::prices::Envelope {
     match call_data.pid {
         Some(pid) => {
             let request = o8_xml::prices::get_request_string(&call_data.xmlns, &call_data.authcode, &pid);
@@ -117,7 +117,7 @@ pub async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::p
 }
 
 
-pub async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::images::Envelope {
+async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::images::Envelope {
     let request = o8_xml::images::get_request_string(&call_data.xmlns, &FIRST_DATE, &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
     let hu_envelope: o8_xml::images::Envelope = match quick_xml::de::from_str(&response) {
