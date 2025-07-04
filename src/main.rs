@@ -3,7 +3,7 @@ use std::panic;
 mod service;
 use std::env;
 
-use crate::service::{soap, ipv4, log::logger};
+use crate::service::{ipv4, log::logger};
 
 mod o8_xml;
 

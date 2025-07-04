@@ -43,6 +43,8 @@ pub struct Products {
 }
 
 
+
+
 #[derive(Serialize)]
 pub struct Product {
     pub id: u64,

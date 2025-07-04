@@ -5,7 +5,7 @@ use reqwest::header::CONTENT_TYPE;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
 
 use crate::service::config;
-
+use crate::service::log::logger;
 
 pub fn get_first_date() -> DateTime<Utc> {
     get_date_from_parts(None, None, None, None, None, None)
@@ -47,12 +47,12 @@ pub async fn get_response(url: &str, soap_request: String) -> String {
         Ok(resp) => match resp.text().await {
             Ok(text) => text,
             Err(e) => {
-                println!("Response error: {}", e);
+                logger(format!("Response error: {}", e));
                 "<Envelope></Envelope>".to_string()
             }
         },
         Err(e) => {
-            println!("Response error: {}", e);
+            logger(format!("Response error: {}", e));
             "<Envelope></Envelope>".to_string()
         }
     }

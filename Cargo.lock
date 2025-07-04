@@ -1729,6 +1729,7 @@ dependencies = [
  "config",
  "dotenv",
  "flexi_logger",
+ "lazy_static",
  "log",
  "once_cell",
  "quick-xml",

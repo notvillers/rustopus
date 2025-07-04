@@ -8,3 +8,11 @@ pub struct Hiba {
     pub kod: u64,
     pub leiras: String
 }
+
+
+pub struct CallData {
+    pub authcode: String,
+    pub url: String,
+    pub xmlns: String,
+    pub pid: Option<i64>
+}

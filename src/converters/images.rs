@@ -4,22 +4,6 @@ use crate::partner_xml;
 use crate::service::soap;
 use quick_xml;
 use crate::service::log::logger;
-use crate::global::errors;
-
-/// `async` Get the data into reformatted string
-/// # Parameters
-/// * url: `&str`
-/// * xmlns: `&str`
-/// * authcode: `&str`
-/// * web_update `&DateTime<Utc>`
-/// # Return
-/// `String`
-pub async fn get_data(url: &str, xmlns: &str, authcode: &str, web_update: &DateTime<Utc>) -> String {
-    match get_envelope(&get_xml(url, xmlns, authcode, web_update).await) {
-        Ok(hu_envelope) => convert_envelope_to_xml(hu_envelope),
-        Err(de_error) => log_and_send_error_xml(de_error, errors::GLOBAL_GET_DATA_ERROR)
-    }
-}
 
 
 /// `async` Get XML data
@@ -42,31 +26,6 @@ pub async fn get_xml(url: &str, xmlns: &str, authcode: &str, web_update: &DateTi
 /// `Result<o8_xml::images::Envelope, quick_xml::DeError>`
 pub fn get_envelope(response_text: &str) -> Result<o8_xml::images::Envelope, quick_xml::DeError> {
     quick_xml::de::from_str(response_text)
-}
-
-
-/// Converts envelope struct to string
-/// # Parameters
-/// * hu_envelope: `o8_xml::images::Envelope`
-/// # Returns
-/// `String`
-fn convert_envelope_to_xml(hu_envelope: o8_xml::images::Envelope) -> String {
-    match quick_xml::se::to_string(&hu_envelope.to_en()) {
-        Ok(eng_xml) => eng_xml,
-        Err(de_error) => log_and_send_error_xml(de_error, errors::GLOBAL_CONVERT_ERROR)
-    }
-}
-
-
-/// Logs error and send error struct xml
-/// # Parameters
-/// * de_error: `quick_xml::DeError`
-/// * error: `global::errors:RustopusError`
-/// # Returns
-/// `String`
-fn log_and_send_error_xml(de_error: quick_xml::DeError, error: errors::RustopusError) -> String {
-    logger(format!("{}: {} ({})", error.code, error.description, de_error));
-    send_error_xml(error.code, error.description)
 }
 
 

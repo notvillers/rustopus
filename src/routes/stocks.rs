@@ -1,13 +1,14 @@
 use actix_web::{get, web, HttpRequest, Responder};
 use serde::Deserialize;
 
-use crate::converters::stocks::{get_data, send_error_xml};
-use crate::soap::get_first_date;
+use crate::converters::stocks::send_error_xml;
 use crate::service::ipv4::log_ip;
 use crate::service::log::log_with_ip_uuid;
 use crate::service::slave::get_uuid;
 use crate::routes::default::GetResponse;
 use crate::routes::default::{send_xml, get_auth, get_url, get_xmlns};
+use crate::o8_xml::defaults::CallData;
+use crate::service::new_soap::RequestGet;
 
 #[derive(Deserialize)]
 pub struct StockRequest {
@@ -35,8 +36,15 @@ async fn stocks_handler(req: HttpRequest, params: StockRequest) -> impl Responde
 
     let xmlns = get_xmlns(params.xmlns, &url);
 
-    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting stock request, url: {}, auth: {}", url, authcode));
-    let xml = get_data(&url, &xmlns, &authcode, &get_first_date()).await;
+    let call_data = CallData {
+        authcode: authcode,
+        url: url,
+        xmlns: xmlns,
+        pid: None
+    };
+
+    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting stock request, url: {}, auth: {}", call_data.url, call_data.authcode));
+    let xml = RequestGet::Stocks(call_data).to_xml().await;
     log_with_ip_uuid(&ip_address, &uuid, format!("{}\tAfter stocks request got", uuid));
 
     send_xml(xml)

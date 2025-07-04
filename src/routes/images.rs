@@ -3,11 +3,12 @@ use serde::Deserialize;
 
 use crate::routes::default::GetResponse;
 use crate::routes::default::{send_xml, get_auth, get_url, get_xmlns};
-use crate::service::soap::get_first_date;
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::ipv4::log_ip;
-use crate::converters::images::{get_data, send_error_xml};
+use crate::converters::images::send_error_xml;
+use crate::o8_xml::defaults::CallData;
+use crate::service::new_soap::RequestGet;
 
 #[derive(Deserialize)]
 pub struct ImagesRequest {
@@ -35,8 +36,15 @@ async fn products_handler(req: HttpRequest, params: ImagesRequest) -> impl Respo
 
     let xmlns = get_xmlns(params.xmlns, &url);
 
-    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting images request, url: {}, auth: {}", url, authcode));
-    let xml = get_data(&url, &xmlns, &authcode, &get_first_date()).await;
+    let call_data = CallData {
+        authcode: authcode,
+        url: url,
+        xmlns: xmlns,
+        pid: None
+    };
+
+    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting images request, url: {}, auth: {}", call_data.url, call_data.authcode));
+    let xml = RequestGet::Images(call_data).to_xml().await;
     log_with_ip_uuid(&ip_address, &uuid, "After images request got");
 
     send_xml(xml)

@@ -3,10 +3,12 @@ use serde::Deserialize;
 
 use crate::routes::default::{GetResponse, GetPidResponse};
 use crate::routes::default::{send_xml, get_auth, get_url, get_xmlns, get_pid};
-use crate::converters::prices::{get_data, send_error_xml};
+use crate::converters::prices::send_error_xml;
 use crate::service::ipv4::log_ip;
 use crate::service::log::log_with_ip_uuid;
 use crate::service::slave::get_uuid;
+use crate::o8_xml::defaults::CallData;
+use crate::service::new_soap::RequestGet;
 
 #[derive(Deserialize)]
 pub struct PriceRequest {
@@ -40,8 +42,15 @@ async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responde
         GetPidResponse::Response(response) => return response
     };
     
-    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting prices request, url: {}, auth: {}, pid: {}", url, authcode, pid));
-    let xml = get_data(&url, &xmlns, &pid, &authcode).await;
+    let call_data = CallData {
+        authcode: authcode,
+        url: url,
+        xmlns: xmlns,
+        pid: Some(pid)
+    };
+
+    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting prices request, url: {}, auth: {}, pid: {}", call_data.url, call_data.authcode, pid));
+    let xml = RequestGet::Prices(call_data).to_xml().await;
     log_with_ip_uuid(&ip_address, &uuid, "After prices request got");
 
     send_xml(xml)
