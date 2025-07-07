@@ -6,12 +6,6 @@ use std::str::FromStr;
 use crate::partner_xml;
 
 /// Get the string for the request
-/// # Parameters
-/// * xmlns: `&str`
-/// * web_update: `&DateTime<Utc>`
-/// * authcode: `&str`
-/// # Returns
-/// `String`
 pub fn get_request_string(xmlns: &str, authcode: &str, pid: &i64) -> String {
     format!(r#"<?xml version="1.0" encoding="utf-8"?>
                 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">

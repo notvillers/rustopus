@@ -6,12 +6,6 @@ use crate::o8_xml;
 use crate::partner_xml;
 
 /// Get the string for the request
-/// # Parameters
-/// * xmlns: `&str`
-/// * web_update: `&DateTime<Utc>`
-/// * authcode: `&str`
-/// # Returns
-/// `String`
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
     format!(
         r#"<?xml version="1.0" encoding="utf-8"?>
@@ -29,7 +23,6 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
         authcode
     ) 
 }
-
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
