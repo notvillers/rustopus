@@ -149,19 +149,22 @@ async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::image
 
 async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::Envelope {
     let products = match RequestGet::Products(call_data.clone()).to_envelope().await {
-        ResponseGet::Products(e) => e,
+        ResponseGet::Products(e) if e.body.response.result.answer.error.is_none() => e,
         _ => partner_xml::products::error_struct(errors::BULK_GET_PRODUCTS_ERROR.code, errors::BULK_GET_PRODUCTS_ERROR.description)
     };
+
     let stocks = match RequestGet::Stocks(call_data.clone()).to_envelope().await {
-        ResponseGet::Stocks(e) => Some(e),
+        ResponseGet::Stocks(e) if e.body.response.result.answer.error.is_none() => Some(e),
         _ => Some(partner_xml::stocks::error_struct(errors::BULK_GET_STOCKS_ERROR.code, errors::BULK_GET_STOCKS_ERROR.description))
     };
+
     let prices = match RequestGet::Prices(call_data.clone()).to_envelope().await {
-        ResponseGet::Prices(e) => Some(e),
+        ResponseGet::Prices(e) if e.body.response.result.answer.error.is_none() => Some(e),
         _ => Some(partner_xml::prices::error_struct(errors::BULK_GET_PRICES_ERROR.code, errors::BULK_GET_PRICES_ERROR.description))
     };
+
     let images = match RequestGet::Images(call_data).to_envelope().await {
-        ResponseGet::Images(e) => Some(e),
+        ResponseGet::Images(e) if e.body.response.result.answer.error.is_none() => Some(e),
         _ => Some(partner_xml::images::error_struct(errors::BULK_GET_IMAGES_ERROR.code, errors::BULK_GET_IMAGES_ERROR.description))
     };
     if let Some(e) = products.body.response.result.answer.error {
