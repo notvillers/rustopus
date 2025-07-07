@@ -1,6 +1,7 @@
 /// Images english struct(s) for XML(s) got from the Octopus call
 
 use serde::Serialize;
+use quick_xml;
 
 use crate::o8_xml;
 use crate::partner_xml;
@@ -166,5 +167,13 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
                 }
             }
         }
+    }
+}
+
+
+pub fn error_struct_xml(code: u64, description: &str) -> String {
+    match quick_xml::se::to_string(&error_struct(code, description)) {
+        Ok(xml) => xml,
+        _ => "<Envelope></Envelope>".to_string()
     }
 }

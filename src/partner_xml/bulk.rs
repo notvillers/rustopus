@@ -1,6 +1,7 @@
 /// Bulk english struct(s) fro XML(s) got from the Octopus call
 
 use serde::Serialize;
+use quick_xml;
 
 use crate::partner_xml;
 
@@ -247,5 +248,17 @@ pub fn error_struct(errors: Vec<partner_xml::defaults::Error>) -> Envelope {
                 }
             }
         }
+    }
+}
+
+
+pub fn error_struct_xml(code: u64, description: &str) -> String {
+    let error = partner_xml::defaults::Error {
+        code: code,
+        description: description.to_string()
+    };
+    match quick_xml::se::to_string(&error_struct(vec![error])) {
+        Ok(xml) => xml,
+        _ => "<Envelope></Envelope>".to_string()
     }
 }

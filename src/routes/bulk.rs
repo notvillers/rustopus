@@ -6,7 +6,7 @@ use crate::routes::default::{send_xml, get_auth, get_url, get_xmlns, get_pid};
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::ipv4::log_ip;
-use crate::converters::bulk::send_error_xml;
+use crate::partner_xml::bulk::error_struct_xml;
 use crate::o8_xml::defaults::CallData;
 use crate::service::new_soap::RequestGet;
 
@@ -25,19 +25,19 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
 
-    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, send_error_xml) {
+    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
         GetResponse::Text(auth) => auth,
         GetResponse::Response(response) => return response
     };
 
-    let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, send_error_xml) {
+    let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {
         GetResponse::Text(url) => url,
         GetResponse::Response(response) => return response
     };
 
     let xmlns = get_xmlns(params.xmlns, &url);
 
-    let pid = match get_pid(REQUEST_NAME, &ip_address, &uuid, params.pid, send_error_xml) {
+    let pid = match get_pid(REQUEST_NAME, &ip_address, &uuid, params.pid, error_struct_xml) {
         GetPidResponse::Number(pid) => pid,
         GetPidResponse::Response(response) => return response
     };

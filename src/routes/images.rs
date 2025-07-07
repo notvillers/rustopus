@@ -6,7 +6,7 @@ use crate::routes::default::{send_xml, get_auth, get_url, get_xmlns};
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::ipv4::log_ip;
-use crate::converters::images::send_error_xml;
+use crate::partner_xml::images::error_struct_xml;
 use crate::o8_xml::defaults::CallData;
 use crate::service::new_soap::RequestGet;
 
@@ -24,12 +24,12 @@ async fn products_handler(req: HttpRequest, params: ImagesRequest) -> impl Respo
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
     
-    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, send_error_xml) {
+    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
         GetResponse::Text(auth) => auth,
         GetResponse::Response(response) => return response
     };
 
-    let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, send_error_xml) {
+    let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {
         GetResponse::Text(url) => url,
         GetResponse::Response(response) => return response
     };

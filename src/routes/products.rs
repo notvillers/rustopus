@@ -1,7 +1,7 @@
 use actix_web::{get, web, HttpRequest, Responder};
 use serde::Deserialize;
 
-use crate::converters::products::send_error_xml;
+use crate::partner_xml::products::error_struct_xml;
 use crate::service::ipv4::log_ip;
 use crate::service::log::log_with_ip_uuid;
 use crate::service::slave::get_uuid;
@@ -24,12 +24,12 @@ async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Resp
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
 
-    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, send_error_xml) {
+    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
         GetResponse::Text(auth) => auth,
         GetResponse::Response(response) => return response
     };
 
-    let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, send_error_xml) {
+    let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {
         GetResponse::Text(url) => url,
         GetResponse::Response(response) => return response
     };
