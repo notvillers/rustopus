@@ -168,11 +168,7 @@ async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::E
         _ => Some(partner_xml::images::error_struct(errors::BULK_GET_IMAGES_ERROR.code, errors::BULK_GET_IMAGES_ERROR.description))
     };
     if let Some(e) = products.body.response.result.answer.error {
-        let bulk_error = partner_xml::defaults::Error {
-            code: errors::GLOBAL_GET_DATA_ERROR.code,
-            description: errors::GLOBAL_GET_DATA_ERROR.description.to_string()
-        };
-        return partner_xml::bulk::error_struct(vec![bulk_error, e])
+        return partner_xml::bulk::error_struct(vec![errors::GLOBAL_GET_DATA_ERROR.into(), e])
     }
     (&products, prices.as_ref(), stocks.as_ref(), images.as_ref()).into()
 }
