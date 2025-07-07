@@ -82,7 +82,7 @@ impl From<o8_xml::products::Valasz> for Answer {
 
 #[derive(Serialize)]
 pub struct Products {
-    product: Vec<Product>
+    pub product: Vec<Product>
 }
 
 impl FromIterator<o8_xml::products::Cikk> for Products {
@@ -140,7 +140,7 @@ impl From<o8_xml::products::Cikk> for Product {
 }
 
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Size {
     pub x: Option<f64>,
     pub y: Option<f64>,

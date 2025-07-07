@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub struct Hiba {
     pub kod: u64,
@@ -10,6 +10,7 @@ pub struct Hiba {
 }
 
 
+#[derive(Clone)]
 pub struct CallData {
     pub authcode: String,
     pub url: String,

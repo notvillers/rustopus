@@ -5,7 +5,7 @@ use crate::o8_xml;
 use crate::service::errors;
 use crate::global;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Error {
     pub code: u64,
     pub description: String

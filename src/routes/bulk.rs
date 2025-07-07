@@ -3,11 +3,12 @@ use serde::Deserialize;
 
 use crate::routes::default::{GetResponse, GetPidResponse};
 use crate::routes::default::{send_xml, get_auth, get_url, get_xmlns, get_pid};
-use crate::service::soap::get_first_date;
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::ipv4::log_ip;
-use crate::converters::bulk::{get_data, send_error_xml};
+use crate::converters::bulk::send_error_xml;
+use crate::o8_xml::defaults::CallData;
+use crate::service::new_soap::RequestGet;
 
 #[derive(Deserialize)]
 pub struct BulkRequest {
@@ -41,8 +42,15 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
         GetPidResponse::Response(response) => return response
     };
 
-    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting bulk request, url: {}, auth: {}, pid: {}", url, authcode, pid));
-    let xml = get_data(&url, &xmlns, &authcode, &get_first_date(), &pid).await;
+    let call_data = CallData {
+        authcode: authcode,
+        url: url,
+        xmlns: xmlns,
+        pid: Some(pid)
+    };
+
+    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting bulk request, url: {}, auth: {}, pid: {}", call_data.url, call_data.authcode, call_data.url));
+    let xml = RequestGet::Bulk(call_data).to_xml().await;
     log_with_ip_uuid(&ip_address, &uuid, "After bulk request got");
 
     send_xml(xml)

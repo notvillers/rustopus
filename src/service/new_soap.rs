@@ -1,11 +1,14 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
 use quick_xml;
 use lazy_static::lazy_static;
+use crate::global::errors;
 use crate::o8_xml;
 use crate::partner_xml;
 use crate::service::soap;
-use crate::global::errors;
 use crate::service::log::logger;
+
+use std::pin::Pin;
+use futures::Future;
 
 lazy_static! {
     static ref FIRST_DATE: DateTime<Utc> = get_first_date();
@@ -30,7 +33,8 @@ pub enum RequestGet {
     Products(o8_xml::defaults::CallData),
     Stocks(o8_xml::defaults::CallData),
     Prices(o8_xml::defaults::CallData),
-    Images(o8_xml::defaults::CallData)
+    Images(o8_xml::defaults::CallData),
+    Bulk(o8_xml::defaults::CallData)
 }
 
 
@@ -40,27 +44,41 @@ pub enum ResponseGet {
     Products(partner_xml::products::Envelope),
     Stocks(partner_xml::stocks::Envelope),
     Prices(partner_xml::prices::Envelope),
-    Images(partner_xml::images::Envelope)
+    Images(partner_xml::images::Envelope),
+    Bulk(partner_xml::bulk::Envelope)
 }
 
 
 impl RequestGet {
-    pub async fn to_envelope(self) -> ResponseGet {
-        match self {
-            RequestGet::Products(call_data) => ResponseGet::Products(get_products(call_data).await),
-            RequestGet::Stocks(call_data) => ResponseGet::Stocks(get_stocks(call_data).await),
-            RequestGet::Prices(call_data) => ResponseGet::Prices(get_prices(call_data).await),
-            RequestGet::Images(call_data) => ResponseGet::Images(get_images(call_data).await)
-        }
+    pub fn to_envelope(self) -> Pin<Box<dyn Future<Output = ResponseGet> + Send>> {
+        Box::pin(async move {
+            match self {
+                RequestGet::Products(call_data) => ResponseGet::Products(get_products(call_data).await),
+                RequestGet::Stocks(call_data) => ResponseGet::Stocks(get_stocks(call_data).await),
+                RequestGet::Prices(call_data) => ResponseGet::Prices(get_prices(call_data).await),
+                RequestGet::Images(call_data) => ResponseGet::Images(get_images(call_data).await),
+                RequestGet::Bulk(call_data) => ResponseGet::Bulk(get_bulk(call_data).await),
+            }
+        })
     }
-    pub async fn to_xml(self) -> String {
-        to_xml_string(&self.to_envelope().await)
+
+    pub fn to_xml(self) -> Pin<Box<dyn Future<Output=String> + Send>> {
+        Box::pin(async move {
+            let envelope = self.to_envelope().await;
+            to_xml_string(&envelope)
+        })
     }
 }
 
 
 fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
-    quick_xml::se::to_string(val).unwrap_or("<Envelope></Envelope>".to_string())
+    match quick_xml::se::to_string(val) {
+        Ok(val) => val,
+        Err(de_error) => {
+            logger(format!("{}: {} ({})", errors::GLOBAL_CONVERT_ERROR.code, errors::GLOBAL_CONVERT_ERROR.description, de_error));
+            "<Envelope></Envelope>".to_string()
+        }
+    }
 }
 
 
@@ -109,10 +127,7 @@ async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::price
             };
             hu_envelope.to_en()
         }
-        _ => {
-            let error = errors::GLOBAL_PID_ERROR;
-            return partner_xml::prices::error_struct(error.code, error.description)
-        }
+        _ => partner_xml::prices::error_struct(errors::GLOBAL_PID_ERROR.code, errors::GLOBAL_PID_ERROR.description)
     }
 }
 
@@ -129,4 +144,32 @@ async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::image
         }
     };
     hu_envelope.to_en()
+}
+
+
+async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::Envelope {
+    let products = match RequestGet::Products(call_data.clone()).to_envelope().await {
+        ResponseGet::Products(e) => e,
+        _ => partner_xml::products::error_struct(errors::BULK_GET_PRODUCTS_ERROR.code, errors::BULK_GET_PRODUCTS_ERROR.description)
+    };
+    let stocks = match RequestGet::Stocks(call_data.clone()).to_envelope().await {
+        ResponseGet::Stocks(e) => Some(e),
+        _ => Some(partner_xml::stocks::error_struct(errors::BULK_GET_STOCKS_ERROR.code, errors::BULK_GET_STOCKS_ERROR.description))
+    };
+    let prices = match RequestGet::Prices(call_data.clone()).to_envelope().await {
+        ResponseGet::Prices(e) => Some(e),
+        _ => Some(partner_xml::prices::error_struct(errors::BULK_GET_PRICES_ERROR.code, errors::BULK_GET_PRICES_ERROR.description))
+    };
+    let images = match RequestGet::Images(call_data).to_envelope().await {
+        ResponseGet::Images(e) => Some(e),
+        _ => Some(partner_xml::images::error_struct(errors::BULK_GET_IMAGES_ERROR.code, errors::BULK_GET_IMAGES_ERROR.description))
+    };
+    if let Some(e) = products.body.response.result.answer.error {
+        let bulk_error = partner_xml::defaults::Error {
+            code: errors::GLOBAL_GET_DATA_ERROR.code,
+            description: errors::GLOBAL_GET_DATA_ERROR.description.to_string()
+        };
+        return partner_xml::bulk::error_struct(vec![bulk_error, e])
+    }
+    (&products, prices.as_ref(), stocks.as_ref(), images.as_ref()).into()
 }

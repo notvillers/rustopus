@@ -102,7 +102,7 @@ impl FromIterator<o8_xml::images::Cikk> for Products {
 pub struct Product {
     pub id: u64,
     pub no: String,
-    images: Images
+    pub images: Images
 }
 
 impl From<o8_xml::images::Cikk> for Product {
@@ -118,7 +118,7 @@ impl From<o8_xml::images::Cikk> for Product {
 
 #[derive(Serialize)]
 pub struct Images {
-    image: Vec<Image>
+    pub image: Vec<Image>
 }
 
 impl From<o8_xml::images::Kepek> for Images {
@@ -135,8 +135,8 @@ impl From<o8_xml::images::Kepek> for Images {
 
 #[derive(Serialize)]
 pub struct Image {
-    gallery: String,
-    url: String
+    pub gallery: String,
+    pub url: String
 }
 
 impl From<o8_xml::images::Kep> for Image {
