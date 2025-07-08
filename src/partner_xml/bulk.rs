@@ -10,14 +10,14 @@ pub struct Envelope {
     pub body: Body
 }
 
-impl From<(&partner_xml::products::Envelope, Option<&partner_xml::prices::Envelope>, Option<&partner_xml::stocks::Envelope>, Option<&partner_xml::images::Envelope>)> for Envelope {
-    fn from((c, p, s, i): (&partner_xml::products::Envelope, Option<&partner_xml::prices::Envelope>, Option<&partner_xml::stocks::Envelope>, Option<&partner_xml::images::Envelope>)) -> Self {
+impl From<(partner_xml::products::Envelope, Option<partner_xml::prices::Envelope>, Option<partner_xml::stocks::Envelope>, Option<partner_xml::images::Envelope>)> for Envelope {
+    fn from((c, p, s, i): (partner_xml::products::Envelope, Option<partner_xml::prices::Envelope>, Option<partner_xml::stocks::Envelope>, Option<partner_xml::images::Envelope>)) -> Self {
         Envelope {
             body: (
-                &c.body,
-                p.as_ref().map(|p| &p.body),
-                s.as_ref().map(|s| &s.body),
-                i.as_ref().map(|i| &i.body)
+                c.body,
+                p.map(|p| p.body),
+                s.map(|s| s.body),
+                i.map(|i| i.body)
             ).into()
         }
     }
@@ -29,14 +29,14 @@ pub struct Body {
     pub response: Response
 }
 
-impl From<(&partner_xml::products::Body, Option<&partner_xml::prices::Body>, Option<&partner_xml::stocks::Body>, Option<&partner_xml::images::Body>)> for Body {
-    fn from((c, p, s, i): (&partner_xml::products::Body, Option<&partner_xml::prices::Body>, Option<&partner_xml::stocks::Body>, Option<&partner_xml::images::Body>)) -> Self {
+impl From<(partner_xml::products::Body, Option<partner_xml::prices::Body>, Option<partner_xml::stocks::Body>, Option<partner_xml::images::Body>)> for Body {
+    fn from((c, p, s, i): (partner_xml::products::Body, Option<partner_xml::prices::Body>, Option<partner_xml::stocks::Body>, Option<partner_xml::images::Body>)) -> Self {
         Body {
             response: (
-                &c.response,
-                p.as_ref().map(|p| &p.response),
-                s.as_ref().map(|s| &s.response),
-                i.as_ref().map(|i| &i.response)
+                c.response,
+                p.map(|p| p.response),
+                s.map(|s| s.response),
+                i.map(|i| i.response)
             ).into()
         }
     }
@@ -48,14 +48,14 @@ pub struct Response {
     pub result: Result
 }
 
-impl From<(&partner_xml::products::GetProductsAuthResponse, Option<&partner_xml::prices::GetPriceAuthResponse>, Option<&partner_xml::stocks::GetStockChangeAuthResponse>, Option<&partner_xml::images::GetProductImagesAuthResponse>)> for Response {
-    fn from((c, p , s, i): (&partner_xml::products::GetProductsAuthResponse, Option<&partner_xml::prices::GetPriceAuthResponse>, Option<&partner_xml::stocks::GetStockChangeAuthResponse>, Option<&partner_xml::images::GetProductImagesAuthResponse>)) -> Self {
+impl From<(partner_xml::products::GetProductsAuthResponse, Option<partner_xml::prices::GetPriceAuthResponse>, Option<partner_xml::stocks::GetStockChangeAuthResponse>, Option<partner_xml::images::GetProductImagesAuthResponse>)> for Response {
+    fn from((c, p , s, i): (partner_xml::products::GetProductsAuthResponse, Option<partner_xml::prices::GetPriceAuthResponse>, Option<partner_xml::stocks::GetStockChangeAuthResponse>, Option<partner_xml::images::GetProductImagesAuthResponse>)) -> Self {
         Response {
             result: (
-                &c.result,
-                p.as_ref().map(|p| &p.result),
-                s.as_ref().map(|s| &s.result),
-                i.as_ref().map(|i| &i.result)
+                c.result,
+                p.map(|p| p.result),
+                s.map(|s| s.result),
+                i.map(|i| i.result)
             ).into()
         }
     }
@@ -67,14 +67,14 @@ pub struct Result {
     pub answer: Answer
 }
 
-impl From<(&partner_xml::products::GetProductsAuthResult, Option<&partner_xml::prices::GetPriceAuthResult>, Option<&partner_xml::stocks::GetStockChangeAuthResult>, Option<&partner_xml::images::GetProductImagesAuthResult>)> for Result {
-    fn from((c, p, s, i): (&partner_xml::products::GetProductsAuthResult, Option<&partner_xml::prices::GetPriceAuthResult>, Option<&partner_xml::stocks::GetStockChangeAuthResult>, Option<&partner_xml::images::GetProductImagesAuthResult>)) -> Self {
+impl From<(partner_xml::products::GetProductsAuthResult, Option<partner_xml::prices::GetPriceAuthResult>, Option<partner_xml::stocks::GetStockChangeAuthResult>, Option<partner_xml::images::GetProductImagesAuthResult>)> for Result {
+    fn from((c, p, s, i): (partner_xml::products::GetProductsAuthResult, Option<partner_xml::prices::GetPriceAuthResult>, Option<partner_xml::stocks::GetStockChangeAuthResult>, Option<partner_xml::images::GetProductImagesAuthResult>)) -> Self {
         Result {
             answer: (
-                &c.answer,
-                p.as_ref().map(|p| &p.answer),
-                s.as_ref().map(|s| &s.answer),
-                i.as_ref().map(|i| &i.answer)
+                c.answer,
+                p.map(|p| p.answer),
+                s.map(|s| s.answer),
+                i.map(|i| i.answer)
             ).into()
         }
     }
@@ -88,8 +88,8 @@ pub struct Answer {
     pub error: Vec<partner_xml::defaults::Error>
 }
 
-impl From<(&partner_xml::products::Answer, Option<&partner_xml::prices::Answer>, Option<&partner_xml::stocks::Answer>, Option<&partner_xml::images::Answer>)> for Answer {
-    fn from((c, p, s, i): (&partner_xml::products::Answer, Option<&partner_xml::prices::Answer>, Option<&partner_xml::stocks::Answer>, Option<&partner_xml::images::Answer>)) -> Self {
+impl From<(partner_xml::products::Answer, Option<partner_xml::prices::Answer>, Option<partner_xml::stocks::Answer>, Option<partner_xml::images::Answer>)> for Answer {
+    fn from((c, p, s, i): (partner_xml::products::Answer, Option<partner_xml::prices::Answer>, Option<partner_xml::stocks::Answer>, Option<partner_xml::images::Answer>)) -> Self {
         let mut errors: Vec<partner_xml::defaults::Error> = vec![];
         [
             c.error.as_ref(),
@@ -104,10 +104,10 @@ impl From<(&partner_xml::products::Answer, Option<&partner_xml::prices::Answer>,
         Answer {
             version: "1.0".to_string(),
             products: (
-                &c.products.product,
-                p.as_ref().map_or(&vec![], |p| &p.prices.price),
-                s.as_ref().map_or(&vec![], |s| &s.products.product),
-                i.as_ref().map_or(&vec![], |i| &i.products.product)
+                c.products.product,
+                p.map_or(vec![], |p| p.prices.price),
+                s.map_or(vec![], |s| s.products.product),
+                i.map_or(vec![], |i| i.products.product)
             ).into(),
             error: errors
         }
@@ -120,11 +120,11 @@ pub struct Products {
     pub product: Vec<Product>
 }
 
-impl From<(&Vec<partner_xml::products::Product>, &Vec<partner_xml::prices::Price>, &Vec<partner_xml::stocks::Product>, &Vec<partner_xml::images::Product>)> for Products {
-    fn from((c, p, s , i): (&Vec<partner_xml::products::Product>, &Vec<partner_xml::prices::Price>, &Vec<partner_xml::stocks::Product>, &Vec<partner_xml::images::Product>)) -> Self {
+impl From<(Vec<partner_xml::products::Product>, Vec<partner_xml::prices::Price>, Vec<partner_xml::stocks::Product>, Vec<partner_xml::images::Product>)> for Products {
+    fn from((c, p, s , i): (Vec<partner_xml::products::Product>, Vec<partner_xml::prices::Price>, Vec<partner_xml::stocks::Product>, Vec<partner_xml::images::Product>)) -> Self {
         Products {
-            product: c.iter()
-                .map(|c| Product::from((c, p, s, i)))
+            product: c.into_iter()
+                .map(|c| Product::from((c, &p, &s, &i)))
                 .collect()
         }
     }
@@ -156,8 +156,8 @@ pub struct Product {
     pub images: Images
 }
 
-impl From<(&partner_xml::products::Product, &Vec<partner_xml::prices::Price>, &Vec<partner_xml::stocks::Product>, &Vec<partner_xml::images::Product>)> for Product {
-    fn from((c, p, s, i): (&partner_xml::products::Product, &Vec<partner_xml::prices::Price>, &Vec<partner_xml::stocks::Product>, &Vec<partner_xml::images::Product>)) -> Self {
+impl From<(partner_xml::products::Product, &Vec<partner_xml::prices::Price>, &Vec<partner_xml::stocks::Product>, &Vec<partner_xml::images::Product>)> for Product {
+    fn from((c, p, s, i): (partner_xml::products::Product, &Vec<partner_xml::prices::Price>, &Vec<partner_xml::stocks::Product>, &Vec<partner_xml::images::Product>)) -> Self {
         let price = p.iter().find(|price| price.id == c.id);
         let stock = s.iter().find(|stock| stock.id == c.id);
         let image = i.iter().find(|image| image.id == c.id);
@@ -166,8 +166,8 @@ impl From<(&partner_xml::products::Product, &Vec<partner_xml::prices::Price>, &V
     }
 }
 
-impl From<(&partner_xml::products::Product, Option<&partner_xml::prices::Price>, Option<&partner_xml::stocks::Product>, Option<&partner_xml::images::Product>)> for Product {
-    fn from((c, a, k, i): (&partner_xml::products::Product, Option<&partner_xml::prices::Price>, Option<&partner_xml::stocks::Product>, Option<&partner_xml::images::Product>)) -> Self {
+impl From<(partner_xml::products::Product, Option<&partner_xml::prices::Price>, Option<&partner_xml::stocks::Product>, Option<&partner_xml::images::Product>)> for Product {
+    fn from((c, a, k, i): (partner_xml::products::Product, Option<&partner_xml::prices::Price>, Option<&partner_xml::stocks::Product>, Option<&partner_xml::images::Product>)) -> Self {
 
         Product {
             id: c.id,

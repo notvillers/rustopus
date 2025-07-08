@@ -95,7 +95,7 @@ impl FromIterator<o8_xml::products::Cikk> for Products {
 }
 
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Product {
     pub id: u64,
     pub no: String,
@@ -141,7 +141,7 @@ impl From<o8_xml::products::Cikk> for Product {
 }
 
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Copy)]
 pub struct Size {
     pub x: Option<f64>,
     pub y: Option<f64>,
