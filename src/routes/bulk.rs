@@ -21,7 +21,7 @@ pub struct BulkRequest {
 
 const REQUEST_NAME: &'static str = "BULK REQUEST";
 
-async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
+async fn handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
 
@@ -58,6 +58,6 @@ async fn bulk_handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
 
 
 #[get("/get-bulk")]
-pub async fn get_bulk_handler(req: HttpRequest, query: Query<BulkRequest>) -> impl Responder {
-    bulk_handler(req, query.into_inner()).await
+pub async fn get_handler(req: HttpRequest, query: Query<BulkRequest>) -> impl Responder {
+    handler(req, query.into_inner()).await
 }

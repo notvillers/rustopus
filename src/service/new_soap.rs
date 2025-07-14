@@ -14,7 +14,7 @@ lazy_static! {
     static ref FIRST_DATE: DateTime<Utc> = get_first_date();
 }
 
-fn get_first_date() -> DateTime<Utc> {
+pub fn get_first_date() -> DateTime<Utc> {
     get_date_from_parts(None, None, None, None, None, None)
 }
 
@@ -29,15 +29,6 @@ fn get_date_from_parts(year: Option<i32>, month: Option<u32>, day: Option<u32>, 
 }
 
 
-pub enum RequestGet {
-    Products(o8_xml::defaults::CallData),
-    Stocks(o8_xml::defaults::CallData),
-    Prices(o8_xml::defaults::CallData),
-    Images(o8_xml::defaults::CallData),
-    Bulk(o8_xml::defaults::CallData)
-}
-
-
 #[derive(serde::Serialize)]
 #[serde(untagged)]
 pub enum ResponseGet {
@@ -45,9 +36,18 @@ pub enum ResponseGet {
     Stocks(partner_xml::stocks::Envelope),
     Prices(partner_xml::prices::Envelope),
     Images(partner_xml::images::Envelope),
+    Barcode(partner_xml::barcode::Envelope),
     Bulk(partner_xml::bulk::Envelope)
 }
 
+pub enum RequestGet {
+    Products(o8_xml::defaults::CallData),
+    Stocks(o8_xml::defaults::CallData),
+    Prices(o8_xml::defaults::CallData),
+    Images(o8_xml::defaults::CallData),
+    Barcode(o8_xml::defaults::CallData),
+    Bulk(o8_xml::defaults::CallData)
+}
 
 impl RequestGet {
     pub fn to_envelope(self) -> Pin<Box<dyn Future<Output = ResponseGet> + Send>> {
@@ -57,7 +57,8 @@ impl RequestGet {
                 RequestGet::Stocks(call_data) => ResponseGet::Stocks(get_stocks(call_data).await),
                 RequestGet::Prices(call_data) => ResponseGet::Prices(get_prices(call_data).await),
                 RequestGet::Images(call_data) => ResponseGet::Images(get_images(call_data).await),
-                RequestGet::Bulk(call_data) => ResponseGet::Bulk(get_bulk(call_data).await),
+                RequestGet::Barcode(call_data) => ResponseGet::Barcode(get_barcode(call_data).await),
+                RequestGet::Bulk(call_data) => ResponseGet::Bulk(get_bulk(call_data).await)
             }
         })
     }
@@ -147,6 +148,21 @@ async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::image
 }
 
 
+async fn get_barcode(call_data: o8_xml::defaults::CallData) -> partner_xml::barcode::Envelope {
+    let request = o8_xml::barcode::get_request_string(&call_data.xmlns, &FIRST_DATE, &call_data.authcode);
+    let response = soap::get_response(&call_data.url, request).await;
+    let hu_envelope: o8_xml::barcode::Envelope = match quick_xml::de::from_str(&response) {
+        Ok(envelope) => envelope,
+        Err(de_error) => {
+            let error = errors::GLOBAL_GET_DATA_ERROR;
+            logger(format!("{}: {} ({})", error.code, error.description, de_error));
+            return partner_xml::barcode::error_struct(error.code, error.description)
+        }
+    };
+    hu_envelope.to_en()
+}
+
+
 async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::Envelope {
     let products = match RequestGet::Products(call_data.clone()).to_envelope().await {
         ResponseGet::Products(e) if e.body.response.result.answer.error.is_none() => e,
@@ -163,12 +179,18 @@ async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::E
         _ => Some(partner_xml::prices::error_struct(errors::BULK_GET_PRICES_ERROR.code, errors::BULK_GET_PRICES_ERROR.description))
     };
 
-    let images = match RequestGet::Images(call_data).to_envelope().await {
+    let images = match RequestGet::Images(call_data.clone()).to_envelope().await {
         ResponseGet::Images(e) if e.body.response.result.answer.error.is_none() => Some(e),
         _ => Some(partner_xml::images::error_struct(errors::BULK_GET_IMAGES_ERROR.code, errors::BULK_GET_IMAGES_ERROR.description))
     };
+
+    let barcodes = match RequestGet::Barcode(call_data).to_envelope().await {
+        ResponseGet::Barcode(e) if e.body.response.result.answer.error.is_none() => Some(e),
+        _ => Some(partner_xml::barcode::error_struct(errors::BULK_GET_BARCODES_ERROR.code, errors::BULK_GET_BARCODES_ERROR.description))
+    };
+
     if let Some(e) = products.body.response.result.answer.error {
         return partner_xml::bulk::error_struct(vec![errors::GLOBAL_GET_DATA_ERROR.into(), e])
     }
-    (products, prices, stocks, images).into()
+    (products, prices, stocks, images, barcodes).into()
 }

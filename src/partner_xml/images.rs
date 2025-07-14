@@ -126,9 +126,9 @@ impl From<o8_xml::images::Kepek> for Images {
     fn from(kk: o8_xml::images::Kepek) -> Self {
         Images {
             image: kk.kep
-                    .into_iter()
-                    .map(|k| k.into())
-                    .collect()
+                .into_iter()
+                .map(|k| k.into())
+                .collect()
         }
     }
 }

@@ -21,7 +21,7 @@ pub struct PriceRequest {
 
 const REQUEST_NAME: &'static str = "PRICES REQUEST";
 
-async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responder {
+async fn handler(req: HttpRequest, params: PriceRequest) -> impl Responder {
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
     
@@ -58,6 +58,6 @@ async fn prices_handler(req: HttpRequest, params: PriceRequest) -> impl Responde
 
 
 #[get("/get-prices")]
-async fn get_prices_handler(req: HttpRequest, query: web::Query<PriceRequest>) -> impl Responder {
-    prices_handler(req, query.into_inner()).await
+async fn get_handler(req: HttpRequest, query: web::Query<PriceRequest>) -> impl Responder {
+    handler(req, query.into_inner()).await
 }

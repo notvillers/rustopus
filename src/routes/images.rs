@@ -20,7 +20,7 @@ pub struct ImagesRequest {
 
 const REQUEST_NAME: &'static str = "IMAGES REQUEST";
 
-async fn products_handler(req: HttpRequest, params: ImagesRequest) -> impl Responder {
+async fn handler(req: HttpRequest, params: ImagesRequest) -> impl Responder {
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
     
@@ -52,6 +52,6 @@ async fn products_handler(req: HttpRequest, params: ImagesRequest) -> impl Respo
 
 
 #[get("/get-images")]
-pub async fn get_images_handler(req: HttpRequest, query: web::Query<ImagesRequest>) -> impl Responder {
-    products_handler(req, query.into_inner()).await
+pub async fn get_handler(req: HttpRequest, query: web::Query<ImagesRequest>) -> impl Responder {
+    handler(req, query.into_inner()).await
 }

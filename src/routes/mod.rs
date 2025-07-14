@@ -5,3 +5,4 @@ pub mod prices;
 pub mod bulk;
 pub mod images;
 pub mod test;
+pub mod barcode;

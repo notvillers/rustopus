@@ -61,3 +61,8 @@ pub const BULK_GET_IMAGES_ERROR: RustopusError = RustopusError {
     code: 109,
     description: "Bulk images error"
 };
+
+pub const BULK_GET_BARCODES_ERROR: RustopusError = RustopusError {
+    code: 110,
+    description: "Bulk barcodes error"
+};

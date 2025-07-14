@@ -20,7 +20,7 @@ pub struct ProductRequest {
 
 const REQUEST_NAME: &'static str = "PRODUCTS REQUEST";
 
-async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Responder {
+async fn handler(req: HttpRequest, params: ProductRequest) -> impl Responder {
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
 
@@ -53,6 +53,6 @@ async fn products_handler(req: HttpRequest, params: ProductRequest) -> impl Resp
 
 
 #[get("/get-products")]
-pub async fn get_products_handler(req: HttpRequest, query: web::Query<ProductRequest>) -> impl Responder {
-    products_handler(req, query.into_inner()).await
+pub async fn get_handler(req: HttpRequest, query: web::Query<ProductRequest>) -> impl Responder {
+    handler(req, query.into_inner()).await
 }
