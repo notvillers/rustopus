@@ -91,7 +91,7 @@ impl From<o8_xml::stocks::Cikkek> for Products {
         Products {
             product: c.cikk
                         .into_iter()
-                        .map(|p| p.into())
+                        .map(|x| x.into())
                         .collect()
         }
     }

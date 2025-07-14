@@ -2,6 +2,7 @@ use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
 use quick_xml;
 use lazy_static::lazy_static;
 use crate::global::errors;
+use crate::global::errors::RustopusError;
 use crate::o8_xml;
 use crate::partner_xml;
 use crate::service::soap;
@@ -26,6 +27,21 @@ fn get_date_from_parts(year: Option<i32>, month: Option<u32>, day: Option<u32>, 
             chrono::NaiveTime::from_hms_opt(hour.unwrap_or(0), min.unwrap_or(0), sec.unwrap_or(1)).unwrap_or(NaiveTime::MIN)
         )
     )
+}
+
+
+pub enum ErrorType {
+    DeError(quick_xml::DeError),
+    Txt(&'static str)
+}
+
+
+fn error_logger(in_error: ErrorType, error: &RustopusError) {
+    let error_string = match in_error {
+        ErrorType::DeError(e) => e.to_string(),
+        ErrorType::Txt(e) => e.to_string()
+    };
+    logger(format!("{}: {} ({})", error.code, error.description, error_string));
 }
 
 
@@ -90,7 +106,7 @@ async fn get_products(call_data: o8_xml::defaults::CallData) -> partner_xml::pro
         Ok(envelope) => envelope,
         Err(de_error) => {
             let error = errors::GLOBAL_GET_DATA_ERROR;
-            logger(format!("{}: {} ({})", error.code, error.description, de_error));
+            error_logger(ErrorType::DeError(de_error), &error);
             return partner_xml::products::error_struct(error.code, error.description)
         }
     };
@@ -105,7 +121,7 @@ async fn get_stocks(call_data: o8_xml::defaults::CallData) -> partner_xml::stock
         Ok(envelope) => envelope,
         Err(de_error) => {
             let error = errors::GLOBAL_GET_DATA_ERROR;
-            logger(format!("{}: {} ({})", error.code, error.description, de_error));
+            error_logger(ErrorType::DeError(de_error), &error);
             return partner_xml::stocks::error_struct(error.code, error.description)
         }
     };
@@ -122,7 +138,7 @@ async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::price
                 Ok(envelope) => envelope,
                 Err(de_error) => {
                     let error = errors::GLOBAL_GET_DATA_ERROR;
-                    logger(format!("{}: {} ({})", error.code, error.description, de_error));
+                    error_logger(ErrorType::DeError(de_error), &error);
                     return partner_xml::prices::error_struct(error.code, error.description)
                 }
             };
@@ -140,7 +156,7 @@ async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::image
         Ok(envelope) => envelope,
         Err(de_error) => {
             let error = errors::GLOBAL_GET_DATA_ERROR;
-            logger(format!("{}: {} ({})", error.code, error.description, de_error));
+            error_logger(ErrorType::DeError(de_error), &error);
             return partner_xml::images::error_struct(error.code, error.description)
         }
     };
@@ -155,7 +171,7 @@ async fn get_barcode(call_data: o8_xml::defaults::CallData) -> partner_xml::barc
         Ok(envelope) => envelope,
         Err(de_error) => {
             let error = errors::GLOBAL_GET_DATA_ERROR;
-            logger(format!("{}: {} ({})", error.code, error.description, de_error));
+            error_logger(ErrorType::DeError(de_error), &error);
             return partner_xml::barcode::error_struct(error.code, error.description)
         }
     };
@@ -165,32 +181,35 @@ async fn get_barcode(call_data: o8_xml::defaults::CallData) -> partner_xml::barc
 
 async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::Envelope {
     let products = match RequestGet::Products(call_data.clone()).to_envelope().await {
-        ResponseGet::Products(e) if e.body.response.result.answer.error.is_none() => e,
+        ResponseGet::Products(envelope) if envelope.body.response.result.answer.error.is_none() => envelope,
         _ => partner_xml::products::error_struct(errors::BULK_GET_PRODUCTS_ERROR.code, errors::BULK_GET_PRODUCTS_ERROR.description)
     };
 
     let stocks = match RequestGet::Stocks(call_data.clone()).to_envelope().await {
-        ResponseGet::Stocks(e) if e.body.response.result.answer.error.is_none() => Some(e),
+        ResponseGet::Stocks(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(partner_xml::stocks::error_struct(errors::BULK_GET_STOCKS_ERROR.code, errors::BULK_GET_STOCKS_ERROR.description))
     };
 
     let prices = match RequestGet::Prices(call_data.clone()).to_envelope().await {
-        ResponseGet::Prices(e) if e.body.response.result.answer.error.is_none() => Some(e),
+        ResponseGet::Prices(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(partner_xml::prices::error_struct(errors::BULK_GET_PRICES_ERROR.code, errors::BULK_GET_PRICES_ERROR.description))
     };
 
     let images = match RequestGet::Images(call_data.clone()).to_envelope().await {
-        ResponseGet::Images(e) if e.body.response.result.answer.error.is_none() => Some(e),
+        ResponseGet::Images(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(partner_xml::images::error_struct(errors::BULK_GET_IMAGES_ERROR.code, errors::BULK_GET_IMAGES_ERROR.description))
     };
 
     let barcodes = match RequestGet::Barcode(call_data).to_envelope().await {
-        ResponseGet::Barcode(e) if e.body.response.result.answer.error.is_none() => Some(e),
+        ResponseGet::Barcode(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(partner_xml::barcode::error_struct(errors::BULK_GET_BARCODES_ERROR.code, errors::BULK_GET_BARCODES_ERROR.description))
     };
 
     if let Some(e) = products.body.response.result.answer.error {
+        let error = errors::GLOBAL_GET_DATA_ERROR;
+        error_logger(ErrorType::Txt("Can not get products"), &error);
         return partner_xml::bulk::error_struct(vec![errors::GLOBAL_GET_DATA_ERROR.into(), e])
     }
+
     (products, prices, stocks, images, barcodes).into()
 }

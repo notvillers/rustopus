@@ -90,7 +90,7 @@ impl From<o8_xml::prices::Arak> for Prices {
         Prices {
             price: arak.ar
                 .into_iter()
-                .map(|p| p.into())
+                .map(|x| x.into())
                 .collect()
         }
     }

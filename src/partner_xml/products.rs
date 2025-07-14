@@ -89,7 +89,7 @@ pub struct Products {
 impl FromIterator<o8_xml::products::Cikk> for Products {
     fn from_iter<I: IntoIterator<Item = o8_xml::products::Cikk>>(iter: I) -> Self {
         Products {
-            product: iter.into_iter().map(|p| p.into()).collect(),
+            product: iter.into_iter().map(|x| x.into()).collect(),
         }
     }
 }

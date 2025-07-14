@@ -127,7 +127,7 @@ impl From<o8_xml::images::Kepek> for Images {
         Images {
             image: kk.kep
                 .into_iter()
-                .map(|k| k.into())
+                .map(|x| x.into())
                 .collect()
         }
     }
