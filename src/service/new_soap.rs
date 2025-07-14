@@ -37,7 +37,7 @@ pub enum ErrorType {
 
 
 fn error_logger(in_error: ErrorType, error: &RustopusError) {
-    let error_string = match in_error {
+    let error_string  = match in_error {
         ErrorType::DeError(e) => e.to_string(),
         ErrorType::Txt(e) => e.to_string()
     };
@@ -144,7 +144,11 @@ async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::price
             };
             hu_envelope.to_en()
         }
-        _ => partner_xml::prices::error_struct(errors::GLOBAL_PID_ERROR.code, errors::GLOBAL_PID_ERROR.description)
+        _ => {
+            let error = errors::GLOBAL_PID_ERROR;
+            error_logger(ErrorType::Txt("PID missing"), &error);
+            partner_xml::prices::error_struct(errors::GLOBAL_PID_ERROR.code, errors::GLOBAL_PID_ERROR.description)
+        }
     }
 }
 
