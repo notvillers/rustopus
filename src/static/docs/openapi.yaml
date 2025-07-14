@@ -139,7 +139,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/ImageResponse'
           
-          
+  /get-barcodes:
+    get:
+      summary: Get barcodes data
+      tags:
+        - Barcodes
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: Endpoint URL with the ```.asmx``` file
+          schema:
+            type: string
+        - name: authcode
+          in: query
+          required: true
+          description: Authorization code
+          schema:
+            type: string
+        - name: xmlns
+          in: query
+          required: false
+          description: Optional XML namespace
+          schema:
+            type: string
+      responses:
+        '200':
+          description: XML barcode list
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/BarcodeResponse'        
   
   /get-bulk:
     get:
@@ -504,6 +534,8 @@ components:
               type: string
             stock:
               type: number
+            ean:
+              type: string
             images:
               type: array
               items:
@@ -516,3 +548,54 @@ components:
       properties:
         url:
           type: string
+    
+    BarcodeResponse:
+      type: object
+      xml:
+        name: Envelope
+      properties:
+        body:
+          type: object
+          properties:
+            response:
+              type: object
+              properties:
+                result:
+                  type: object
+                  properties:
+                    answer:
+                      type: object
+                      properties:
+                        version:
+                          type: string
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: number
+                            description:
+                              type: string
+                        barcodes:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Barcodes'
+
+    Barcodes:
+      type: object
+      xml:
+        name: barcodes
+      properties:
+        barcode:
+          type: object
+          properties:
+            ean:
+              type: string
+            id:
+              type: number
+            no:
+              type: string
+            unit:
+              type: string
+            main_ean:
+              type: boolean
+
