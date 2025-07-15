@@ -2,6 +2,16 @@ use actix_web::HttpResponse;
 use crate::global::errors;
 use crate::service::log::log_with_ip_uuid;
 use crate::service::soap_config::get_default_url;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+pub struct RequestParameters {
+    pub authcode: Option<String>,
+    pub url: Option<String>,
+    pub xmlns: Option<String>,
+    pub pid: Option<i64>
+}
+
 
 pub enum GetResponse {
     Text(String),

@@ -1,27 +1,17 @@
 use actix_web::{get, web::Query, HttpRequest, Responder};
-use serde::Deserialize;
 
 use crate::routes::default::{GetResponse, GetPidResponse};
-use crate::routes::default::{send_xml, get_auth, get_url, get_xmlns, get_pid};
+use crate::routes::default::{RequestParameters, send_xml, get_auth, get_url, get_xmlns, get_pid};
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::ipv4::log_ip;
 use crate::partner_xml::bulk::error_struct_xml;
 use crate::o8_xml::defaults::CallData;
-use crate::service::new_soap::RequestGet;
-
-#[derive(Deserialize)]
-pub struct BulkRequest {
-    pub authcode: Option<String>,
-    pub url: Option<String>,
-    pub xmlns: Option<String>,
-    pub pid: Option<i64>
-}
-
+use crate::service::get_data::RequestGet;
 
 const REQUEST_NAME: &'static str = "BULK REQUEST";
 
-async fn handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
+async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder {
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
 
@@ -58,6 +48,6 @@ async fn handler(req: HttpRequest, params: BulkRequest) -> impl Responder {
 
 
 #[get("/get-bulk")]
-pub async fn get_handler(req: HttpRequest, query: Query<BulkRequest>) -> impl Responder {
+pub async fn get_handler(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
     handler(req, query.into_inner()).await
 }

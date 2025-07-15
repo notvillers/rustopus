@@ -81,9 +81,9 @@ pub struct Vonalkodok {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Vonalkod {
-    pub azonosito: String,
     pub cikkid: u64,
     pub cikkszam: String,
+    pub vonalkod: String,
     pub me: String,
     pub elsean: u64
 }

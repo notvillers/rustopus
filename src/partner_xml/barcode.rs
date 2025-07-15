@@ -99,9 +99,9 @@ impl From<o8_xml::barcode::Vonalkodok> for Barcodes {
 
 #[derive(Serialize)]
 pub struct Barcode {
-    pub ean: String,
     pub id: u64,
     pub no: String,
+    pub ean: String,
     pub unit: String,
     pub main_ean: bool
 }
@@ -109,9 +109,9 @@ pub struct Barcode {
 impl From<o8_xml::barcode::Vonalkod> for Barcode {
     fn from(v: o8_xml::barcode::Vonalkod) -> Self {
         Barcode {
-            ean: v.azonosito,
             id: v.cikkid,
             no: v.cikkszam,
+            ean: v.vonalkod,
             unit: v.me,
             main_ean: if v.elsean == 1 { true } else { false }
         }

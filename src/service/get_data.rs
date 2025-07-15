@@ -32,14 +32,14 @@ fn get_date_from_parts(year: Option<i32>, month: Option<u32>, day: Option<u32>, 
 
 pub enum ErrorType {
     DeError(quick_xml::DeError),
-    Txt(&'static str)
+    Text(&'static str)
 }
 
 
 fn error_logger(in_error: ErrorType, error: &RustopusError) {
     let error_string  = match in_error {
         ErrorType::DeError(e) => e.to_string(),
-        ErrorType::Txt(e) => e.to_string()
+        ErrorType::Text(e) => e.to_string()
     };
     logger(format!("{}: {} ({})", error.code, error.description, error_string));
 }
@@ -78,6 +78,7 @@ impl RequestGet {
             }
         })
     }
+
 
     pub fn to_xml(self) -> Pin<Box<dyn Future<Output=String> + Send>> {
         Box::pin(async move {
@@ -146,7 +147,7 @@ async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::price
         }
         _ => {
             let error = errors::GLOBAL_PID_ERROR;
-            error_logger(ErrorType::Txt("PID missing"), &error);
+            error_logger(ErrorType::Text("PID missing"), &error);
             partner_xml::prices::error_struct(errors::GLOBAL_PID_ERROR.code, errors::GLOBAL_PID_ERROR.description)
         }
     }
@@ -211,7 +212,7 @@ async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::E
 
     if let Some(e) = products.body.response.result.answer.error {
         let error = errors::GLOBAL_GET_DATA_ERROR;
-        error_logger(ErrorType::Txt("Can not get products"), &error);
+        error_logger(ErrorType::Text("Can not get products"), &error);
         return partner_xml::bulk::error_struct(vec![errors::GLOBAL_GET_DATA_ERROR.into(), e])
     }
 

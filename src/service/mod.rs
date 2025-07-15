@@ -6,4 +6,4 @@ pub mod errors;
 pub mod path;
 pub mod soap_config;
 pub mod slave;
-pub mod new_soap;
+pub mod get_data;

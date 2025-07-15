@@ -1,26 +1,17 @@
 use actix_web::{get, web, HttpRequest, Responder};
-use serde::Deserialize;
 
 use crate::routes::default::GetResponse;
-use crate::routes::default::{send_xml, get_auth, get_url, get_xmlns};
+use crate::routes::default::{RequestParameters, send_xml, get_auth, get_url, get_xmlns};
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::ipv4::log_ip;
 use crate::partner_xml::barcode::error_struct_xml;
 use crate::o8_xml::defaults::CallData;
-use crate::service::new_soap::RequestGet;
-
-#[derive(Deserialize)]
-pub struct BarcodeRequest {
-    pub authcode: Option<String>,
-    pub url: Option<String>,
-    pub xmlns: Option<String>
-}
-
+use crate::service::get_data::RequestGet;
 
 const REQUEST_NAME: &'static str = "BARCODE REQUEST";
 
-async fn handler(req: HttpRequest, params: BarcodeRequest) -> impl Responder {
+async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder {
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
 
@@ -51,6 +42,6 @@ async fn handler(req: HttpRequest, params: BarcodeRequest) -> impl Responder {
 }
 
 #[get("/get-barcodes")]
-pub async fn get_handler(req: HttpRequest, query: web::Query<BarcodeRequest>) -> impl Responder {
+pub async fn get_handler(req: HttpRequest, query: web::Query<RequestParameters>) -> impl Responder {
     handler(req, query.into_inner()).await
 }
