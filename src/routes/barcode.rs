@@ -15,11 +15,6 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
 
-    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
-        GetResponse::Text(auth) => auth,
-        GetResponse::Response(reponse) => return reponse
-    };
-
     let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {
         GetResponse::Text(url) => url,
         GetResponse::Response(response) => return response
@@ -28,7 +23,10 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let xmlns = get_xmlns(params.xmlns, &url);
 
     let call_data = CallData {
-        authcode: authcode,
+        authcode: match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
+            GetResponse::Text(auth) => auth,
+            GetResponse::Response(reponse) => return reponse
+        },
         url: url,
         xmlns: xmlns,
         pid: None

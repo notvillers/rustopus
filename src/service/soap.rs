@@ -12,7 +12,7 @@ pub async fn get_response(url: &str, soap_request: String) -> String {
         .build() {
         Ok(client) => client,
         Err(e) => {
-            println!("Error creating reqwest client: {e}");
+            eprintln!("Error creating reqwest client: {e}");
             Client::new()
         }
     };

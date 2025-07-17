@@ -14,11 +14,6 @@ const REQUEST_NAME: &'static str = "IMAGES REQUEST";
 async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder {
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
-    
-    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
-        GetResponse::Text(auth) => auth,
-        GetResponse::Response(response) => return response
-    };
 
     let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {
         GetResponse::Text(url) => url,
@@ -28,7 +23,10 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let xmlns = get_xmlns(params.xmlns, &url);
 
     let call_data = CallData {
-        authcode: authcode,
+        authcode: match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
+            GetResponse::Text(auth) => auth,
+            GetResponse::Response(response) => return response
+        },
         url: url,
         xmlns: xmlns,
         pid: None

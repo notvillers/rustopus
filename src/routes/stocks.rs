@@ -11,37 +11,44 @@ use crate::service::get_data::RequestGet;
 
 const REQUEST_NAME: &'static str = "STOCKS REQUEST";
 
+/// Handler
 async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder {
+    // ID with UUID
     let uuid = get_uuid();
-    let ip_address = log_ip(req).await;
-    
-    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
-        GetResponse::Text(auth) => auth,
-        GetResponse::Response(response) => return response
-    };
 
+    // IP address of the request
+    let ip_address = log_ip(req).await;
+
+    // Trying to get url from parameters
     let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {
         GetResponse::Text(url) => url,
         GetResponse::Response(response) => return response
     };
 
+    // Getting XMLNS from parameters
     let xmlns = get_xmlns(params.xmlns, &url);
 
+    // Creating call data from parameters
     let call_data = CallData {
-        authcode: authcode,
+        // Getting authentication code from parameters
+        authcode: match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
+            GetResponse::Text(auth) => auth,
+            GetResponse::Response(response) => return response
+        },
         url: url,
         xmlns: xmlns,
         pid: None
     };
 
-    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting stock request, url: {}, auth: {}", call_data.url, call_data.authcode));
+    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}", REQUEST_NAME, call_data.url, call_data.authcode));
     let xml = RequestGet::Stocks(call_data).to_xml().await;
-    log_with_ip_uuid(&ip_address, &uuid, format!("{}\tAfter stocks request got", uuid));
+    log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     send_xml(xml)
 }
 
 
+/// GET handler
 #[get("/get-stocks")]
 async fn get_handler(req: HttpRequest, query: web::Query<RequestParameters>) -> impl Responder {
     handler(req, query.into_inner()).await

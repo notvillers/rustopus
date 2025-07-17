@@ -14,11 +14,6 @@ const REQUEST_NAME: &'static str = "PRICES REQUEST";
 async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder {
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
-    
-    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
-        GetResponse::Text(auth) => auth,
-        GetResponse::Response(response) => return response
-    };
 
     let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {
         GetResponse::Text(url) => url,
@@ -26,22 +21,23 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     };
 
     let xmlns = get_xmlns(params.xmlns, &url);
-
-    let pid = match get_pid(REQUEST_NAME, &ip_address, &uuid, params.pid, error_struct_xml) {
-        GetPidResponse::Number(pid) => pid,
-        GetPidResponse::Response(response) => return response
-    };
     
     let call_data = CallData {
-        authcode: authcode,
+        authcode: match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
+            GetResponse::Text(auth) => auth,
+            GetResponse::Response(response) => return response
+        },
         url: url,
         xmlns: xmlns,
-        pid: Some(pid)
+        pid: match get_pid(REQUEST_NAME, &ip_address, &uuid, params.pid, error_struct_xml) {
+            GetPidResponse::Number(pid) => Some(pid),
+            GetPidResponse::Response(response) => return response
+        }
     };
 
-    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting prices request, url: {}, auth: {}, pid: {}", call_data.url, call_data.authcode, pid));
+    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}, pid: {:#?}", REQUEST_NAME, call_data.url, call_data.authcode, call_data.pid));
     let xml = RequestGet::Prices(call_data).to_xml().await;
-    log_with_ip_uuid(&ip_address, &uuid, "After prices request got");
+    log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     send_xml(xml)
 }

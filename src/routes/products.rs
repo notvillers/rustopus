@@ -15,11 +15,6 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let uuid = get_uuid();
     let ip_address = log_ip(req).await;
 
-    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
-        GetResponse::Text(auth) => auth,
-        GetResponse::Response(response) => return response
-    };
-
     let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {
         GetResponse::Text(url) => url,
         GetResponse::Response(response) => return response
@@ -28,16 +23,19 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let xmlns = get_xmlns(params.xmlns, &url);
 
     let call_data = CallData {
-        authcode: authcode,
+        authcode: match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
+            GetResponse::Text(auth) => auth,
+            GetResponse::Response(response) => return response
+        },
         url: url,
         xmlns: xmlns,
         pid: None
     };
 
-    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting products request, url: {}, auth: {}", call_data.url, call_data.authcode));
+    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}", REQUEST_NAME, call_data.url, call_data.authcode));
     //let xml = get_data(&url, &xmlns, &authcode, &get_first_date()).await;
     let xml = RequestGet::Products(call_data).to_xml().await;
-    log_with_ip_uuid(&ip_address, &uuid, "After products request got");
+    log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     send_xml(xml)
 }
