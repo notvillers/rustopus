@@ -3,7 +3,7 @@ use std::env;
 use std::fs::File;
 use std::io::BufReader;
 
-use crate::service::log::logger;
+use crate::service::log::elogger;
 
 use crate::global;
 
@@ -30,13 +30,13 @@ pub fn read_errors() -> Vec<ErrorMessage> {
                     let json: Result<Vec<ErrorMessage>, serde_json::Error> = serde_json::from_reader(reader);
                     match json {
                         Ok(errors) => return errors,
-                        Err(e) => logger(format!("errors.json file error: {}, returning dummy", e))
+                        Err(e) => elogger(format!("errors.json file error: {}, returning dummy", e))
                     }
                 }
-                Err(e) => logger(format!("errors.json file error: {}, returning dummy", e))
+                Err(e) => elogger(format!("errors.json file error: {}, returning dummy", e))
             }
         }
-        Err(e) => logger(format!("errors.json file error: {}, returning dummy", e))
+        Err(e) => elogger(format!("errors.json file error: {}, returning dummy", e))
     }
     get_dummy_errors()
 }

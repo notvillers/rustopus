@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use std::fs;
 use std::path::PathBuf;
 use crate::service::path::get_current_or_root_dir;
-use crate::service::log::logger;
+use crate::service::log::elogger;
 
 pub fn get_soap_path() -> PathBuf {
     let mut path = get_current_or_root_dir();
@@ -30,10 +30,10 @@ impl SoapConfig {
                 Ok(content) => {
                     match serde_json::from_str::<SoapConfig>(&content) {
                         Ok(json) => return json,
-                        Err(error) => logger(format!("Can't read dict data from '{:#?}': {}", path, error))
+                        Err(error) => elogger(format!("Can't read dict data from '{:#?}': {}", path, error))
                     }
                 }
-                Err(error) => logger(format!("Can't read '{:#?}': {}. (Do not bother this message if you are not willing to work with static 'url'.)", path, error))
+                Err(error) => elogger(format!("Can't read '{:#?}': {}. (Do not bother this message if you are not willing to work with static 'url'.)", path, error))
             }
         }
         SoapConfig {

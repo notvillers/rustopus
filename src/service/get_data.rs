@@ -6,7 +6,7 @@ use crate::global::errors::RustopusError;
 use crate::o8_xml;
 use crate::partner_xml;
 use crate::service::soap;
-use crate::service::log::logger;
+use crate::service::log::elogger;
 
 use std::pin::Pin;
 use futures::Future;
@@ -41,7 +41,7 @@ fn error_logger(in_error: ErrorType, error: &RustopusError) {
         ErrorType::DeError(e) => e.to_string(),
         ErrorType::Text(e) => e.to_string()
     };
-    logger(format!("{}: {} ({})", error.code, error.description, error_string));
+    elogger(format!("{}: {} ({})", error.code, error.description, error_string));
 }
 
 
@@ -93,7 +93,7 @@ fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
     match quick_xml::se::to_string(val) {
         Ok(val) => val,
         Err(de_error) => {
-            logger(format!("{}: {} ({})", errors::GLOBAL_CONVERT_ERROR.code, errors::GLOBAL_CONVERT_ERROR.description, de_error));
+            elogger(format!("{}: {} ({})", errors::GLOBAL_CONVERT_ERROR.code, errors::GLOBAL_CONVERT_ERROR.description, de_error));
             "<Envelope></Envelope>".to_string()
         }
     }
