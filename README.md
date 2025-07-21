@@ -26,4 +26,4 @@ If the file exists in the [rustopus](rustopus/) directory, it searches for an "u
 Can be build with simple cargo, but a [build_debug.sh](rustopus/build_debug.sh) and a [build_release.sh](rustopus/build_release.sh) is provided for easier tooling.
 
 ## Running
-After build, it can be run with cargo, the binary and with [start](rustopus/start) or [start.sh](rustopus/start.sh)
+After build, it can be run with cargo, the binary or with [start](rustopus/start) or [start.sh](rustopus/start.sh)

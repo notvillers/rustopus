@@ -1,6 +1,6 @@
 use actix_web::HttpResponse;
 use crate::global::errors;
-use crate::service::log::log_with_ip_uuid;
+use crate::service::log::{log_with_ip_uuid, elog_with_ip_uuid};
 use crate::service::soap_config::get_default_url;
 use serde::Deserialize;
 
@@ -37,7 +37,7 @@ pub fn get_auth(request_name: &str, ip_address: &str, uuid: &str, param: Option<
         Some(ref s) if !s.trim().is_empty() => GetResponse::Text(s.to_string()),
         _ => {
             let error = errors::GLOBAL_AUTH_ERROR;
-            log_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
+            elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
             GetResponse::Response(send_xml(send_error_xml_fn(error.code, error.description)))
         }
     }
@@ -55,7 +55,7 @@ pub fn get_url(request_name: &str, ip_address: &str, uuid: &str, param: Option<S
                 }
                 _ => {
                     let error = errors::GLOBAL_URL_ERROR;
-                    log_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
+                    elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
                     GetResponse::Response(send_xml(send_error_xml_fn(error.code, error.description)))
                 }
             }
@@ -82,7 +82,7 @@ pub fn get_pid(request_name: &str, ip_address: &str, uuid: &str, param: Option<i
         Some(ref s) => GetPidResponse::Number(*s),
         _ => {
             let error = errors::GLOBAL_PID_ERROR;
-            log_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
+            elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
             GetPidResponse::Response(send_xml(send_error_xml_fn(error.code, error.description)))
         }
     }

@@ -3,7 +3,7 @@ use std::panic;
 mod service;
 use std::env;
 
-use crate::service::{ipv4, log::logger};
+use crate::service::{ipv4, log::{logger, elogger}};
 
 mod o8_xml;
 
@@ -38,8 +38,7 @@ async fn index() -> impl Responder {
 async fn main() -> std::io::Result<()> {
 
     panic::set_hook(Box::new(|info| {
-        eprintln!("Panic: {:?}", info);
-        logger(format!("Panic: {:?}", info));
+        elogger(format!("Panic: {:?}", info));
     }));
 
     let config = service::config::get_settings();
@@ -74,11 +73,8 @@ async fn main() -> std::io::Result<()> {
         .run();
 
     match server.await {
-        Ok(_) => logger("Server stopped gracefully."),
-        Err(e) => {
-            eprintln!("Server exited with error: {}", e);
-            logger(format!("Server exited with error: {}", e))
-        }
+        Err(e) => elogger(format!("Server exited with error: {}", e)),
+        _ => logger("Server stopped gracefully.")
     }
 
     Ok(())

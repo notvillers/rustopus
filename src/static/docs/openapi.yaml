@@ -8,6 +8,7 @@ paths:
   /get-products:
     get:
       summary: Get product data
+      description: Returns basic data for the products.
       tags:
         - Products
       parameters:
@@ -40,6 +41,7 @@ paths:
   /get-stocks:
     get:
       summary: Get stock data
+      description: Returns stock for the products.
       tags:
         - Stocks
       parameters:
@@ -72,6 +74,7 @@ paths:
   /get-prices:
     get:
       summary: Get price data
+      description: Returns price for the products
       tags:
         - Prices
       parameters:
@@ -110,6 +113,7 @@ paths:
   /get-images:
     get:
       summary: Get image data
+      description: Returns images for the products
       tags:
         - Images
       parameters:
@@ -142,6 +146,7 @@ paths:
   /get-barcodes:
     get:
       summary: Get barcodes data
+      description: Returns barcodes/eans or the products
       tags:
         - Barcodes
       parameters:
@@ -174,6 +179,7 @@ paths:
   /get-bulk:
     get:
       summary: Get bulk data (XML)
+      description: Returns concatenated data for the products. This containts every main information, but takes a long time to get.
       tags:
         - Bulk
       parameters:
