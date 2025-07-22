@@ -146,7 +146,7 @@ paths:
   /get-barcodes:
     get:
       summary: Get barcodes data
-      description: Returns barcodes/eans or the products
+      description: Returns barcodes/eans for the products
       tags:
         - Barcodes
       parameters:
