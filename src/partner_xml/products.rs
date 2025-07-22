@@ -169,9 +169,7 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
                         products: Products {
                             product: vec![]
                         },
-                        error: Some(
-                            partner_xml::defaults::Error::load(code, description)
-                        )
+                        error: Some(partner_xml::defaults::Error::load(code, description))
                     }
                 }
             }

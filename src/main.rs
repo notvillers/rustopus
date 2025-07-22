@@ -44,7 +44,7 @@ async fn main() -> std::io::Result<()> {
     let config = service::config::get_settings();
 
     if !check_soap_config() {
-        logger(format!("'{:#?}' not found. (Do not bother this message if you are not willing to work with static 'url'.)", get_soap_path()));
+        elogger(format!("'{:#?}' not found. (Do not bother this message if you are not willing to work with static 'url'.)", get_soap_path()));
     }
 
     logger(format!("Running on '{}:{}', with {} worker(s)", config.server.host, config.server.port, config.server.workers));
