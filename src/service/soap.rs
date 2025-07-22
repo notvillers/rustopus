@@ -4,7 +4,7 @@ use reqwest::Client;
 use reqwest::header::CONTENT_TYPE;
 
 use crate::service::config;
-use crate::service::log::{logger, elogger};
+use crate::service::log::{elogger};
 
 pub async fn get_response(url: &str, soap_request: String) -> String {
     let client = match Client::builder()
@@ -25,7 +25,7 @@ pub async fn get_response(url: &str, soap_request: String) -> String {
         Ok(resp) => match resp.text().await {
             Ok(text) => text,
             Err(e) => {
-                logger(format!("Response error: {}", e));
+                elogger(format!("Response error: {}", e));
                 "<Envelope></Envelope>".to_string()
             }
         },

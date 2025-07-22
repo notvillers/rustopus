@@ -9,16 +9,6 @@ enum LogType {
 }
 
 
-pub fn elogger<S: AsRef<str>>(message: S) {
-    log_handler(message, Some(LogType::Error));
-}
-
-
-pub fn logger<S: AsRef<str>>(message: S) {
-    log_handler(message, None);
-}
-
-
 fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
 
     let error_prefix = match log_type.as_ref().unwrap_or(&LogType::Ok) {
@@ -52,6 +42,16 @@ fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
         }
         Err(e) => println!("Failed to open logfile '{}', content '{}', error '{}'", &log_dir.to_string_lossy(), content, e)
     }
+}
+
+
+pub fn elogger<S: AsRef<str>>(message: S) {
+    log_handler(message, Some(LogType::Error));
+}
+
+
+pub fn logger<S: AsRef<str>>(message: S) {
+    log_handler(message, None);
 }
 
 
