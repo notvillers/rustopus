@@ -9,20 +9,29 @@ use crate::routes::default::{RequestParameters, send_xml, get_auth, get_url, get
 use crate::o8_xml::defaults::CallData;
 use crate::service::get_data::RequestGet;
 
+// Request name
 const REQUEST_NAME: &'static str = "PRODUCTS REQUEST";
 
+/// Handler
 async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder {
+    // ID with UUID
     let uuid = get_uuid();
+
+    // IP address of the request
     let ip_address = log_ip(req).await;
 
+    // Trying to get url from parameters
     let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {
         GetResponse::Text(url) => url,
         GetResponse::Response(response) => return response
     };
 
+    // Getting XMLNS from parameters, otherwise using url
     let xmlns = get_xmlns(params.xmlns, &url);
 
+    // Creating call data from parameters
     let call_data = CallData {
+        // Getting authentication code from parameters
         authcode: match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
             GetResponse::Text(auth) => auth,
             GetResponse::Response(response) => return response
@@ -32,15 +41,21 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
         pid: None
     };
 
+    // Before log
     log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}", REQUEST_NAME, call_data.url, call_data.authcode));
-    //let xml = get_data(&url, &xmlns, &authcode, &get_first_date()).await;
+
+    // Getting data
     let xml = RequestGet::Products(call_data).to_xml().await;
+
+    // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
+    // Sending back xml as reponse
     send_xml(xml)
 }
 
 
+/// GET handler
 #[get("/get-products")]
 pub async fn get_handler(req: HttpRequest, query: web::Query<RequestParameters>) -> impl Responder {
     handler(req, query.into_inner()).await
