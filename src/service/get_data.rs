@@ -1,3 +1,4 @@
+use std::fmt;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
 use quick_xml;
 use lazy_static::lazy_static;
@@ -35,13 +36,18 @@ pub enum ErrorType {
     Text(&'static str)
 }
 
+impl fmt::Display for ErrorType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ErrorType::Text(e) => write!(f, "{}", e),
+            ErrorType::DeError(e) => write!(f, "{}", e)
+        }
+    }
+}
+
 
 fn error_logger(in_error: ErrorType, error: &RustopusError) {
-    let error_string  = match in_error {
-        ErrorType::DeError(e) => e.to_string(),
-        ErrorType::Text(e) => e.to_string()
-    };
-    elogger(format!("{}: {} ({})", error.code, error.description, error_string));
+    elogger(format!("{}: {} ({})", error.code, error.description, in_error.to_string()));
 }
 
 
