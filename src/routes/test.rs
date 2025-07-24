@@ -7,6 +7,7 @@ use crate::global::errors;
 use crate::routes::default::send_xml;
 use crate::service::log::log_with_ip_uuid;
 
+// Request name
 const REQUEST_NAME: &'static str = "TEST REQUEST";
 
 /// Handler
