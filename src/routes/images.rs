@@ -19,7 +19,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let uuid = get_uuid();
 
     // IP address of the request
-    let ip_address = log_ip(req).await;
+    let ip_address = log_ip(req).await.to_string();
 
     // Trying to get url from parameters
     let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {
@@ -43,13 +43,13 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     };
 
     // Before log
-    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting images request, url: {}, auth: {}", call_data.url, call_data.authcode));
+    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}", REQUEST_NAME, call_data.url, call_data.authcode));
 
     // Getting data
     let xml = RequestGet::Images(call_data).to_xml().await;
 
     // After log
-    log_with_ip_uuid(&ip_address, &uuid, "After images request got");
+    log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     // Sending back xml as response
     send_xml(xml)

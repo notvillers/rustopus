@@ -1,4 +1,5 @@
 use actix_web::{get, web, HttpRequest, Responder};
+
 use crate::partner_xml::stocks::error_struct_xml;
 use crate::service::ipv4::log_ip;
 use crate::service::log::log_with_ip_uuid;
@@ -17,7 +18,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let uuid = get_uuid();
 
     // IP address of the request
-    let ip_address = log_ip(req).await;
+    let ip_address = log_ip(req).await.to_string();
 
     // Trying to get url from parameters
     let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {

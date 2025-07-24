@@ -66,3 +66,8 @@ pub const BULK_GET_BARCODES_ERROR: RustopusError = RustopusError {
     code: 110,
     description: "Bulk barcodes error"
 };
+
+pub const UNDEFINED_ERROR: RustopusError = RustopusError {
+    code: 999,
+    description: "Undefined error"
+};

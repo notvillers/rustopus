@@ -1,8 +1,8 @@
 /// Structs for GetArlistaAuth's XML
-
 use serde::{Deserialize, Deserializer};
-use crate::o8_xml;
 use std::str::FromStr;
+
+use crate::o8_xml;
 use crate::partner_xml;
 
 /// Get the string for the request

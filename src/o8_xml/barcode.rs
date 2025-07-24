@@ -1,4 +1,4 @@
-// Sturcts for GetVonalkodokAuth's XML
+// Structs for GetVonalkodokAuth's XML
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 

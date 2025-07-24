@@ -1,8 +1,9 @@
 use actix_web::HttpResponse;
+use serde::Deserialize;
+
 use crate::global::errors;
 use crate::service::log::{log_with_ip_uuid, elog_with_ip_uuid};
 use crate::service::soap_config::get_default_url;
-use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct RequestParameters {

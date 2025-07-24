@@ -1,8 +1,8 @@
 /// Structs for GetCikkekAuth's XML
-
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
+
 use crate::o8_xml;
 use crate::partner_xml;
 

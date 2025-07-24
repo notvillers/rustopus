@@ -1,7 +1,7 @@
 /// Structs for GetCikkKepekAuth's XML
-
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
+
 use crate::o8_xml;
 use crate::partner_xml;
 

@@ -1,11 +1,9 @@
 /// Products english struct(s) for XML(s) got from the Octopus call
-
 use serde::Serialize;
 use quick_xml;
 
 use crate::o8_xml;
 use crate::partner_xml;
-
 
 #[derive(Serialize)]
 pub struct Envelope {

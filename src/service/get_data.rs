@@ -2,15 +2,15 @@ use std::fmt;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
 use quick_xml;
 use lazy_static::lazy_static;
+use std::pin::Pin;
+use futures::Future;
+
 use crate::global::errors;
 use crate::global::errors::RustopusError;
 use crate::o8_xml;
 use crate::partner_xml;
 use crate::service::soap;
 use crate::service::log::elogger;
-
-use std::pin::Pin;
-use futures::Future;
 
 lazy_static! {
     static ref FIRST_DATE: DateTime<Utc> = get_first_date();

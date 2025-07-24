@@ -1,5 +1,7 @@
+// Test struct
 use serde::Serialize;
 use quick_xml;
+
 use crate::partner_xml;
 
 #[derive(Serialize)]
@@ -7,10 +9,10 @@ pub struct Envelope {
     pub body: Body
 }
 
-impl Envelope {
-    pub fn load(version: Option<String>, ip: Option<String>, uuid: Option<String>, error: Option<partner_xml::defaults::Error>) -> Self {
+impl From<(Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)> for Envelope {
+    fn from((verion, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)) -> Self {
         Envelope {
-            body: Body::load(version, ip, uuid, error)
+            body: (verion, ip, uuid, error).into()
         }
     }
 }
@@ -21,10 +23,10 @@ pub struct Body {
     pub response: Response
 }
 
-impl Body {
-    pub fn load(version: Option<String>, ip: Option<String>, uuid: Option<String>, error: Option<partner_xml::defaults::Error>) -> Self {
+impl From<(Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)> for Body {
+    fn from((version, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)) -> Self {
         Body {
-            response: Response::load(version, ip, uuid, error)
+            response: (version, ip, uuid, error).into()
         }
     }
 }
@@ -35,10 +37,10 @@ pub struct Response {
     pub result: Result
 }
 
-impl Response {
-    pub fn load(version: Option<String>, ip: Option<String>, uuid: Option<String>, error: Option<partner_xml::defaults::Error>) -> Self {
+impl From<(Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)> for Response {
+    fn from((version, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)) -> Self {
         Response {
-            result: Result::load(version, ip, uuid, error)
+            result: (version, ip, uuid, error).into()
         }
     }
 }
@@ -49,10 +51,10 @@ pub struct Result {
     pub answer: Answer
 }
 
-impl Result {
-    pub fn load(version: Option<String>, ip: Option<String>, uuid: Option<String>, error: Option<partner_xml::defaults::Error>) -> Self {
+impl From<(Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)> for Result {
+    fn from((version, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)) -> Self {
         Result {
-            answer: Answer::load(version, ip, uuid, error)
+            answer: (version, ip, uuid, error).into()
         }
     }
 }
@@ -65,11 +67,11 @@ pub struct Answer {
     pub error: Option<partner_xml::defaults::Error>
 }
 
-impl Answer {
-    pub fn load(version: Option<String>, ip: Option<String>, uuid: Option<String>, error: Option<partner_xml::defaults::Error>) -> Self {
+impl From<(Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)> for Answer {
+    fn from((version, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)) -> Self {
         Answer {
             version: version.unwrap_or("1.0".to_string()),
-            data: if ip.is_some() || uuid.is_some() { Some(Data::load(ip, uuid)) } else { None },
+            data: if ip.is_some() || uuid.is_some() { Some((ip, uuid).into()) } else { None },
             error: error
         }
     }
@@ -82,14 +84,15 @@ pub struct Data {
     pub uuid: Option<String>
 }
 
-impl Data {
-    pub fn load(ip: Option<String>, uuid: Option<String>) -> Self {
+impl From<(Option<String>, Option<String>)> for Data {
+    fn from((ip, uuid): (Option<String>, Option<String>)) -> Self {
         Data {
             ip: ip,
             uuid: uuid
         }
     }
 }
+
 
 pub fn create_xml(envelope: Envelope) -> String {
     quick_xml::se::to_string(&envelope).unwrap_or("<Envelope></Envelope>".to_string())
