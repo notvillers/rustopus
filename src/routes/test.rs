@@ -1,13 +1,13 @@
 use actix_web::{get, HttpRequest, Responder};
 
-use crate::partner_xml::{test::create_xml, defaults::Error};
+use crate::routes::default::send_xml;
 use crate::service::slave::get_uuid;
 use crate::service::ipv4::{log_ip, RequestIP};
-use crate::global::errors;
-use crate::routes::default::send_xml;
 use crate::service::log::log_with_ip_uuid;
+use crate::partner_xml::{test::create_xml, defaults::Error};
+use crate::global::errors;
 
-// Request name
+/// Name of the current request
 const REQUEST_NAME: &'static str = "TEST REQUEST";
 
 /// Handler
@@ -18,6 +18,7 @@ async fn handler(req: HttpRequest) -> impl Responder {
     // IP address of the request
     let ip_address = log_ip(req).await;
 
+    // Error if can not get IP
     let error: Option<Error> = match ip_address {
         RequestIP::Err(_) => Some(errors::UNDEFINED_ERROR.into()),
         _ => None

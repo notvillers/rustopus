@@ -1,15 +1,15 @@
 use actix_web::{get, web, HttpRequest, Responder};
 
-use crate::partner_xml::products::error_struct_xml;
-use crate::service::ipv4::log_ip;
-use crate::service::log::log_with_ip_uuid;
-use crate::service::slave::get_uuid;
 use crate::routes::default::GetResponse;
 use crate::routes::default::{RequestParameters, send_xml, get_auth, get_url, get_xmlns};
+use crate::service::slave::get_uuid;
+use crate::service::log::log_with_ip_uuid;
+use crate::service::ipv4::log_ip;
+use crate::partner_xml::products::error_struct_xml;
 use crate::o8_xml::defaults::CallData;
 use crate::service::get_data::RequestGet;
 
-// Request name
+/// Name of the current request
 const REQUEST_NAME: &'static str = "PRODUCTS REQUEST";
 
 /// Handler

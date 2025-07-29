@@ -9,7 +9,7 @@ use crate::partner_xml::barcode::error_struct_xml;
 use crate::o8_xml::defaults::CallData;
 use crate::service::get_data::RequestGet;
 
-// Request name
+/// Name of the current request
 const REQUEST_NAME: &'static str = "BARCODE REQUEST";
 
 /// Handler

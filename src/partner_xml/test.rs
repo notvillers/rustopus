@@ -1,6 +1,7 @@
 // Test struct
 use serde::Serialize;
 use quick_xml;
+use chrono::{DateTime, Local};
 
 use crate::partner_xml;
 
@@ -81,14 +82,16 @@ impl From<(Option<String>, Option<String>, Option<String>, Option<partner_xml::d
 #[derive(Serialize)]
 pub struct Data {
     pub ip: Option<String>,
-    pub uuid: Option<String>
+    pub uuid: Option<String>,
+    pub time: Option<DateTime<Local>>
 }
 
 impl From<(Option<String>, Option<String>)> for Data {
     fn from((ip, uuid): (Option<String>, Option<String>)) -> Self {
         Data {
             ip: ip,
-            uuid: uuid
+            uuid: uuid,
+            time: Some(Local::now())
         }
     }
 }

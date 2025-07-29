@@ -33,6 +33,7 @@ pub fn send_xml(xml: String) -> HttpResponse {
 }
 
 
+/// Tries to get authentication from the parameter, sends back error xml on fail
 pub fn get_auth(request_name: &str, ip_address: &str, uuid: &str, param: Option<String>, send_error_xml_fn: fn(u64, &str) -> String) -> GetResponse {
     match param {
         Some(ref s) if !s.trim().is_empty() => GetResponse::Text(s.to_string()),
@@ -45,6 +46,7 @@ pub fn get_auth(request_name: &str, ip_address: &str, uuid: &str, param: Option<
 }
 
 
+/// Tries to get url from the parameter, if not found, then tries to get default url from the `./soap.json` file, sends back error xml on fail
 pub fn get_url(request_name: &str, ip_address: &str, uuid: &str, param: Option<String>, send_error_xml_fn: fn(u64, &str) -> String) -> GetResponse {
     match param {
         Some(ref s) if !s.trim().is_empty() => GetResponse::Text(s.to_string()),
@@ -65,6 +67,7 @@ pub fn get_url(request_name: &str, ip_address: &str, uuid: &str, param: Option<S
 }
 
 
+/// Tries to get xmlns from parameter, if not found, then using url parameter
 pub fn get_xmlns(param: Option<String>, url: &str) -> String {
     let serv_str = "/services/";
     let mut xmlns = param.unwrap_or_default();
@@ -78,6 +81,7 @@ pub fn get_xmlns(param: Option<String>, url: &str) -> String {
 }
 
 
+/// Tries to get pid (Partner ID) from parameter, sends back error xml on fail
 pub fn get_pid(request_name: &str, ip_address: &str, uuid: &str, param: Option<i64>, send_error_xml_fn: fn(u64, &str) -> String) -> GetPidResponse {
     match param {
         Some(ref s) => GetPidResponse::Number(*s),
