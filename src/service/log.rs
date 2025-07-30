@@ -94,19 +94,6 @@ fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
         },
         _ => {}
     }
-
-    // match OpenOptions::new()
-    //     .create(true)
-    //     .append(true)
-    //     .open(log_dir.join(format!("{}.log", Local::now().format("%Y_%m_%d")))) {
-    //     Ok(mut file) => {
-    //         match writeln!(file, "{}", content) {
-    //             Err(e) => println!("Failed to log content '{}', error '{}'", content, e),
-    //             _ => {}
-    //         }
-    //     }
-    //     Err(e) => println!("Failed to open logfile '{}', content '{}', error '{}'", &log_dir.to_string_lossy(), content, e)
-    // }
 }
 
 
