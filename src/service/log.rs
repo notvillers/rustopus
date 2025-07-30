@@ -60,7 +60,6 @@ enum LogType {
 
 
 fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
-
     let error_prefix = match log_type.as_ref().unwrap_or(&LogType::Ok) {
         LogType::Error => "ERROR: ".to_string(),
         _ => "".to_string()
