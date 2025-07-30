@@ -2,6 +2,10 @@
 name = "rustopus"
 version = "1.0.1"
 edition = "2024"
+build = "build.rs"
+
+[build-dependencies]
+cc = "1.0"
 
 [dependencies]
 config = "0.13"

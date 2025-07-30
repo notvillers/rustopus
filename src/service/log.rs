@@ -1,7 +1,57 @@
-use std::io::Write;
 use chrono::Local;
-use std::fs::OpenOptions;
 use crate::service::path::get_current_or_root_dir;
+use std::ffi::CString;
+use std::path::{Path, PathBuf};
+use std::os::raw::c_char;
+
+#[cfg(unix)]
+use std::os::unix::ffi::OsStrExt;
+#[cfg(windows)]
+use std::os::windows::ffi::OsStrExt;
+
+fn path_to_cstring(path: &Path) -> Result<CString, std::ffi::NulError> {
+    #[cfg(unix)]
+    {
+        CString::new(path.as_os_str().as_bytes())
+    }
+    #[cfg(windows)]
+    {
+        let s = path.to_str().expect("Non-UTF-8 path are not supported on Windows");
+        CString::new(s)
+    }
+}
+
+
+unsafe extern "C" {
+    fn append_to_file_c(filename: *const c_char, string_to_append: *const c_char) -> i32;
+}
+
+
+enum AppendFileError {
+    Open,
+    Write,
+    NewLine,
+    Unknown(i32)
+}
+
+
+fn append_to_file(path: &PathBuf, content: &str) -> Result<(), AppendFileError> {
+    let c_path = path_to_cstring(&path).expect("Invalid path");
+    let c_content = CString::new(content).expect("Content contained interior null byte");
+
+    let result = unsafe {
+        append_to_file_c(c_path.as_ptr(), c_content.as_ptr())
+    };
+
+    match result {
+        0 => Ok(()),
+        1 => Err(AppendFileError::Open),
+        2 => Err(AppendFileError::Write),
+        3 => Err(AppendFileError::NewLine),
+        error => Err(AppendFileError::Unknown(error))
+    }
+}
+
 
 enum LogType {
     Ok,
@@ -30,18 +80,33 @@ fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
             return
         }
     }
-    match OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(log_dir.join(format!("{}.log", Local::now().format("%Y_%m_%d")))) {
-        Ok(mut file) => {
-            match writeln!(file, "{}", content) {
-                Err(e) => println!("Failed to log content '{}', error '{}'", content, e),
-                _ => {}
+
+    let file_path = log_dir.join(format!("{}.log", Local::now().format("%Y_%m_%d")));
+
+    match append_to_file(&file_path, &content) {
+        Err(e) => {
+            match e {
+                AppendFileError::Open => eprintln!("Error opening '{:#?}'", file_path),
+                AppendFileError::Write => eprintln!("Error writing '{:#?}'", file_path),
+                AppendFileError::NewLine => eprintln!("Error adding new line '{:#?}'", file_path),
+                AppendFileError::Unknown(e) => eprintln!("Error while appending '{:#?}': {}", file_path, e)
             }
-        }
-        Err(e) => println!("Failed to open logfile '{}', content '{}', error '{}'", &log_dir.to_string_lossy(), content, e)
+        },
+        _ => {}
     }
+
+    // match OpenOptions::new()
+    //     .create(true)
+    //     .append(true)
+    //     .open(log_dir.join(format!("{}.log", Local::now().format("%Y_%m_%d")))) {
+    //     Ok(mut file) => {
+    //         match writeln!(file, "{}", content) {
+    //             Err(e) => println!("Failed to log content '{}', error '{}'", content, e),
+    //             _ => {}
+    //         }
+    //     }
+    //     Err(e) => println!("Failed to open logfile '{}', content '{}', error '{}'", &log_dir.to_string_lossy(), content, e)
+    // }
 }
 
 
