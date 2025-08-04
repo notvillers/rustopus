@@ -73,7 +73,7 @@ impl From<o8_xml::barcode::Valasz> for Answer {
         Answer {
             version: v.verzio,
             barcodes: v.vonalkodok.into(),
-            error: v.hiba.map(|e| e.into())
+            error: v.hiba.map(|x| x.into())
         }
     }
 }
@@ -89,7 +89,7 @@ impl From<o8_xml::barcode::Vonalkodok> for Barcodes {
         Barcodes {
             barcode: v.vonalkod
                 .into_iter()
-                .map(|b| b.into())
+                .map(|x| x.into())
                 .collect()
         }
     }

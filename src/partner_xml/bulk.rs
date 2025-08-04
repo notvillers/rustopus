@@ -103,7 +103,7 @@ impl From<(partner_xml::products::Answer, Option<partner_xml::prices::Answer>, O
         ]
             .into_iter()
             .flatten()
-            .for_each(|e| errors.push(e.clone()));
+            .for_each(|x| errors.push(x.clone()));
 
         Answer {
             version: "1.0".to_string(),
@@ -129,7 +129,7 @@ impl From<(Vec<partner_xml::products::Product>, Vec<partner_xml::prices::Price>,
     fn from((c, p, s , i, b): (Vec<partner_xml::products::Product>, Vec<partner_xml::prices::Price>, Vec<partner_xml::stocks::Product>, Vec<partner_xml::images::Product>, Vec<partner_xml::barcode::Barcode>)) -> Self {
         Products {
             product: c.into_iter()
-                .map(|c| Product::from((c, &p, &s, &i, &b)))
+                .map(|x| Product::from((x, &p, &s, &i, &b)))
                 .collect()
         }
     }

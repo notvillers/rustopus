@@ -109,30 +109,28 @@ fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
 async fn get_products(call_data: o8_xml::defaults::CallData) -> partner_xml::products::Envelope {
     let request = o8_xml::products::get_request_string(&call_data.xmlns, &FIRST_DATE, &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
-    let hu_envelope: o8_xml::products::Envelope = match quick_xml::de::from_str(&response) {
-        Ok(envelope) => envelope,
+    match quick_xml::de::from_str::<o8_xml::products::Envelope>(&response) {
+        Ok(envelope) => envelope.to_en(),
         Err(de_error) => {
             let error = errors::GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(de_error), &error);
-            return partner_xml::products::error_struct(error.code, error.description)
+            partner_xml::products::error_struct(error.code, error.description)
         }
-    };
-    hu_envelope.to_en()
+    }
 }
 
 
 async fn get_stocks(call_data: o8_xml::defaults::CallData) -> partner_xml::stocks::Envelope {
     let request = o8_xml::stocks::get_request_string(&call_data.xmlns, &FIRST_DATE, &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
-    let hu_envelope: o8_xml::stocks::Envelope = match quick_xml::de::from_str(&response) {
-        Ok(envelope) => envelope,
+    match quick_xml::de::from_str::<o8_xml::stocks::Envelope>(&response) {
+        Ok(envelope) => envelope.to_en(),
         Err(de_error) => {
             let error = errors::GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(de_error), &error);
-            return partner_xml::stocks::error_struct(error.code, error.description)
+            partner_xml::stocks::error_struct(error.code, error.description)
         }
-    };
-    hu_envelope.to_en()
+    }
 }
 
 
@@ -141,15 +139,14 @@ async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::price
         Some(pid) => {
             let request = o8_xml::prices::get_request_string(&call_data.xmlns, &call_data.authcode, &pid);
             let response = soap::get_response(&call_data.url, request).await;
-            let hu_envelope: o8_xml::prices::Envelope = match quick_xml::de::from_str(&response) {
-                Ok(envelope) => envelope,
+            match quick_xml::de::from_str::<o8_xml::prices::Envelope>(&response) {
+                Ok(envelope) => envelope.to_en(),
                 Err(de_error) => {
                     let error = errors::GLOBAL_GET_DATA_ERROR;
                     error_logger(ErrorType::DeError(de_error), &error);
-                    return partner_xml::prices::error_struct(error.code, error.description)
+                    partner_xml::prices::error_struct(error.code, error.description)
                 }
-            };
-            hu_envelope.to_en()
+            }
         }
         _ => {
             let error = errors::GLOBAL_PID_ERROR;
@@ -163,30 +160,28 @@ async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::price
 async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::images::Envelope {
     let request = o8_xml::images::get_request_string(&call_data.xmlns, &FIRST_DATE, &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
-    let hu_envelope: o8_xml::images::Envelope = match quick_xml::de::from_str(&response) {
-        Ok(envelope) => envelope,
+    match quick_xml::de::from_str::<o8_xml::images::Envelope>(&response) {
+        Ok(envelope) => envelope.to_en(),
         Err(de_error) => {
             let error = errors::GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(de_error), &error);
-            return partner_xml::images::error_struct(error.code, error.description)
+            partner_xml::images::error_struct(error.code, error.description)
         }
-    };
-    hu_envelope.to_en()
+    }
 }
 
 
 async fn get_barcode(call_data: o8_xml::defaults::CallData) -> partner_xml::barcode::Envelope {
     let request = o8_xml::barcode::get_request_string(&call_data.xmlns, &FIRST_DATE, &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
-    let hu_envelope: o8_xml::barcode::Envelope = match quick_xml::de::from_str(&response) {
-        Ok(envelope) => envelope,
+    match quick_xml::de::from_str::<o8_xml::barcode::Envelope>(&response) {
+        Ok(envelope) => envelope.to_en(),
         Err(de_error) => {
             let error = errors::GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(de_error), &error);
-            return partner_xml::barcode::error_struct(error.code, error.description)
+            partner_xml::barcode::error_struct(error.code, error.description)
         }
-    };
-    hu_envelope.to_en()
+    }
 }
 
 
@@ -195,6 +190,12 @@ async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::E
         ResponseGet::Products(envelope) if envelope.body.response.result.answer.error.is_none() => envelope,
         _ => partner_xml::products::error_struct(errors::BULK_GET_PRODUCTS_ERROR.code, errors::BULK_GET_PRODUCTS_ERROR.description)
     };
+
+    if let Some(e) = products.body.response.result.answer.error {
+        let error = errors::GLOBAL_GET_DATA_ERROR;
+        error_logger(ErrorType::Text("Can not get products"), &error);
+        return partner_xml::bulk::error_struct(vec![errors::GLOBAL_GET_DATA_ERROR.into(), e])
+    }
 
     let stocks = match RequestGet::Stocks(call_data.clone()).to_envelope().await {
         ResponseGet::Stocks(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
@@ -215,12 +216,6 @@ async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::E
         ResponseGet::Barcode(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(partner_xml::barcode::error_struct(errors::BULK_GET_BARCODES_ERROR.code, errors::BULK_GET_BARCODES_ERROR.description))
     };
-
-    if let Some(e) = products.body.response.result.answer.error {
-        let error = errors::GLOBAL_GET_DATA_ERROR;
-        error_logger(ErrorType::Text("Can not get products"), &error);
-        return partner_xml::bulk::error_struct(vec![errors::GLOBAL_GET_DATA_ERROR.into(), e])
-    }
 
     (products, prices, stocks, images, barcodes).into()
 }

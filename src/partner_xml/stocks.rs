@@ -74,7 +74,7 @@ impl From<o8_xml::stocks::Valasz> for Answer {
         Answer {
             version: v.verzio,
             products: v.cikkek.into(),
-            error: v.hiba.map(|e| e.into())
+            error: v.hiba.map(|x| x.into())
         }
     }
 }

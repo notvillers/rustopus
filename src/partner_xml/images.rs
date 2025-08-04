@@ -75,7 +75,7 @@ impl From<o8_xml::images::Valasz> for Answer {
             products: v.cikk
                         .into_iter()
                         .collect::<Products>(),
-            error: v.hiba.map(|e| e.into())
+            error: v.hiba.map(|x| x.into())
         }
     }
 }
@@ -91,7 +91,7 @@ impl FromIterator<o8_xml::images::Cikk> for Products {
         Products {
             product: iter
                         .into_iter()
-                        .map(|p| p.into())
+                        .map(|x| x.into())
                         .collect()
         }
     }
