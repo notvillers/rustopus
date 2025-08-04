@@ -15,8 +15,7 @@ pub struct ErrorMessage {
 
 
 fn get_dummy_errors() -> Vec<ErrorMessage> {
-    let dummy_errors: Vec<ErrorMessage> = Vec::new();
-    dummy_errors
+    Vec::new()
 }
 
 
