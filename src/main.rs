@@ -64,6 +64,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::images::get_handler)
             .service(routes::barcode::get_handler)
             .service(routes::bulk::get_handler)
+            .service(routes::invoice::get_handler)
             .service(routes::test::get_handler)
     })
         .client_request_timeout(std::time::Duration::from_secs(1200))

@@ -111,7 +111,7 @@ pub fn get_date(request_name: &str, ip_address: &str, uuid: &str, param: Option<
         Some(ref s) => GetDateResponse::DateTime(*s),
         _ => {
             let error = errors::GLOBAL_MISSING_ERROR;
-            let error_str = format!("{}:{} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name);
+            let error_str = format!("{}: {} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name);
             elog_with_ip_uuid(ip_address, uuid, &error_str);
             GetDateResponse::Response(send_xml(send_error_xml_fn(error.code, &error_str)))
         }
@@ -125,7 +125,7 @@ pub fn get_i64(request_name: &str, ip_address: &str, uuid: &str, param: Option<i
         Some(ref s) => GetI64Response::Number(*s),
         _ => {
             let error = errors::GLOBAL_MISSING_ERROR;
-            let error_str = format!("{}:{} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name);
+            let error_str = format!("{}: {} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name);
             elog_with_ip_uuid(ip_address, uuid, &error_str);
             GetI64Response::Response(send_xml(send_error_xml_fn(error.code, &error_str)))
         }

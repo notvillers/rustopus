@@ -26,9 +26,49 @@ pub fn get_request_string(xmlns: &str, pid: &i64, tipus: &i64, datumtol: &DateTi
         xmlns,
         pid,
         tipus,
-        datumtol.format("%Y.%m.%d").to_string(),
-        datumig.format("%Y.%m.%d").to_string(),
+        datumtol.format("%Y-%m-%dT%H:%M:%S").to_string(),
+        datumig.format("%Y-%m-%dT%H:%M:%S").to_string(),
         osszes_fizetetlen,
         authcode
     )
+}
+
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct Envelope {
+    pub body: Body
+}
+
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct Body {
+    pub get_szamlak_auth_response: GetSzamlakAuthResponse
+}
+
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct GetSzamlakAuthResponse {
+    pub get_szamlak_auth_result: GetSzamlakAuthResult
+}
+
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct GetSzamlakAuthResult {
+    pub valasz: Valasz
+}
+
+
+#[derive(Debug, Deserialize)]
+pub struct Valasz {
+    #[serde(rename = "@verzio")]
+    pub verzio: String,
+
+    // számlák
+
+    #[serde(rename = "hiba")]
+    pub hiba: Option<o8_xml::defaults::Hiba>
 }

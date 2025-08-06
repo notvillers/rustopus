@@ -9,6 +9,8 @@ use crate::partner_xml::images::error_struct_xml;
 use crate::o8_xml::defaults::CallData;
 use crate::service::get_data::RequestGet;
 
+use crate::service::soap::get_response;
+use crate::o8_xml::invoice::get_request_string;
 
 /// Name of the current request
 const REQUEST_NAME: &'static str = "INVOICES REQUEST";
@@ -30,11 +32,6 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     // Getting XMLNS from parameters, otherwise using url
     let xmlns = get_xmlns(params.xmlns, &url);
 
-    let from_date = match get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, error_struct_xml, Some("from_date")) {
-            GetDateResponse::DateTime(datetime) => Some(datetime),
-            GetDateResponse::Response(response) => return response
-    };
-
     // Creating call data from parameters
     let call_data = CallData {
         // Getting authentication code from parameters
@@ -50,16 +47,19 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
         },
         type_mod: match get_i64(REQUEST_NAME, &ip_address, &uuid, params.type_mod, error_struct_xml, Some("type_mod")) {
             GetI64Response::Number(num) => Some(num),
-            _ => None
+            _ => Some(1)
         },
-        from_date: from_date,
+        from_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, error_struct_xml, Some("from_date")) {
+            GetDateResponse::DateTime(datetime) => Some(datetime),
+            GetDateResponse::Response(response) => return response
+        },
         to_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.to_date, error_struct_xml, Some("to_date")) {
             GetDateResponse::DateTime(datetime) => Some(datetime),
-            _ => from_date
+            GetDateResponse::Response(response) => return response
         },
         unpaid: match get_i64(REQUEST_NAME, &ip_address, &uuid, params.unpaid, error_struct_xml, Some("unpaid")) {
             GetI64Response::Number(num) => Some(num),
-            _ => None
+            _ => Some(0)
         },
         ..Default::default()
     };
@@ -67,14 +67,17 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     // Before log
     log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}", REQUEST_NAME, call_data.url, call_data.authcode));
 
-    // Getting data
-    let xml = "<Envelope>Under development</Envelope>".to_string();
+    let xml_string = get_request_string(&call_data.xmlns, &call_data.pid.unwrap(), &call_data.type_mod.unwrap_or(1), &call_data.from_date.unwrap(), &call_data.to_date.unwrap(), &call_data.unpaid.unwrap_or(0), &call_data.authcode);
+
+    println!("{}", xml_string);
+
+    let respone = get_response(&call_data.url, xml_string).await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     // Sending back xml as response
-    send_xml(xml)
+    send_xml(respone)
 }
 
 
