@@ -18,52 +18,57 @@ pub struct RustopusError {
 
 
 pub const GLOBAL_AUTH_ERROR: RustopusError = RustopusError {
-    code: 101,
+    code: 201,
     description: "Missing authcode"
 };
 
 pub const GLOBAL_URL_ERROR: RustopusError = RustopusError {
-    code: 102,
+    code: 202,
     description: "Missing url (this can be a server side error, if not configured properly.)"
 };
 
 pub const GLOBAL_PID_ERROR: RustopusError = RustopusError {
-    code: 103,
+    code: 203,
     description: "Missing PID"
 };
 
+pub const GLOBAL_MISSING_ERROR: RustopusError = RustopusError {
+    code: 299,
+    description: "Missing value"
+};
+
 pub const GLOBAL_GET_DATA_ERROR: RustopusError = RustopusError {
-    code: 104,
+    code: 304,
     description: "Get data error"
 };
 
 pub const GLOBAL_CONVERT_ERROR: RustopusError = RustopusError {
-    code: 105,
+    code: 401,
     description: "Envelope convert error"
 };
 
 pub const BULK_GET_PRODUCTS_ERROR: RustopusError = RustopusError {
-    code: 106,
+    code: 501,
     description: "Bulk products error"
 };
 
 pub const BULK_GET_PRICES_ERROR: RustopusError = RustopusError {
-    code: 107,
+    code: 502,
     description: "Bulk prices error"
 };
 
 pub const BULK_GET_STOCKS_ERROR: RustopusError = RustopusError {
-    code: 108,
+    code: 503,
     description: "Bulk stocks error"
 };
 
 pub const BULK_GET_IMAGES_ERROR: RustopusError = RustopusError {
-    code: 109,
+    code: 504,
     description: "Bulk images error"
 };
 
 pub const BULK_GET_BARCODES_ERROR: RustopusError = RustopusError {
-    code: 110,
+    code: 505,
     description: "Bulk barcodes error"
 };
 

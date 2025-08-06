@@ -1,6 +1,6 @@
 use actix_web::{get, web, HttpRequest, Responder};
 
-use crate::routes::default::GetResponse;
+use crate::routes::default::GetStringResponse;
 use crate::routes::default::{RequestParameters, send_xml, get_auth, get_url, get_xmlns};
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
@@ -22,8 +22,8 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
     // Trying to get url from parameters
     let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {
-        GetResponse::Text(url) => url,
-        GetResponse::Response(response) => return response // Error response if something went wrong
+        GetStringResponse::Text(url) => url,
+        GetStringResponse::Response(response) => return response // Error response if something went wrong
     };
 
     // Getting XMLNS from parameters, otherwise using url
@@ -33,12 +33,13 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let call_data = CallData {
         // Getting authentication code from parameters
         authcode: match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
-            GetResponse::Text(auth) => auth,
-            GetResponse::Response(response) => return response // Error response if something went wrong
+            GetStringResponse::Text(auth) => auth,
+            GetStringResponse::Response(response) => return response // Error response if something went wrong
         },
         url: url,
         xmlns: xmlns,
-        pid: None
+        pid: None,
+        ..Default::default()
     };
 
     // Before log

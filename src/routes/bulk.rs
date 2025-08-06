@@ -1,6 +1,6 @@
 use actix_web::{get, web::Query, HttpRequest, Responder};
 
-use crate::routes::default::{GetResponse, GetPidResponse};
+use crate::routes::default::{GetStringResponse, GetI64Response};
 use crate::routes::default::{RequestParameters, send_xml, get_auth, get_url, get_xmlns, get_pid};
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
@@ -22,8 +22,8 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
     // Trying to get url from parameters
     let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {
-        GetResponse::Text(url) => url,
-        GetResponse::Response(response) => return response
+        GetStringResponse::Text(url) => url,
+        GetStringResponse::Response(response) => return response
     };
 
     // Getting XMLNS from parameters, otherwise using url
@@ -33,16 +33,17 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let call_data = CallData {
         // Getting authentication code from parameters
         authcode: match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
-            GetResponse::Text(auth) => auth,
-            GetResponse::Response(response) => return response
+            GetStringResponse::Text(auth) => auth,
+            GetStringResponse::Response(response) => return response
         },
         url: url,
         xmlns: xmlns,
         // Getting partner ID from parameters
         pid: match get_pid(REQUEST_NAME, &ip_address, &uuid, params.pid, error_struct_xml) {
-            GetPidResponse::Number(pid) => Some(pid),
-            GetPidResponse::Response(response) => return response
-        }
+            GetI64Response::Number(pid) => Some(pid),
+            GetI64Response::Response(response) => return response
+        },
+        ..Default::default()
     };
 
     // Before log

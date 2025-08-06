@@ -1,16 +1,17 @@
 use actix_web::{get, web, HttpRequest, Responder};
 
-use crate::routes::default::{GetStringResponse, GetI64Response};
-use crate::routes::default::{RequestParameters, send_xml, get_auth, get_url, get_xmlns, get_pid};
+use crate::routes::default::{GetStringResponse, GetI64Response, GetDateResponse};
+use crate::routes::default::{RequestParameters, send_xml, get_auth, get_url, get_xmlns, get_pid, get_i64, get_date};
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
-use crate::service::ipv4::log_ip;
-use crate::partner_xml::prices::error_struct_xml;
+use crate::ipv4::log_ip;
+use crate::partner_xml::images::error_struct_xml;
 use crate::o8_xml::defaults::CallData;
 use crate::service::get_data::RequestGet;
 
+
 /// Name of the current request
-const REQUEST_NAME: &'static str = "PRICES REQUEST";
+const REQUEST_NAME: &'static str = "INVOICES REQUEST";
 
 /// Handler
 async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder {
@@ -28,7 +29,12 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
     // Getting XMLNS from parameters, otherwise using url
     let xmlns = get_xmlns(params.xmlns, &url);
-    
+
+    let from_date = match get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, error_struct_xml, Some("from_date")) {
+            GetDateResponse::DateTime(datetime) => Some(datetime),
+            GetDateResponse::Response(response) => return response
+    };
+
     // Creating call data from parameters
     let call_data = CallData {
         // Getting authentication code from parameters
@@ -38,19 +44,31 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
         },
         url: url,
         xmlns: xmlns,
-        // Getting partner ID from parameters
         pid: match get_pid(REQUEST_NAME, &ip_address, &uuid, params.pid, error_struct_xml) {
-            GetI64Response::Number(pid) => Some(pid),
+            GetI64Response::Number(num) => Some(num),
             GetI64Response::Response(response) => return response
+        },
+        type_mod: match get_i64(REQUEST_NAME, &ip_address, &uuid, params.type_mod, error_struct_xml, Some("type_mod")) {
+            GetI64Response::Number(num) => Some(num),
+            _ => None
+        },
+        from_date: from_date,
+        to_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.to_date, error_struct_xml, Some("to_date")) {
+            GetDateResponse::DateTime(datetime) => Some(datetime),
+            _ => from_date
+        },
+        unpaid: match get_i64(REQUEST_NAME, &ip_address, &uuid, params.unpaid, error_struct_xml, Some("unpaid")) {
+            GetI64Response::Number(num) => Some(num),
+            _ => None
         },
         ..Default::default()
     };
 
     // Before log
-    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}, pid: {:#?}", REQUEST_NAME, call_data.url, call_data.authcode, call_data.pid));
+    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}", REQUEST_NAME, call_data.url, call_data.authcode));
 
     // Getting data
-    let xml = RequestGet::Prices(call_data).to_xml().await;
+    let xml = "<Envelope>Under development</Envelope>".to_string();
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
@@ -61,7 +79,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
 
 /// GET handler
-#[get("/get-prices")]
-async fn get_handler(req: HttpRequest, query: web::Query<RequestParameters>) -> impl Responder {
+#[get("/get-invoices")]
+pub async fn get_handler(req: HttpRequest, query: web::Query<RequestParameters>) -> impl Responder {
     handler(req, query.into_inner()).await
 }

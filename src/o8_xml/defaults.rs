@@ -1,4 +1,5 @@
 /// Default struct(s) for XML(s) got from the Octopus call
+use chrono::{DateTime, Utc};
 
 use serde::{Deserialize, Serialize};
 
@@ -15,5 +16,24 @@ pub struct CallData {
     pub authcode: String,
     pub url: String,
     pub xmlns: String,
-    pub pid: Option<i64>
+    pub pid: Option<i64>,
+    pub type_mod: Option<i64>,
+    pub from_date: Option<DateTime<Utc>>,
+    pub to_date: Option<DateTime<Utc>>,
+    pub unpaid: Option<i64>
+}
+
+impl Default for CallData {
+    fn default() -> Self {
+        CallData {
+            authcode: "".to_string(),
+            url: "".to_string(),
+            xmlns: "".to_string(),
+            pid: None,
+            type_mod: None,
+            from_date: None,
+            to_date: None,
+            unpaid: None
+        }
+    }
 }
