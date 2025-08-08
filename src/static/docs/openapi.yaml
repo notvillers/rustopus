@@ -176,6 +176,67 @@ paths:
               schema:
                 $ref: '#/components/schemas/BarcodeResponse'        
   
+  /get-invoices:
+    get:
+      summary: Get invoice data
+      description: Returns invoice data.
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: Endpoint URL with the ```.asmx``` file
+          schema:
+            type: string
+        - name: authcode
+          in: query
+          required: true
+          description: Authorization code
+          schema:
+            type: string
+        - name: xmlns
+          in: query
+          required: false
+          description: Optional XML namespace
+          schema:
+            type: string
+        - name: pid
+          in: query
+          required: true
+          description: Partner ID
+          schema:
+            type: integer
+        - name: type_mod
+          in: query
+          required: false
+          description: Invoice type
+          schema:
+            type: integer
+        - name: from_date
+          in: query
+          required: true
+          description: First date in YYYY-MM-DDThh:mm:ssZ format (2025-01-01T00:00:00Z)
+          schema:
+            type: string
+        - name: to_date
+          in: query
+          required: true
+          description: Last date in YYYY-MM-DDThh:mm:ssZ format (2025-01-01T00:00:00Z)
+          schema:
+            type: string
+        - name: unpaid
+          in: query
+          required: false
+          description: 1 if only the unpaid invoices should be inclouded
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: XML invoice list
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'        
+
   /get-bulk:
     get:
       summary: Get bulk data (XML)
@@ -605,3 +666,122 @@ components:
             main_ean:
               type: boolean
 
+    InvoiceResponse:
+      type: object
+      xml:
+        name: Envelope
+      properties:
+        body:
+          type: object
+          properties:
+            response:
+              type: object
+              properties:
+                result:
+                  type: object
+                  properties:
+                    answer:
+                      type: object
+                      properties:
+                        version:
+                          type: string
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: number
+                            description:
+                              type: string
+                        invoices:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Invoices'
+
+    Invoices:
+      type: object
+      xml:
+        name: invoices
+      properties:
+        invoice:
+          type: object
+          properties:
+            head:
+              type: object
+              properties:
+                id:
+                  type: integer
+                no:
+                  type: string
+                date:
+                  type: string
+                completition_date:
+                  type: string
+                payment_deadline:
+                  type: string
+                net_price:
+                  type: string
+                price:
+                  type: number
+                remaining:
+                  type: number
+                cancellation_no:
+                  type: string
+                currency:
+                  type: string
+                pid:
+                  type: integer
+                partner_name:
+                  type: string
+                status:
+                  type: integer
+                foreign_order_no:
+                  type: string
+                delivery_name:
+                  type: string
+                delivery_country:
+                  type: string
+                delivery_zip:
+                  type: string
+                delivery_city:
+                  type: string
+                delivery_street:
+                  type: string
+            products:
+              type: array
+              items:
+                $ref: '#/components/schemas/InvoiceProducts'
+                
+    InvoiceProducts:
+      type: object
+      xml:
+        name: products
+      properties:
+        product:
+          type: object
+          properties:
+            lot_no:
+              type: integer
+            id:
+              type: integer
+            no:
+              type:
+                string
+            name:
+              type:
+                string
+            qty:
+              type: number
+            unit:
+              type: string
+            net_unit_price:
+              type: number
+            unit_price:
+              type: number
+            net_price:
+              type: number
+            price:
+              type: number
+            order_no:
+              type: string
+            order_foreign_no:
+              type: string
