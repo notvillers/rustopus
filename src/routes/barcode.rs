@@ -46,7 +46,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}", REQUEST_NAME, call_data.url, call_data.authcode));
 
     // Getting data
-    let xml = RequestGet::Barcode(call_data).to_xml().await;
+    let xml = RequestGet::Barcodes(call_data).to_xml().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));

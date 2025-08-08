@@ -58,7 +58,7 @@ pub enum ResponseGet {
     Stocks(partner_xml::stocks::Envelope),
     Prices(partner_xml::prices::Envelope),
     Images(partner_xml::images::Envelope),
-    Barcode(partner_xml::barcode::Envelope),
+    Barcodes(partner_xml::barcode::Envelope),
     Invoices(partner_xml::invoice::Envelope),
     Bulk(partner_xml::bulk::Envelope)
 }
@@ -68,7 +68,7 @@ pub enum RequestGet {
     Stocks(o8_xml::defaults::CallData),
     Prices(o8_xml::defaults::CallData),
     Images(o8_xml::defaults::CallData),
-    Barcode(o8_xml::defaults::CallData),
+    Barcodes(o8_xml::defaults::CallData),
     Invoices(o8_xml::defaults::CallData),
     Bulk(o8_xml::defaults::CallData)
 }
@@ -81,7 +81,7 @@ impl RequestGet {
                 RequestGet::Stocks(call_data) => ResponseGet::Stocks(get_stocks(call_data).await),
                 RequestGet::Prices(call_data) => ResponseGet::Prices(get_prices(call_data).await),
                 RequestGet::Images(call_data) => ResponseGet::Images(get_images(call_data).await),
-                RequestGet::Barcode(call_data) => ResponseGet::Barcode(get_barcode(call_data).await),
+                RequestGet::Barcodes(call_data) => ResponseGet::Barcodes(get_barcode(call_data).await),
                 RequestGet::Invoices(call_data) => ResponseGet::Invoices(get_invoices(call_data).await),
                 RequestGet::Bulk(call_data) => ResponseGet::Bulk(get_bulk(call_data).await)
             }
@@ -230,8 +230,8 @@ async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::E
         _ => Some(partner_xml::images::error_struct(errors::BULK_GET_IMAGES_ERROR.code, errors::BULK_GET_IMAGES_ERROR.description))
     };
 
-    let barcodes = match RequestGet::Barcode(call_data).to_envelope().await {
-        ResponseGet::Barcode(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
+    let barcodes = match RequestGet::Barcodes(call_data).to_envelope().await {
+        ResponseGet::Barcodes(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(partner_xml::barcode::error_struct(errors::BULK_GET_BARCODES_ERROR.code, errors::BULK_GET_BARCODES_ERROR.description))
     };
 
