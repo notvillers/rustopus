@@ -8,7 +8,7 @@ use crate::ipv4::log_ip;
 use crate::partner_xml::invoice::error_struct_xml;
 use crate::o8_xml::defaults::CallData;
 use crate::service::get_data::RequestGet;
-use crate::service::dates::{get_first_date, get_datetime};
+use crate::service::dates::{get_first_date, get_datetime, is_min_date};
 
 /// Name of the current request
 const REQUEST_NAME: &'static str = "INVOICES REQUEST";
@@ -50,12 +50,18 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
             _ => Some(1)
         },
         // Getting `from_date` from parameters
-        from_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, Some("from_date")) {
+        from_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, error_struct_xml,  Some("from_date")) {
             GetDateResponse::DateTime(datetime) => Some(datetime),
-            _ => Some(get_first_date())
+            GetDateResponse::Response(response) => {
+                let first_date = get_first_date();
+                if is_min_date(&first_date) {
+                    return response
+                }
+                Some(first_date)
+            }
         },
         // Getting `to_date` from parameters
-        to_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.to_date, Some("to_date")) {
+        to_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.to_date, error_struct_xml, Some("to_date")) {
             GetDateResponse::DateTime(datetime) => Some(datetime),
             _ => Some(get_datetime())
         },

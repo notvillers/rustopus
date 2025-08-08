@@ -178,7 +178,6 @@ async fn get_barcode(call_data: o8_xml::defaults::CallData) -> partner_xml::barc
 async fn get_invoices(call_data: o8_xml::defaults::CallData) -> partner_xml::invoice::Envelope {
     let request = o8_xml::invoice::get_request_string_opt(&call_data.xmlns, &call_data.pid, &call_data.type_mod, &call_data.from_date, &call_data.to_date, &call_data.unpaid, &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
-    println!("{}", response);
     match quick_xml::de::from_str::<o8_xml::invoice::Envelope>(&response) {
         Ok(envelope) => envelope.to_en(),
         Err(de_error) => {
