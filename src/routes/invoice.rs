@@ -5,12 +5,9 @@ use crate::routes::default::{RequestParameters, send_xml, get_auth, get_url, get
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::ipv4::log_ip;
-use crate::partner_xml::images::error_struct_xml;
+use crate::partner_xml::invoice::error_struct_xml;
 use crate::o8_xml::defaults::CallData;
 use crate::service::get_data::RequestGet;
-
-use crate::service::soap::get_response;
-use crate::o8_xml::invoice::get_request_string;
 
 /// Name of the current request
 const REQUEST_NAME: &'static str = "INVOICES REQUEST";
@@ -67,17 +64,13 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     // Before log
     log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}", REQUEST_NAME, call_data.url, call_data.authcode));
 
-    let xml_string = get_request_string(&call_data.xmlns, &call_data.pid.unwrap(), &call_data.type_mod.unwrap_or(1), &call_data.from_date.unwrap(), &call_data.to_date.unwrap(), &call_data.unpaid.unwrap_or(0), &call_data.authcode);
-
-    println!("{}", xml_string);
-
-    let respone = get_response(&call_data.url, xml_string).await;
+    let xml = RequestGet::Invoices(call_data).to_xml().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     // Sending back xml as response
-    send_xml(respone)
+    send_xml(xml)
 }
 
 

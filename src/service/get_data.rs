@@ -59,6 +59,7 @@ pub enum ResponseGet {
     Prices(partner_xml::prices::Envelope),
     Images(partner_xml::images::Envelope),
     Barcode(partner_xml::barcode::Envelope),
+    Invoices(partner_xml::invoice::Envelope),
     Bulk(partner_xml::bulk::Envelope)
 }
 
@@ -68,6 +69,7 @@ pub enum RequestGet {
     Prices(o8_xml::defaults::CallData),
     Images(o8_xml::defaults::CallData),
     Barcode(o8_xml::defaults::CallData),
+    Invoices(o8_xml::defaults::CallData),
     Bulk(o8_xml::defaults::CallData)
 }
 
@@ -80,6 +82,7 @@ impl RequestGet {
                 RequestGet::Prices(call_data) => ResponseGet::Prices(get_prices(call_data).await),
                 RequestGet::Images(call_data) => ResponseGet::Images(get_images(call_data).await),
                 RequestGet::Barcode(call_data) => ResponseGet::Barcode(get_barcode(call_data).await),
+                RequestGet::Invoices(call_data) => ResponseGet::Invoices(get_invoices(call_data).await),
                 RequestGet::Bulk(call_data) => ResponseGet::Bulk(get_bulk(call_data).await)
             }
         })
@@ -180,6 +183,21 @@ async fn get_barcode(call_data: o8_xml::defaults::CallData) -> partner_xml::barc
             let error = errors::GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(de_error), &error);
             partner_xml::barcode::error_struct(error.code, error.description)
+        }
+    }
+}
+
+
+async fn get_invoices(call_data: o8_xml::defaults::CallData) -> partner_xml::invoice::Envelope {
+    let request = o8_xml::invoice::get_request_string_opt(&call_data.xmlns, &call_data.pid, &call_data.type_mod, &call_data.from_date, &call_data.to_date, &call_data.unpaid, &call_data.authcode);
+    let response = soap::get_response(&call_data.url, request).await;
+    println!("{}", response);
+    match quick_xml::de::from_str::<o8_xml::invoice::Envelope>(&response) {
+        Ok(envelope) => envelope.to_en(),
+        Err(de_error) => {
+            let error = errors::GLOBAL_GET_DATA_ERROR;
+            error_logger(ErrorType::DeError(de_error), &error);
+            partner_xml::invoice::error_struct(error.code, error.description)
         }
     }
 }
