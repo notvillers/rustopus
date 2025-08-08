@@ -5,15 +5,15 @@ use std::str::FromStr;
 
 use crate::o8_xml;
 use crate::partner_xml;
-use crate::service;
+use crate::service::dates::{get_first_date, get_datetime};
 
 pub fn get_request_string_opt(xmlns: &str, pid: &Option<i64>, tipus: &Option<i64>, datumtol: &Option<DateTime<Utc>>, datumig: &Option<DateTime<Utc>>, osszes_fizetetlen: &Option<i64>, authcode: &str) -> String {
     get_request_string(
         xmlns,
         &pid.unwrap_or(0),
         &tipus.unwrap_or(1),
-        &datumtol.unwrap_or(service::get_data::get_first_date()),
-        &datumig.unwrap_or(service::get_data::get_first_date()),
+        &datumtol.unwrap_or(get_first_date()),
+        &datumig.unwrap_or(get_datetime()),
         &osszes_fizetetlen.unwrap_or(0),
         authcode
     )

@@ -33,7 +33,7 @@ pub enum GetI64Response {
 
 pub enum GetDateResponse {
     DateTime(DateTime<Utc>),
-    Response(actix_web::HttpResponse)
+    Response()
 }
 
 
@@ -106,14 +106,14 @@ pub fn get_pid(request_name: &str, ip_address: &str, uuid: &str, param: Option<i
 
 
 /// Tries to get date from parameter, sends back error xml on fail
-pub fn get_date(request_name: &str, ip_address: &str, uuid: &str, param: Option<DateTime<Utc>>, send_error_xml_fn: fn(u64, &str) -> String, param_name: Option<&str>) -> GetDateResponse {
+pub fn get_date(request_name: &str, ip_address: &str, uuid: &str, param: Option<DateTime<Utc>>, param_name: Option<&str>) -> GetDateResponse {
     match param {
         Some(ref s) => GetDateResponse::DateTime(*s),
         _ => {
             let error = errors::GLOBAL_MISSING_ERROR;
             let error_str = format!("{}: {} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name);
             elog_with_ip_uuid(ip_address, uuid, &error_str);
-            GetDateResponse::Response(send_xml(send_error_xml_fn(error.code, &error_str)))
+            GetDateResponse::Response()
         }
     }
 }
