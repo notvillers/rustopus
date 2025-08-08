@@ -38,22 +38,27 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
         },
         url: url,
         xmlns: xmlns,
+        // Getting partner ID from parameters
         pid: match get_pid(REQUEST_NAME, &ip_address, &uuid, params.pid, error_struct_xml) {
             GetI64Response::Number(num) => Some(num),
             GetI64Response::Response(response) => return response
         },
+        // Getting `type_mod` from parameters
         type_mod: match get_i64(REQUEST_NAME, &ip_address, &uuid, params.type_mod, error_struct_xml, Some("type_mod")) {
             GetI64Response::Number(num) => Some(num),
             _ => Some(1)
         },
+        // Getting `from_date` from parameters
         from_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, error_struct_xml, Some("from_date")) {
             GetDateResponse::DateTime(datetime) => Some(datetime),
             GetDateResponse::Response(response) => return response
         },
+        // Getting `to_date` from parameters
         to_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.to_date, error_struct_xml, Some("to_date")) {
             GetDateResponse::DateTime(datetime) => Some(datetime),
             GetDateResponse::Response(response) => return response
         },
+        // Getting `unpaid` from parameters
         unpaid: match get_i64(REQUEST_NAME, &ip_address, &uuid, params.unpaid, error_struct_xml, Some("unpaid")) {
             GetI64Response::Number(num) => Some(num),
             _ => Some(0)
@@ -64,6 +69,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     // Before log
     log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}", REQUEST_NAME, call_data.url, call_data.authcode));
 
+    // Getting data
     let xml = RequestGet::Invoices(call_data).to_xml().await;
 
     // After log

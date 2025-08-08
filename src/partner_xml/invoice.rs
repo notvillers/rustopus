@@ -176,8 +176,8 @@ impl From<Vec<o8_xml::invoice::Tetel>> for Products {
 
 #[derive(Serialize)]
 pub struct Product {
-    pub lot_no: i64,
-    pub id: i64,
+    pub lot_no: u64,
+    pub id: u64,
     pub no: String,
     pub name: String,
     pub qty: Option<f64>,

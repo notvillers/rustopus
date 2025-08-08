@@ -148,8 +148,8 @@ pub struct Tetelek {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Tetel {
-    pub tetelszam: i64,
-    pub cikkid: i64,
+    pub tetelszam: u64,
+    pub cikkid: u64,
     pub cikkszam: String,
     pub cikknev: String,
     #[serde(deserialize_with = "parse_comma_f64", default)]
