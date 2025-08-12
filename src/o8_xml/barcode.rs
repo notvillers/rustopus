@@ -52,9 +52,8 @@ pub struct GetVonalkodokAuthResponse {
 
 
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
+#[serde(rename_all = "lowercase")]
 pub struct GetVonalkodokAuthResult {
-    #[serde(rename = "valasz")]
     pub valasz: Valasz
 }
 

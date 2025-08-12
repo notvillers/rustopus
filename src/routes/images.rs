@@ -1,7 +1,6 @@
 use actix_web::{get, web, HttpRequest, Responder};
 
-use crate::routes::default::GetStringResponse;
-use crate::routes::default::{RequestParameters, send_xml, get_auth, get_url, get_xmlns};
+use crate::routes::default::{RequestParameters, GetStringResponse, GetDateResponse, get_auth, get_date, get_url, get_xmlns, send_xml};
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::ipv4::log_ip;
@@ -40,6 +39,10 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
         url: url,
         xmlns: xmlns,
         pid: None,
+        from_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, error_struct_xml, Some("from_date")) {
+            GetDateResponse::DateTime(datetime) => Some(datetime),
+            _ => None
+        },
         ..Default::default()
     };
 

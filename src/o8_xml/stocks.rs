@@ -54,6 +54,7 @@ pub struct GetCikkekKeszletValtozasAuthResponse {
 
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub struct GetCikkekKeszletValtozasAuthResult {
     pub valasz: Valasz,
 }

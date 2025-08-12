@@ -54,6 +54,7 @@ pub struct GetArlistaAuthResponse {
 
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub struct GetArlistaAuthResult {
     pub valasz: Valasz
 }

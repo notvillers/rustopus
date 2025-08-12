@@ -97,7 +97,7 @@ fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
 
 
 async fn get_products(call_data: o8_xml::defaults::CallData) -> partner_xml::products::Envelope {
-    let request = o8_xml::products::get_request_string(&call_data.xmlns, &FIRST_DATE, &call_data.authcode);
+    let request = o8_xml::products::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::products::Envelope>(&response) {
         Ok(envelope) => envelope.to_en(),
@@ -111,7 +111,7 @@ async fn get_products(call_data: o8_xml::defaults::CallData) -> partner_xml::pro
 
 
 async fn get_stocks(call_data: o8_xml::defaults::CallData) -> partner_xml::stocks::Envelope {
-    let request = o8_xml::stocks::get_request_string(&call_data.xmlns, &FIRST_DATE, &call_data.authcode);
+    let request = o8_xml::stocks::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::stocks::Envelope>(&response) {
         Ok(envelope) => envelope.to_en(),
@@ -148,7 +148,7 @@ async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::price
 
 
 async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::images::Envelope {
-    let request = o8_xml::images::get_request_string(&call_data.xmlns, &FIRST_DATE, &call_data.authcode);
+    let request = o8_xml::images::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::images::Envelope>(&response) {
         Ok(envelope) => envelope.to_en(),
@@ -162,7 +162,7 @@ async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::image
 
 
 async fn get_barcode(call_data: o8_xml::defaults::CallData) -> partner_xml::barcode::Envelope {
-    let request = o8_xml::barcode::get_request_string(&call_data.xmlns, &FIRST_DATE, &call_data.authcode);
+    let request = o8_xml::barcode::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::barcode::Envelope>(&response) {
         Ok(envelope) => envelope.to_en(),
