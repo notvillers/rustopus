@@ -101,10 +101,10 @@ async fn get_products(call_data: o8_xml::defaults::CallData) -> partner_xml::pro
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::products::Envelope>(&response) {
         Ok(envelope) => envelope.to_en(),
-        Err(de_error) => {
-            let error = errors::GLOBAL_GET_DATA_ERROR;
-            error_logger(ErrorType::DeError(de_error), &error);
-            partner_xml::products::error_struct(error.code, error.description)
+        Err(error) => {
+            let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
+            error_logger(ErrorType::DeError(error), &rustopus_error);
+            partner_xml::products::error_struct(rustopus_error.code, rustopus_error.description)
         }
     }
 }
@@ -115,10 +115,10 @@ async fn get_stocks(call_data: o8_xml::defaults::CallData) -> partner_xml::stock
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::stocks::Envelope>(&response) {
         Ok(envelope) => envelope.to_en(),
-        Err(de_error) => {
-            let error = errors::GLOBAL_GET_DATA_ERROR;
-            error_logger(ErrorType::DeError(de_error), &error);
-            partner_xml::stocks::error_struct(error.code, error.description)
+        Err(error) => {
+            let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
+            error_logger(ErrorType::DeError(error), &rustopus_error);
+            partner_xml::stocks::error_struct(rustopus_error.code, rustopus_error.description)
         }
     }
 }
@@ -131,17 +131,17 @@ async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::price
             let response = soap::get_response(&call_data.url, request).await;
             match quick_xml::de::from_str::<o8_xml::prices::Envelope>(&response) {
                 Ok(envelope) => envelope.to_en(),
-                Err(de_error) => {
-                    let error = errors::GLOBAL_GET_DATA_ERROR;
-                    error_logger(ErrorType::DeError(de_error), &error);
-                    partner_xml::prices::error_struct(error.code, error.description)
+                Err(error) => {
+                    let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
+                    error_logger(ErrorType::DeError(error), &rustopus_error);
+                    partner_xml::prices::error_struct(rustopus_error.code, rustopus_error.description)
                 }
             }
         }
         _ => {
-            let error = errors::GLOBAL_PID_ERROR;
-            error_logger(ErrorType::Text("PID missing"), &error);
-            partner_xml::prices::error_struct(errors::GLOBAL_PID_ERROR.code, errors::GLOBAL_PID_ERROR.description)
+            let rustopus_error = errors::GLOBAL_PID_ERROR;
+            error_logger(ErrorType::Text("PID missing"), &rustopus_error);
+            partner_xml::prices::error_struct(rustopus_error.code, rustopus_error.description)
         }
     }
 }
@@ -152,10 +152,10 @@ async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::image
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::images::Envelope>(&response) {
         Ok(envelope) => envelope.to_en(),
-        Err(de_error) => {
-            let error = errors::GLOBAL_GET_DATA_ERROR;
-            error_logger(ErrorType::DeError(de_error), &error);
-            partner_xml::images::error_struct(error.code, error.description)
+        Err(error) => {
+            let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
+            error_logger(ErrorType::DeError(error), &rustopus_error);
+            partner_xml::images::error_struct(rustopus_error.code, rustopus_error.description)
         }
     }
 }
@@ -166,10 +166,10 @@ async fn get_barcode(call_data: o8_xml::defaults::CallData) -> partner_xml::barc
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::barcode::Envelope>(&response) {
         Ok(envelope) => envelope.to_en(),
-        Err(de_error) => {
-            let error = errors::GLOBAL_GET_DATA_ERROR;
-            error_logger(ErrorType::DeError(de_error), &error);
-            partner_xml::barcode::error_struct(error.code, error.description)
+        Err(error) => {
+            let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
+            error_logger(ErrorType::DeError(error), &rustopus_error);
+            partner_xml::barcode::error_struct(rustopus_error.code, rustopus_error.description)
         }
     }
 }
@@ -180,10 +180,10 @@ async fn get_invoices(call_data: o8_xml::defaults::CallData) -> partner_xml::inv
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::invoice::Envelope>(&response) {
         Ok(envelope) => envelope.to_en(),
-        Err(de_error) => {
-            let error = errors::GLOBAL_GET_DATA_ERROR;
-            error_logger(ErrorType::DeError(de_error), &error);
-            partner_xml::invoice::error_struct(error.code, error.description)
+        Err(error) => {
+            let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
+            error_logger(ErrorType::DeError(error), &rustopus_error);
+            partner_xml::invoice::error_struct(rustopus_error.code, rustopus_error.description)
         }
     }
 }
@@ -195,10 +195,10 @@ async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::E
         _ => partner_xml::products::error_struct(errors::BULK_GET_PRODUCTS_ERROR.code, errors::BULK_GET_PRODUCTS_ERROR.description)
     };
 
-    if let Some(e) = products.body.response.result.answer.error {
-        let error = errors::GLOBAL_GET_DATA_ERROR;
-        error_logger(ErrorType::Text("Can not get products"), &error);
-        return partner_xml::bulk::error_struct(vec![errors::GLOBAL_GET_DATA_ERROR.into(), e])
+    if let Some(error) = products.body.response.result.answer.error {
+        let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
+        error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
+        return partner_xml::bulk::error_struct(vec![rustopus_error.into(), error])
     }
 
     let stocks = match RequestGet::Stocks(call_data.clone()).to_envelope().await {

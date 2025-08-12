@@ -24,7 +24,7 @@ pub fn get_settings() -> Settings {
             let settings: Result<Settings, config::ConfigError> = config.try_deserialize();
             match settings {
                 Ok(settings) => return settings,
-                Err(e) => elogger(format!("Config settings error: {}", e))
+                Err(error) => elogger(format!("Config settings error: {}", error))
             }
         }
         Err(e) => elogger(format!("Config config error: {}", e))
@@ -35,9 +35,9 @@ pub fn get_settings() -> Settings {
             port: 8080,
             timeout: 1200,
             workers: match available_parallelism() {
-                Ok(w) => w.into(),
-                Err(e) => {
-                    elogger(format!("Error getting available_parallelism(): {}", e));
+                Ok(workers) => workers.into(),
+                Err(error) => {
+                    elogger(format!("Error getting available_parallelism(): {}", error));
                     1
                 }
             }

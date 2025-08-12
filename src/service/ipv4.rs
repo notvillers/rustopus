@@ -24,10 +24,10 @@ pub async fn get_ip() -> RequestIP {
         Ok(response) => {
             match response.text().await {
                 Ok(body) => return RequestIP::Ok(body.trim().to_string()),
-                Err(e) => elogger(format!("ipv4 error: {}", e)),
+                Err(error) => elogger(format!("ipv4 error: {}", error)),
             }
         }
-        Err(e) => elogger(format!("ipv4 error: {}", e))
+        Err(error) => elogger(format!("ipv4 error: {}", error))
     }
     RequestIP::Err("unknown ipv4 address".to_string())
 }

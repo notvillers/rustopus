@@ -83,8 +83,8 @@ fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
     let file_path = log_dir.join(format!("{}.log", Local::now().format("%Y_%m_%d")));
 
     match append_to_file(&file_path, &content) {
-        Err(e) => {
-            match e {
+        Err(error) => {
+            match error {
                 AppendFileError::Open => eprintln!("Error opening '{:#?}'", file_path),
                 AppendFileError::Write => eprintln!("Error writing '{:#?}'", file_path),
                 AppendFileError::NewLine => eprintln!("Error adding new line '{:#?}'", file_path),
