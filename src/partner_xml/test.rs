@@ -83,7 +83,7 @@ impl From<(Option<String>, Option<String>, Option<String>, Option<partner_xml::d
 pub struct Data {
     pub ip: Option<String>,
     pub uuid: Option<String>,
-    pub time: Option<DateTime<Local>>
+    pub time: DateTime<Local>
 }
 
 impl From<(Option<String>, Option<String>)> for Data {
@@ -91,7 +91,7 @@ impl From<(Option<String>, Option<String>)> for Data {
         Data {
             ip: ip,
             uuid: uuid,
-            time: Some(Local::now())
+            time: Local::now()
         }
     }
 }
