@@ -42,6 +42,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
             GetI64Response::Number(pid) => Some(pid),
             GetI64Response::Response(response) => return response
         },
+        // Getting `from_date` from parameters
         from_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, error_struct_xml, Some("from_date")) {
             GetDateResponse::DateTime(datetime) => Some(datetime),
             _ => None

@@ -80,5 +80,3 @@ async fn main() -> std::io::Result<()> {
 
     Ok(())
 }
-
-// TODO: comment the `get_date`s
