@@ -50,7 +50,9 @@ async fn main() -> std::io::Result<()> {
     logger(format!("Running on '{}:{}', with {} worker(s)", config.server.host, config.server.port, config.server.workers));
 
     let current_dir = env::current_dir().expect("Failed to get current directory");
+
     let docs_dir = current_dir.join("src").join("static").join("docs");
+    
     let server = HttpServer::new(move || {
         App::new()
             .service(index)
