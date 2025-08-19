@@ -6,4 +6,4 @@ pub mod bulk;
 pub mod images;
 pub mod test;
 pub mod barcode;
-pub mod invoice;
+pub mod invoices;

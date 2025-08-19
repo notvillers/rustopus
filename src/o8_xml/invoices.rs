@@ -54,7 +54,7 @@ pub struct Envelope {
 }
 
 impl Envelope {
-    pub fn to_en(self) -> partner_xml::invoice::Envelope {
+    pub fn to_en(self) -> partner_xml::invoices::Envelope {
         self.into()
     }
 }

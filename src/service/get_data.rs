@@ -46,7 +46,7 @@ pub enum ResponseGet {
     Prices(partner_xml::prices::Envelope),
     Images(partner_xml::images::Envelope),
     Barcodes(partner_xml::barcode::Envelope),
-    Invoices(partner_xml::invoice::Envelope),
+    Invoices(partner_xml::invoices::Envelope),
     Bulk(partner_xml::bulk::Envelope)
 }
 
@@ -175,15 +175,15 @@ async fn get_barcode(call_data: o8_xml::defaults::CallData) -> partner_xml::barc
 }
 
 
-async fn get_invoices(call_data: o8_xml::defaults::CallData) -> partner_xml::invoice::Envelope {
-    let request = o8_xml::invoice::get_request_string_opt(&call_data.xmlns, &call_data.pid, &call_data.type_mod, &call_data.from_date, &call_data.to_date, &call_data.unpaid, &call_data.authcode);
+async fn get_invoices(call_data: o8_xml::defaults::CallData) -> partner_xml::invoices::Envelope {
+    let request = o8_xml::invoices::get_request_string_opt(&call_data.xmlns, &call_data.pid, &call_data.type_mod, &call_data.from_date, &call_data.to_date, &call_data.unpaid, &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
-    match quick_xml::de::from_str::<o8_xml::invoice::Envelope>(&response) {
+    match quick_xml::de::from_str::<o8_xml::invoices::Envelope>(&response) {
         Ok(envelope) => envelope.to_en(),
         Err(error) => {
             let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(error), &rustopus_error);
-            partner_xml::invoice::error_struct(rustopus_error.code, rustopus_error.description)
+            partner_xml::invoices::error_struct(rustopus_error.code, rustopus_error.description)
         }
     }
 }

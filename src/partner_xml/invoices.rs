@@ -11,8 +11,8 @@ pub struct Envelope {
     pub body: Body
 }
 
-impl From<o8_xml::invoice::Envelope> for Envelope {
-    fn from(e: o8_xml::invoice::Envelope) -> Self {
+impl From<o8_xml::invoices::Envelope> for Envelope {
+    fn from(e: o8_xml::invoices::Envelope) -> Self {
         Envelope {
             body: e.body.into()
         }
@@ -25,8 +25,8 @@ pub struct Body {
     pub response: Response
 }
 
-impl From<o8_xml::invoice::Body> for Body {
-    fn from(b: o8_xml::invoice::Body) -> Self {
+impl From<o8_xml::invoices::Body> for Body {
+    fn from(b: o8_xml::invoices::Body) -> Self {
         Body {
             response: b.get_szamlak_auth_response.into()
         }
@@ -39,8 +39,8 @@ pub struct Response {
     pub result: Result
 }
 
-impl From<o8_xml::invoice::GetSzamlakAuthResponse> for Response {
-    fn from(r: o8_xml::invoice::GetSzamlakAuthResponse) -> Self {
+impl From<o8_xml::invoices::GetSzamlakAuthResponse> for Response {
+    fn from(r: o8_xml::invoices::GetSzamlakAuthResponse) -> Self {
         Response {
             result: r.get_szamlak_auth_result.into()
         }
@@ -53,8 +53,8 @@ pub struct Result {
     pub answer: Answer
 }
 
-impl From<o8_xml::invoice::GetSzamlakAuthResult> for Result {
-    fn from(r: o8_xml::invoice::GetSzamlakAuthResult) -> Self {
+impl From<o8_xml::invoices::GetSzamlakAuthResult> for Result {
+    fn from(r: o8_xml::invoices::GetSzamlakAuthResult) -> Self {
         Result {
             answer: r.valasz.into()
         }
@@ -69,8 +69,8 @@ pub struct Answer {
     pub error: Option<partner_xml::defaults::Error>
 }
 
-impl From<o8_xml::invoice::Valasz> for Answer {
-    fn from(v: o8_xml::invoice::Valasz) -> Self {
+impl From<o8_xml::invoices::Valasz> for Answer {
+    fn from(v: o8_xml::invoices::Valasz) -> Self {
         Answer {
             version: v.verzio,
             invoices: v.szamlak.into(),
@@ -85,8 +85,8 @@ pub struct Invoices {
     pub invoice: Vec<Invoice>,
 }
 
-impl From<o8_xml::invoice::Szamlak> for Invoices {
-    fn from(sz: o8_xml::invoice::Szamlak) -> Self {
+impl From<o8_xml::invoices::Szamlak> for Invoices {
+    fn from(sz: o8_xml::invoices::Szamlak) -> Self {
         Invoices {
             invoice: sz.szamla.into_iter().map(Invoice::from).collect()
         }
@@ -100,8 +100,8 @@ pub struct Invoice {
     pub products: Products
 }
 
-impl From<o8_xml::invoice::Szamla> for Invoice {
-    fn from(sz: o8_xml::invoice::Szamla) -> Self {
+impl From<o8_xml::invoices::Szamla> for Invoice {
+    fn from(sz: o8_xml::invoices::Szamla) -> Self {
         Invoice {
             head: sz.fej.into(),
             products: sz.tetelek.tetel.into()
@@ -133,8 +133,8 @@ pub struct Head {
     pub delivery_street: Option<String>
 }
 
-impl From<o8_xml::invoice::Fej> for Head {
-    fn from(f: o8_xml::invoice::Fej) -> Self {
+impl From<o8_xml::invoices::Fej> for Head {
+    fn from(f: o8_xml::invoices::Fej) -> Self {
         Head {
             id: f.kiszamlakod,
             no: f.bizonylatszam,
@@ -165,8 +165,8 @@ pub struct Products {
     pub product: Vec<Product>
 }
 
-impl From<Vec<o8_xml::invoice::Tetel>> for Products {
-    fn from(t: Vec<o8_xml::invoice::Tetel>) -> Self {
+impl From<Vec<o8_xml::invoices::Tetel>> for Products {
+    fn from(t: Vec<o8_xml::invoices::Tetel>) -> Self {
         Products {
             product: t.into_iter().map(|x| x.into()).collect()
         }
@@ -190,8 +190,8 @@ pub struct Product {
     pub order_foreign_no: Option<String>
 }
 
-impl From<o8_xml::invoice::Tetel> for Product {
-    fn from(t: o8_xml::invoice::Tetel) -> Self {
+impl From<o8_xml::invoices::Tetel> for Product {
+    fn from(t: o8_xml::invoices::Tetel) -> Self {
         Product {
             lot_no: t.tetelszam,
             id: t.cikkid,
