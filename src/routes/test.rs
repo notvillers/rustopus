@@ -4,7 +4,7 @@ use crate::routes::default::send_xml;
 use crate::service::slave::get_uuid;
 use crate::service::ipv4::{log_ip, RequestIP};
 use crate::service::log::log_with_ip_uuid;
-use crate::partner_xml::{test::create_xml, defaults::Error};
+use crate::partner_xml::test::create_xml;
 use crate::global::errors;
 
 /// Name of the current request
@@ -19,7 +19,7 @@ async fn handler(req: HttpRequest) -> impl Responder {
     let ip_address = log_ip(req).await;
 
     // Error if can not get IP
-    let error: Option<Error> = match ip_address {
+    let error = match ip_address {
         RequestIP::Err(_) => Some(errors::UNDEFINED_ERROR.into()),
         _ => None
     };

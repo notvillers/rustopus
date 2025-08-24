@@ -36,7 +36,6 @@ async fn index() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-
     panic::set_hook(Box::new(|info| {
         elogger(format!("Panic: {:?}", info));
     }));

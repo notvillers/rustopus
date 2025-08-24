@@ -24,16 +24,15 @@ pub struct SoapConfig {
 
 impl SoapConfig {
     pub fn load() -> Self {
-        let path = get_soap_path();
         if get_soap_path().is_file() {
-            match fs::read_to_string(&path) {
+            match fs::read_to_string(&get_soap_path()) {
                 Ok(content) => {
                     match serde_json::from_str::<SoapConfig>(&content) {
                         Ok(json) => return json,
-                        Err(error) => elogger(format!("Can't read dict data from '{:#?}': {}", path, error))
+                        Err(error) => elogger(format!("Can't read dict data from '{:#?}': {}", get_soap_path(), error))
                     }
                 }
-                Err(error) => elogger(format!("Can't read '{:#?}': {}. (Do not bother this message if you are not willing to work with static 'url'.)", path, error))
+                Err(error) => elogger(format!("Can't read '{:#?}': {}. (Do not bother this message if you are not willing to work with static 'url'.)", get_soap_path(), error))
             }
         }
         SoapConfig {

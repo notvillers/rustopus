@@ -21,8 +21,7 @@ pub struct ServerConfig {
 pub fn get_settings() -> Settings {
     match Config::builder().add_source(config::File::with_name("Config")).build() {
         Ok(config) => {
-            let settings: Result<Settings, config::ConfigError> = config.try_deserialize();
-            match settings {
+            match config.try_deserialize::<Settings>() {
                 Ok(settings) => return settings,
                 Err(error) => elogger(format!("Config settings error: {}", error))
             }

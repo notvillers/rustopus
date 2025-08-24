@@ -14,20 +14,12 @@ pub struct ErrorMessage {
 }
 
 
-fn get_dummy_errors() -> Vec<ErrorMessage> {
-    vec![]
-}
-
-
 pub fn read_errors() -> Vec<ErrorMessage> {
     match env::current_dir() {
         Ok(current_dir) => {
-            let errors_path = current_dir.join("src").join("errors").join("errors.json");
-            match File::open(errors_path) {
+            match File::open(current_dir.join("src").join("errors").join("errors.json")) {
                 Ok(file) => {
-                    let reader = BufReader::new(file);
-                    let json: Result<Vec<ErrorMessage>, serde_json::Error> = serde_json::from_reader(reader);
-                    match json {
+                    match serde_json::from_reader::<_, Vec<ErrorMessage>>(BufReader::new(file)) {
                         Ok(error_messages) => return error_messages,
                         Err(error) => elogger(format!("errors.json file error: {}, returning dummy", error))
                     }
@@ -37,7 +29,7 @@ pub fn read_errors() -> Vec<ErrorMessage> {
         }
         Err(error) => elogger(format!("errors.json file error: {}, returning dummy", error))
     }
-    get_dummy_errors()
+    vec![]
 }
 
 

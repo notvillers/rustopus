@@ -10,10 +10,10 @@ pub async fn get_response(url: &str, soap_request: String) -> String {
     let client = match Client::builder()
         .timeout(Duration::from_secs(config::get_settings().server.timeout))
         .build() {
-        Ok(client) => client,
-        Err(error) => {
-            elogger(format!("Error creating reqwest client: {error}"));
-            Client::new()
+            Ok(client) => client,
+            Err(error) => {
+                elogger(format!("Error creating reqwest client: {error}"));
+                Client::new()
         }
     };
     match client
@@ -22,16 +22,16 @@ pub async fn get_response(url: &str, soap_request: String) -> String {
         .body(soap_request)
         .send()
         .await {
-        Ok(resp) => match resp.text().await {
-            Ok(text) => text,
+            Ok(resp) => match resp.text().await {
+                Ok(text) => text,
+                Err(error) => {
+                    elogger(format!("Response error: {}", error));
+                    "<Envelope></Envelope>".to_string()
+                }
+            },
             Err(error) => {
                 elogger(format!("Response error: {}", error));
                 "<Envelope></Envelope>".to_string()
             }
-        },
-        Err(error) => {
-            elogger(format!("Response error: {}", error));
-            "<Envelope></Envelope>".to_string()
-        }
     }
 }
