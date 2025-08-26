@@ -1,4 +1,3 @@
-use chrono::Local;
 use crate::service::path::get_current_or_root_dir;
 use std::ffi::{CString, CStr};
 use std::path::{Path, PathBuf};
@@ -7,6 +6,7 @@ use std::os::raw::c_char;
 #[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
 #[cfg(windows)]
+#[allow(unused_imports)]
 use std::os::windows::ffi::OsStrExt;
 
 fn path_to_cstring(path: &Path) -> Result<CString, std::ffi::NulError> {
