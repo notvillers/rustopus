@@ -1,6 +1,6 @@
 use chrono::Local;
 use crate::service::path::get_current_or_root_dir;
-use std::ffi::CString;
+use std::ffi::{CString, CStr};
 use std::path::{Path, PathBuf};
 use std::os::raw::c_char;
 
@@ -24,6 +24,14 @@ fn path_to_cstring(path: &Path) -> Result<CString, std::ffi::NulError> {
 
 unsafe extern "C" {
     fn append_to_file_c(filename: *const c_char, string_to_append: *const c_char) -> i32;
+    fn get_datetime_str_c() -> *const c_char;
+}
+
+
+fn get_datetime_str() -> String {
+    unsafe {
+        CStr::from_ptr(get_datetime_str_c()).to_str().unwrap_or(" - datetime error - ").to_string()
+    }
 }
 
 
@@ -39,16 +47,14 @@ fn append_to_file(path: &PathBuf, content: &str) -> Result<(), AppendFileError> 
     let c_path = path_to_cstring(&path).expect("Invalid path");
     let c_content = CString::new(content).expect("Content contained interior null byte");
 
-    let result = unsafe {
-        append_to_file_c(c_path.as_ptr(), c_content.as_ptr())
-    };
-
-    match result {
-        0 => Ok(()),
-        1 => Err(AppendFileError::Open),
-        2 => Err(AppendFileError::Write),
-        3 => Err(AppendFileError::NewLine),
-        error => Err(AppendFileError::Unknown(error))
+    unsafe {
+        match append_to_file_c(c_path.as_ptr(), c_content.as_ptr()) {
+            0 => Ok(()),
+            1 => Err(AppendFileError::Open),
+            2 => Err(AppendFileError::Write),
+            3 => Err(AppendFileError::NewLine),
+            error => Err(AppendFileError::Unknown(error))
+        }
     }
 }
 
@@ -65,7 +71,7 @@ fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
         _ => "".to_string()
     };
 
-    let content = format!("[{}] {}{}", Local::now().format("%Y-%m-%d %H:%M:%S").to_string(), error_prefix, message.as_ref());
+    let content = format!("[{}] {}{}", get_datetime_str(), error_prefix, message.as_ref());
     
     match log_type.unwrap_or(LogType::Ok) {
         LogType::Error => eprintln!("{}", content),

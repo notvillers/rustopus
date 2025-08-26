@@ -27,4 +27,5 @@ fn build_c_file(buildabe_c_file: BuildableCFile) {
 
 fn main() {
     build_c_file(("append.c", "append").into());
+    build_c_file(("date_prefix.c", "date_prefix").into());
 }
