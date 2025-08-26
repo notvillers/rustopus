@@ -25,12 +25,20 @@ fn path_to_cstring(path: &Path) -> Result<CString, std::ffi::NulError> {
 unsafe extern "C" {
     fn append_to_file_c(filename: *const c_char, string_to_append: *const c_char) -> i32;
     fn get_datetime_str_c() -> *const c_char;
+    fn get_date_str_c() -> *const c_char;
 }
 
 
 fn get_datetime_str() -> String {
     unsafe {
-        CStr::from_ptr(get_datetime_str_c()).to_str().unwrap_or(" - datetime error - ").to_string()
+        CStr::from_ptr(get_datetime_str_c()).to_str().unwrap_or("unknown").to_string()
+    }
+}
+
+
+fn get_date_str() -> String {
+    unsafe {
+        CStr::from_ptr(get_date_str_c()).to_str().unwrap_or("unknown").to_string()
     }
 }
 
@@ -44,8 +52,21 @@ enum AppendFileError {
 
 
 fn append_to_file(path: &PathBuf, content: &str) -> Result<(), AppendFileError> {
-    let c_path = path_to_cstring(&path).expect("Invalid path");
-    let c_content = CString::new(content).expect("Content contained interior null byte");
+    let c_path = match path_to_cstring(&path) {
+        Ok(csstring) => csstring,
+        Err(error) => {
+            println!("Error while searching for path {:#?}, error: '{}'", path, error);
+            return Err(AppendFileError::Open);
+        }
+    };
+
+    let c_content = match CString::new(content) {
+        Ok(csstring) => csstring,
+        Err(error) => {
+            println!("Content contained interior null byte, error {}", error);
+            return Err(AppendFileError::Write)
+        }
+    };
 
     unsafe {
         match append_to_file_c(c_path.as_ptr(), c_content.as_ptr()) {
@@ -72,7 +93,7 @@ fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
     };
 
     let content = format!("[{}] {}{}", get_datetime_str(), error_prefix, message.as_ref());
-    
+
     match log_type.unwrap_or(LogType::Ok) {
         LogType::Error => eprintln!("{}", content),
         _ => println!("{}", content)
@@ -86,7 +107,7 @@ fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
         }
     }
 
-    let file_path = log_dir.join(format!("{}.log", Local::now().format("%Y_%m_%d")));
+    let file_path = log_dir.join(format!("{}.log", get_date_str()));
 
     match append_to_file(&file_path, &content) {
         Err(error) => {

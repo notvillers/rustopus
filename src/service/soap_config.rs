@@ -32,7 +32,7 @@ impl SoapConfig {
                         Err(error) => elogger(format!("Can't read dict data from '{:#?}': {}", get_soap_path(), error))
                     }
                 }
-                Err(error) => elogger(format!("Can't read '{:#?}': {}. (Do not bother this message if you are not willing to work with static 'url'.)", get_soap_path(), error))
+                Err(error) => elogger(format!("Can't read '{:#?}': {}. (Do not bother this message, if you are not willing to work with static 'url'.)", get_soap_path(), error))
             }
         }
         SoapConfig {
