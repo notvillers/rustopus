@@ -121,7 +121,7 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
             response: GetStockChangeAuthResponse {
                 result: GetStockChangeAuthResult {
                     answer: Answer {
-                        version: "1.0".to_string(),
+                        version: String::from("1.0"),
                         products: Products {
                             product: Vec::new()
                         },
@@ -133,9 +133,10 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
     }
 }
 
+
 pub fn error_struct_xml(code: u64, description: &str) -> String {
     match quick_xml::se::to_string(&error_struct(code, description)) {
         Ok(xml) => xml,
-        _ => "<Envelope></Envelope>".to_string()
+        _ => String::from("<Envelope></Envelope>")
     }
 }

@@ -23,15 +23,10 @@ pub async fn get_response(url: &str, soap_request: String) -> String {
         .send()
         .await {
             Ok(resp) => match resp.text().await {
-                Ok(text) => text,
-                Err(error) => {
-                    elogger(format!("Response error: {}", error));
-                    "<Envelope></Envelope>".to_string()
-                }
+                Ok(text) => return text,
+                Err(error) => elogger(format!("Response error: {}", error))
             },
-            Err(error) => {
-                elogger(format!("Response error: {}", error));
-                "<Envelope></Envelope>".to_string()
-            }
+            Err(error) => elogger(format!("Response error: {}", error))
     }
+    String::from("<Envelope></Envelope>")
 }

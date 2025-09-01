@@ -37,5 +37,5 @@ pub fn translate_error(hungarian_error: &str) -> String {
     if let Some(error_message) = &global::errors::ERRORS.iter().find(|error| hungarian_error.starts_with(&error.hu)) {
         return error_message.en.clone()
     }
-    hungarian_error.to_string()
+    String::from(hungarian_error)
 }

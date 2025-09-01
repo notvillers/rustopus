@@ -90,7 +90,7 @@ fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
         Ok(val) => val,
         Err(de_error) => {
             elogger(format!("{}: {} ({})", errors::GLOBAL_CONVERT_ERROR.code, errors::GLOBAL_CONVERT_ERROR.description, de_error));
-            "<Envelope></Envelope>".to_string()
+            String::from("<Envelope></Envelope>")
         }
     }
 }

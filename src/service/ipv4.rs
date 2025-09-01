@@ -29,7 +29,7 @@ pub async fn get_ip() -> RequestIP {
         }
         Err(error) => elogger(format!("ipv4 error: {}", error))
     }
-    RequestIP::Err("unknown ipv4 address".to_string())
+    RequestIP::Err(String::from("unknown ipv4 address"))
 }
 
 
@@ -39,7 +39,7 @@ pub async fn log_ip(req: HttpRequest) -> RequestIP {
         .get("X-Forwarded-For")
         .and_then(|x| x.to_str().ok())
         .and_then(|x| x.split(',').next()) {
-            Some(ip) => RequestIP::Ok(ip.to_string()),
+            Some(ip) => RequestIP::Ok(String::from(ip)),
             _ => {
                 match req.peer_addr() {
                     Some(peer_address) => {
@@ -51,7 +51,7 @@ pub async fn log_ip(req: HttpRequest) -> RequestIP {
                     }
                     _ => {
                         elogger("Can not get IP address");
-                        RequestIP::Err("unknown ip address".to_string())
+                        RequestIP::Err(String::from("unknown ip address"))
                     }
                 }
             }

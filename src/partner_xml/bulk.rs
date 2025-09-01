@@ -106,7 +106,7 @@ impl From<(partner_xml::products::Answer, Option<partner_xml::prices::Answer>, O
             .for_each(|x| errors.push(x.clone()));
 
         Answer {
-            version: "1.0".to_string(),
+            version: String::from("1.0"),
             products: (
                 c.products.product,
                 p.map_or(vec![], |x| x.prices.price),
@@ -249,7 +249,7 @@ pub fn error_struct(errors: Vec<partner_xml::defaults::Error>) -> Envelope {
             response: Response {
                 result: Result {
                     answer: Answer {
-                        version: "1.0".to_string(),
+                        version: String::from("1.0"),
                         products: Products {
                             product: Vec::new()
                         },
@@ -269,6 +269,6 @@ pub fn error_struct_xml(code: u64, description: &str) -> String {
     };
     match quick_xml::se::to_string(&error_struct(vec![error])) {
         Ok(xml) => xml,
-        _ => "<Envelope></Envelope>".to_string()
+        _ => String::from("<Envelope></Envelope>")
     }
 }
