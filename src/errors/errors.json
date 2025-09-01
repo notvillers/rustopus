@@ -1,7 +1,7 @@
 [
     {"hu": "Nem engedélyezett IP", "en": "IP address not allowed"},
     {"hu": "Túl sok kérés", "en": "Request limit exceeded"},
-    {"hu": "Nem engedélyezett partner/fizoszt/végf.", "en": "Not allowed partner/price/enduser"},
+    {"hu": "Nem engedélyezett partner/fizoszt/végf.", "en": "Not allowed partner/price category/enduser"},
     {"hu": "Ismeretlen hiba", "en": "Error unknown"},
     {"hu": "A mezőt kötelező megadni: ", "en": "The field is required: "},
     {"hu": "Hibás formátum: ", "en": "Incorrect format: "},
