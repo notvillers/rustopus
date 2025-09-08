@@ -16,10 +16,10 @@ pub fn get_current_or_root_dir() -> PathBuf {
 fn get_root_path() -> PathBuf {
     #[cfg(windows)]
     {
-        PathBuf::from("C:\\")
+        "C:\\".into()
     }
     #[cfg(not(windows))]
     {
-        PathBuf::from("/")
+        "/".into()
     }
 }

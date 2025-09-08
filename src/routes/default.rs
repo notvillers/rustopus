@@ -47,7 +47,7 @@ pub fn send_xml(xml: String) -> HttpResponse {
 /// Tries to get authentication from the parameter, sends back error xml on fail
 pub fn get_auth(request_name: &str, ip_address: &str, uuid: &str, param: Option<String>, send_error_xml_fn: fn(u64, &str) -> String) -> GetStringResponse {
     match param {
-        Some(ref s) if !s.trim().is_empty() => GetStringResponse::Text(s.to_string()),
+        Some(ref s) if !s.trim().is_empty() => GetStringResponse::Text(s.into()),
         _ => {
             let error = errors::GLOBAL_AUTH_ERROR;
             elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
@@ -60,7 +60,7 @@ pub fn get_auth(request_name: &str, ip_address: &str, uuid: &str, param: Option<
 /// Tries to get url from the parameter, if not found, then tries to get default url from the `./soap.json` file, sends back error xml on fail
 pub fn get_url(request_name: &str, ip_address: &str, uuid: &str, param: Option<String>, send_error_xml_fn: fn(u64, &str) -> String) -> GetStringResponse {
     match param {
-        Some(ref s) if !s.trim().is_empty() => GetStringResponse::Text(s.to_string()),
+        Some(ref s) if !s.trim().is_empty() => GetStringResponse::Text(s.into()),
         _ => {
             match get_default_url() {
                 Some(default_url) => {

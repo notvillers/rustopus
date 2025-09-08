@@ -249,7 +249,7 @@ pub fn error_struct(errors: Vec<partner_xml::defaults::Error>) -> Envelope {
             response: Response {
                 result: Result {
                     answer: Answer {
-                        version: String::from("1.0"),
+                        version: "1.0".into(),
                         products: Products {
                             product: Vec::new()
                         },
@@ -267,8 +267,5 @@ pub fn error_struct_xml(code: u64, description: &str) -> String {
         code: code,
         description: description.to_string()
     };
-    match quick_xml::se::to_string(&error_struct(vec![error])) {
-        Ok(xml) => xml,
-        _ => String::from("<Envelope></Envelope>")
-    }
+    quick_xml::se::to_string(&error_struct(vec![error])).unwrap_or("<Envelope></Envelope>".into())
 }

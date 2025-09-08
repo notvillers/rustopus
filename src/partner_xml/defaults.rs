@@ -15,7 +15,7 @@ impl Error {
     pub fn load<S: AsRef<str>>(code: u64, description: S) -> Self {
         Error {
             code: code,
-            description: String::from(description.as_ref())
+            description: description.as_ref().into()
         }
     }
 }
@@ -33,7 +33,7 @@ impl From<global::errors::RustopusError> for Error {
     fn from(e: global::errors::RustopusError) -> Self {
         Error {
             code: e.code,
-            description: String::from(e.description)
+            description: e.description.into()
         }
     }
 }

@@ -29,7 +29,7 @@ pub async fn get_ip() -> RequestIP {
         }
         Err(error) => elogger(format!("ipv4 error: {}", error))
     }
-    RequestIP::Err(String::from("unknown ipv4 address"))
+    RequestIP::Err("unknown ipv4 address".into())
 }
 
 
@@ -51,7 +51,7 @@ pub async fn log_ip(req: HttpRequest) -> RequestIP {
                     }
                     _ => {
                         elogger("Can not get IP address");
-                        RequestIP::Err(String::from("unknown ip address"))
+                        RequestIP::Err("unknown ip address".into())
                     }
                 }
             }

@@ -26,9 +26,9 @@ pub struct CallData {
 impl Default for CallData {
     fn default() -> Self {
         CallData {
-            authcode: String::from(""),
-            url: String::from(""),
-            xmlns: String::from(""),
+            authcode: "".into(),
+            url: "".into(),
+            xmlns: "".into(),
             pid: None,
             type_mod: None,
             from_date: None,

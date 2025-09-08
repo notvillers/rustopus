@@ -71,7 +71,7 @@ pub struct Answer {
 impl From<(Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)> for Answer {
     fn from((version, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)) -> Self {
         Answer {
-            version: version.unwrap_or(String::from("1.0")),
+            version: version.unwrap_or("1.0".into()),
             data: if ip.is_some() || uuid.is_some() { Some((ip, uuid).into()) } else { None },
             error: error
         }
@@ -98,5 +98,5 @@ impl From<(Option<String>, Option<String>)> for Data {
 
 
 pub fn create_xml(envelope: Envelope) -> String {
-    quick_xml::se::to_string(&envelope).unwrap_or(String::from("<Envelope></Envelope>"))
+    quick_xml::se::to_string(&envelope).unwrap_or("<Envelope></Envelope>".into())
 }

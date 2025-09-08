@@ -47,7 +47,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     };
 
     // Before log
-    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}, pid: {:#?}", REQUEST_NAME, call_data.url, call_data.authcode, call_data.pid));
+    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}, pid: {:#?}", REQUEST_NAME, call_data.url, call_data.authcode, call_data.pid.unwrap_or(0)));
 
     // Getting data
     let xml = RequestGet::Prices(call_data).to_xml().await;

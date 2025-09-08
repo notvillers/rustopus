@@ -30,7 +30,7 @@ pub fn get_settings() -> Settings {
     }
     Settings { 
         server: ServerConfig {
-            host: String::from("0.0.0.0"),
+            host: "0.0.0.0".into(),
             port: 8080,
             timeout: 1200,
             workers: match available_parallelism() {

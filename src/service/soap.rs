@@ -28,5 +28,5 @@ pub async fn get_response(url: &str, soap_request: String) -> String {
             },
             Err(error) => elogger(format!("Response error: {}", error))
     }
-    String::from("<Envelope></Envelope>")
+    "<Envelope></Envelope>".into()
 }
