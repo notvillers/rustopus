@@ -191,15 +191,20 @@ async fn get_invoices(call_data: o8_xml::defaults::CallData) -> partner_xml::inv
 
 async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::Envelope {
     let products = match RequestGet::Products(call_data.clone()).to_envelope().await {
-        ResponseGet::Products(envelope) if envelope.body.response.result.answer.error.is_none() => envelope,
-        _ => partner_xml::products::error_struct(errors::BULK_GET_PRODUCTS_ERROR.code, errors::BULK_GET_PRODUCTS_ERROR.description)
+        ResponseGet::Products(envelope) => {
+            if let Some(error) = envelope.body.response.result.answer.error {
+                let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
+                error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
+                return partner_xml::bulk::error_struct(vec![rustopus_error.into(), error])
+            }
+            envelope
+        },
+        _ => {
+            let rustopus_error = errors::BULK_GET_PRODUCTS_ERROR;
+            error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
+            return partner_xml::bulk::error_struct(vec![rustopus_error.into()])
+        }
     };
-
-    if let Some(error) = products.body.response.result.answer.error {
-        let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
-        error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
-        return partner_xml::bulk::error_struct(vec![rustopus_error.into(), error])
-    }
 
     let stocks = match RequestGet::Stocks(call_data.clone()).to_envelope().await {
         ResponseGet::Stocks(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),

@@ -34,7 +34,7 @@ pub fn read_errors() -> Vec<ErrorMessage> {
 
 
 pub fn translate_error(hungarian_error: &str) -> String {
-    if let Some(error_message) = &global::errors::ERRORS.iter().find(|error| hungarian_error.starts_with(&error.hu)) {
+    if let Some(error_message) = &global::errors::ERRORS.iter().find(|x| hungarian_error.starts_with(&x.hu)) {
         return error_message.en.clone()
     }
     String::from(hungarian_error)
