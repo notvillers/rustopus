@@ -7,16 +7,12 @@ pub fn get_date_from_parts(year: Option<i32>, month: Option<u32>, day: Option<u3
                 year.unwrap_or(1900),
                 month.unwrap_or(1), 
                 day.unwrap_or(1)
-            ).unwrap_or(
-                NaiveDate::MIN
-            ),
+            ).unwrap_or(NaiveDate::MIN),
             NaiveTime::from_hms_opt(
                 hour.unwrap_or(0),
                 min.unwrap_or(0),
                 sec.unwrap_or(0)
-            ).unwrap_or(
-                NaiveTime::MIN
-            )
+            ).unwrap_or(NaiveTime::MIN)
         )
     )
 }
