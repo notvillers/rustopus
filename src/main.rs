@@ -76,8 +76,10 @@ async fn main() -> std::io::Result<()> {
 
     match server.await {
         Err(e) => elogger(format!("Server exited with error: {}", e)),
-        _ => logger("Server stopped gracefully.")
+        _ => {}
     }
+
+    logger("Server stopped gracefully.");
 
     Ok(())
 }
