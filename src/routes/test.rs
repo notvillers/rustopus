@@ -19,9 +19,10 @@ async fn handler(req: HttpRequest) -> impl Responder {
     let ip_address = log_ip(req).await;
 
     // Error if can not get IP
-    let error = match ip_address {
-        RequestIP::Err(_) => Some(errors::UNDEFINED_ERROR.into()),
-        _ => None
+    let error = if let RequestIP::Err(_) = ip_address {
+        Some(errors::UNDEFINED_ERROR.into())
+    } else {
+        None
     };
 
     // Before log

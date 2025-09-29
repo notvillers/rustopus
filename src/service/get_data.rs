@@ -87,12 +87,12 @@ impl RequestGet {
 
 fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
     match quick_xml::se::to_string(val) {
-        Ok(val) => val,
+        Ok(val) => return val,
         Err(de_error) => {
             elogger(format!("{}: {} ({})", errors::GLOBAL_CONVERT_ERROR.code, errors::GLOBAL_CONVERT_ERROR.description, de_error));
-            "<Envelope></Envelope>".into()
         }
     }
+    "<Envelope></Envelope>".into()
 }
 
 
@@ -125,25 +125,21 @@ async fn get_stocks(call_data: o8_xml::defaults::CallData) -> partner_xml::stock
 
 
 async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::prices::Envelope {
-    match call_data.pid {
-        Some(pid) => {
-            let request = o8_xml::prices::get_request_string(&call_data.xmlns, &call_data.authcode, &pid);
-            let response = soap::get_response(&call_data.url, request).await;
-            match quick_xml::de::from_str::<o8_xml::prices::Envelope>(&response) {
-                Ok(envelope) => envelope.to_en(),
-                Err(error) => {
-                    let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
-                    error_logger(ErrorType::DeError(error), &rustopus_error);
-                    partner_xml::prices::error_struct(rustopus_error.code, rustopus_error.description)
-                }
+    if let Some(pid) = call_data.pid {
+        let request = o8_xml::prices::get_request_string(&call_data.xmlns, &call_data.authcode, &pid);
+        let response = soap::get_response(&call_data.url, request).await;
+        match quick_xml::de::from_str::<o8_xml::prices::Envelope>(&response) {
+            Ok(envelope) => envelope.to_en(),
+            Err(error) => {
+                let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
+                error_logger(ErrorType::DeError(error), &rustopus_error);
+                partner_xml::prices::error_struct(rustopus_error.code, rustopus_error.description)
             }
-        }
-        _ => {
-            let rustopus_error = errors::GLOBAL_PID_ERROR;
-            error_logger(ErrorType::Text("PID missing"), &rustopus_error);
-            partner_xml::prices::error_struct(rustopus_error.code, rustopus_error.description)
-        }
+        };
     }
+    let rustopus_error = errors::GLOBAL_PID_ERROR;
+    error_logger(ErrorType::Text("PID missing"), &rustopus_error);
+    partner_xml::prices::error_struct(rustopus_error.code, rustopus_error.description)
 }
 
 
@@ -190,20 +186,17 @@ async fn get_invoices(call_data: o8_xml::defaults::CallData) -> partner_xml::inv
 
 
 async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::Envelope {
-    let products = match RequestGet::Products(call_data.clone()).to_envelope().await {
-        ResponseGet::Products(envelope) => {
-            if let Some(error) = envelope.body.response.result.answer.error {
-                let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
-                error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
-                return partner_xml::bulk::error_struct(vec![rustopus_error.into(), error])
-            }
-            envelope
-        },
-        _ => {
-            let rustopus_error = errors::BULK_GET_PRODUCTS_ERROR;
+    let products = if let ResponseGet::Products(envelope) = RequestGet::Products(call_data.clone()).to_envelope().await {
+        if let Some(error) = envelope.body.response.result.answer.error {
+            let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
-            return partner_xml::bulk::error_struct(vec![rustopus_error.into()])
+            return partner_xml::bulk::error_struct(vec![rustopus_error.into(), error])
         }
+        envelope
+    } else {
+        let rustopus_error = errors::BULK_GET_PRODUCTS_ERROR;
+        error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
+        return partner_xml::bulk::error_struct(vec![rustopus_error.into()])
     };
 
     let stocks = match RequestGet::Stocks(call_data.clone()).to_envelope().await {

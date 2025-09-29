@@ -87,16 +87,18 @@ enum LogType {
 
 
 fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
-    let error_prefix: String = match log_type.as_ref().unwrap_or(&LogType::Ok) {
-        LogType::Error => "ERROR: ".into(),
-        _ => "".into(),
+    let error_prefix: String = if let LogType::Error = log_type.as_ref().unwrap_or(&LogType::Ok) {
+        "ERROR: ".into()
+    } else {
+        "".into()
     };
 
     let content = format!("[{}] {}{}", get_datetime_str(), error_prefix, message.as_ref());
 
-    match log_type.unwrap_or(LogType::Ok) {
-        LogType::Error => eprintln!("{}", content),
-        _ => println!("{}", content)
+    if let LogType::Error = log_type.unwrap_or(LogType::Ok) {
+        eprintln!("{}", content)
+    } else {
+        println!("{}", content)
     };
 
     let log_dir = get_current_or_root_dir().join("log");
@@ -109,16 +111,13 @@ fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
 
     let file_path = log_dir.join(format!("{}.log", get_date_str()));
 
-    match append_to_file(&file_path, &content) {
-        Err(error) => {
-            match error {
-                AppendFileError::Open => eprintln!("Error opening '{:#?}'", file_path),
-                AppendFileError::Write => eprintln!("Error writing '{:#?}'", file_path),
-                AppendFileError::NewLine => eprintln!("Error adding new line '{:#?}'", file_path),
-                AppendFileError::Unknown(e) => eprintln!("Error while appending '{:#?}': {}", file_path, e)
-            }
-        },
-        _ => {}
+    if let Err(error) = append_to_file(&file_path, &content) {
+        match error {
+            AppendFileError::Open => eprintln!("Error opening '{:#?}'", file_path),
+            AppendFileError::Write => eprintln!("Error writing '{:#?}'", file_path),
+            AppendFileError::NewLine => eprintln!("Error adding new line '{:#?}'", file_path),
+            AppendFileError::Unknown(e) => eprintln!("Error while appending '{:#?}': {}", file_path, e)
+        }
     }
 }
 
@@ -134,10 +133,10 @@ pub fn logger<S: AsRef<str>>(message: S) {
 
 
 fn log_with_ip_handle<S: AsRef<str>>(ip_address: &str, message: S, log_type: Option<LogType>) {
-    match log_type.unwrap_or(LogType::Ok) {
-        LogType::Error => elogger(format!("|{}| {}", ip_address, message.as_ref())),
-        _ => logger(format!("|{}| {}", ip_address, message.as_ref()))
+    if let LogType::Error = log_type.unwrap_or(LogType::Ok) {
+        elogger(format!("|{}| {}", ip_address, message.as_ref()))
     }
+    logger(format!("|{}| {}", ip_address, message.as_ref()))
 }
 
 
@@ -152,10 +151,11 @@ pub fn elog_with_ip<S: AsRef<str>>(ip_address: &str, message: S) {
 
 
 fn log_with_ip_uuid_handle<S: AsRef<str>>(ip_address: &str, uuid: &str, message: S, log_type: Option<LogType>) {
-    match log_type.unwrap_or(LogType::Ok) {
-        LogType::Error => elog_with_ip(ip_address, format!("{}: {}", uuid, message.as_ref())),
-        _ => log_with_ip(ip_address, format!("{}: {}", uuid, message.as_ref()))
+    if let LogType::Error = log_type.unwrap_or(LogType::Ok) {
+        elog_with_ip(ip_address, format!("{}: {}", uuid, message.as_ref()));
+        return;
     }
+    log_with_ip(ip_address, format!("{}: {}", uuid, message.as_ref()))
 }
 
 

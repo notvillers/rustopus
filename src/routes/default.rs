@@ -46,35 +46,27 @@ pub fn send_xml(xml: String) -> HttpResponse {
 
 /// Tries to get authentication from the parameter, sends back error xml on fail
 pub fn get_auth(request_name: &str, ip_address: &str, uuid: &str, param: Option<String>, send_error_xml_fn: fn(u64, &str) -> String) -> GetStringResponse {
-    match param {
-        Some(ref s) if !s.trim().is_empty() => GetStringResponse::Text(s.into()),
-        _ => {
-            let error = errors::GLOBAL_AUTH_ERROR;
-            elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
-            GetStringResponse::Response(send_xml(send_error_xml_fn(error.code, error.description)))
-        }
+    if let Some(s) = param.filter(|x| !x.trim().is_empty()) {
+        return GetStringResponse::Text(s.into())
     }
+    let error = errors::GLOBAL_AUTH_ERROR;
+    elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
+    GetStringResponse::Response(send_xml(send_error_xml_fn(error.code, error.description)))
 }
 
 
 /// Tries to get url from the parameter, if not found, then tries to get default url from the `./soap.json` file, sends back error xml on fail
 pub fn get_url(request_name: &str, ip_address: &str, uuid: &str, param: Option<String>, send_error_xml_fn: fn(u64, &str) -> String) -> GetStringResponse {
-    match param {
-        Some(ref s) if !s.trim().is_empty() => GetStringResponse::Text(s.into()),
-        _ => {
-            match get_default_url() {
-                Some(default_url) => {
-                    log_with_ip_uuid(ip_address, uuid, format!("Using default url: '{}'", default_url));
-                    GetStringResponse::Text(default_url)
-                }
-                _ => {
-                    let error = errors::GLOBAL_URL_ERROR;
-                    elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
-                    GetStringResponse::Response(send_xml(send_error_xml_fn(error.code, error.description)))
-                }
-            }
-        }
+    if let Some(s) = param.filter(|x| !x.trim().is_empty()) {
+        return GetStringResponse::Text(s);
     }
+    if let Some(default_url) = get_default_url() {
+        log_with_ip_uuid(ip_address, uuid, format!("Using default url: '{}'", default_url));
+        return GetStringResponse::Text(default_url)
+    }
+    let error = errors::GLOBAL_URL_ERROR;
+    elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
+    GetStringResponse::Response(send_xml(send_error_xml_fn(error.code, error.description)))
 }
 
 
@@ -94,40 +86,34 @@ pub fn get_xmlns(param: Option<String>, url: &str) -> String {
 
 /// Tries to get pid (Partner ID) from parameter, sends back error xml on fail
 pub fn get_pid(request_name: &str, ip_address: &str, uuid: &str, param: Option<i64>, send_error_xml_fn: fn(u64, &str) -> String) -> GetI64Response {
-    match param {
-        Some(ref s) => GetI64Response::Number(*s),
-        _ => {
-            let error = errors::GLOBAL_PID_ERROR;
-            elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
-            GetI64Response::Response(send_xml(send_error_xml_fn(error.code, error.description)))
-        }
+    if let Some(s) = param {
+        return GetI64Response::Number(s)
     }
+    let error = errors::GLOBAL_PID_ERROR;
+    elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
+    GetI64Response::Response(send_xml(send_error_xml_fn(error.code, error.description)))
 }
 
 
 /// Tries to get date from parameter, sends back error xml on fail
 pub fn get_date(request_name: &str, ip_address: &str, uuid: &str, param: Option<DateTime<Utc>>, send_error_xml_fn: fn(u64, &str) -> String, param_name: Option<&str>) -> GetDateResponse {
-    match param {
-        Some(ref s) => GetDateResponse::DateTime(*s),
-        _ => {
-            let error = errors::GLOBAL_MISSING_ERROR;
-            let error_str = format!("{}: {} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name);
-            elog_with_ip_uuid(ip_address, uuid, &error_str);
-            GetDateResponse::Response(send_xml(send_error_xml_fn(error.code, &error_str)))
-        }
+    if let Some(s) = param {
+        return GetDateResponse::DateTime(s)
     }
+    let error = errors::GLOBAL_MISSING_ERROR;
+    let error_str = format!("{}: {} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name);
+    elog_with_ip_uuid(ip_address, uuid, &error_str);
+    GetDateResponse::Response(send_xml(send_error_xml_fn(error.code, &error_str)))
 }
 
 
 /// Tries to get i64 from parameter, send back error xml on fail
 pub fn get_i64(request_name: &str, ip_address: &str, uuid: &str, param: Option<i64>, send_error_xml_fn: fn(u64, &str) -> String, param_name: Option<&str>) -> GetI64Response {
-    match param {
-        Some(ref s) => GetI64Response::Number(*s),
-        _ => {
-            let error = errors::GLOBAL_MISSING_ERROR;
-            let error_str = format!("{}: {} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name);
-            elog_with_ip_uuid(ip_address, uuid, &error_str);
-            GetI64Response::Response(send_xml(send_error_xml_fn(error.code, &error_str)))
-        }
+    if let Some(s) = param {
+        return GetI64Response::Number(s)
     }
+    let error = errors::GLOBAL_MISSING_ERROR;
+    let error_str = format!("{}: {} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name);
+    elog_with_ip_uuid(ip_address, uuid, &error_str);
+    GetI64Response::Response(send_xml(send_error_xml_fn(error.code, &error_str)))
 }
