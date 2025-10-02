@@ -134,7 +134,8 @@ pub fn logger<S: AsRef<str>>(message: S) {
 
 fn log_with_ip_handle<S: AsRef<str>>(ip_address: &str, message: S, log_type: Option<LogType>) {
     if let LogType::Error = log_type.unwrap_or(LogType::Ok) {
-        elogger(format!("|{}| {}", ip_address, message.as_ref()))
+        elogger(format!("|{}| {}", ip_address, message.as_ref()));
+        return;
     }
     logger(format!("|{}| {}", ip_address, message.as_ref()))
 }

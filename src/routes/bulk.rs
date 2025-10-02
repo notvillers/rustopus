@@ -20,25 +20,25 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let ip_address = log_ip(req).await.to_string();
 
     // Trying to get url from parameters
-    let url = match get_url(REQUEST_NAME, &ip_address, &uuid, params.url, error_struct_xml) {
+    let url = match get_url(REQUEST_NAME, &ip_address, &uuid, &params, error_struct_xml) {
         GetStringResponse::Text(url) => url,
         GetStringResponse::Response(response) => return response
     };
 
     // Getting XMLNS from parameters, otherwise using url
-    let xmlns = get_xmlns(params.xmlns, &url);
+    let xmlns = get_xmlns(&params, &url);
 
     // Creating call data from parameters
     let call_data = CallData {
         // Getting authentication code from parameters
-        authcode: match get_auth(REQUEST_NAME, &ip_address, &uuid, params.authcode, error_struct_xml) {
+        authcode: match get_auth(REQUEST_NAME, &ip_address, &uuid, &params, error_struct_xml) {
             GetStringResponse::Text(auth) => auth,
             GetStringResponse::Response(response) => return response
         },
         url: url,
         xmlns: xmlns,
         // Getting partner ID from parameters
-        pid: match get_pid(REQUEST_NAME, &ip_address, &uuid, params.pid, error_struct_xml) {
+        pid: match get_pid(REQUEST_NAME, &ip_address, &uuid, &params, error_struct_xml) {
             GetI64Response::Number(pid) => Some(pid),
             GetI64Response::Response(response) => return response
         },
