@@ -8,7 +8,7 @@ use crate::ipv4::log_ip;
 use crate::partner_xml::invoices::error_struct_xml;
 use crate::o8_xml::defaults::CallData;
 use crate::service::get_data::RequestGet;
-use crate::service::dates::{get_first_date, get_datetime, is_min_date};
+use crate::service::dates::{get_first_date, is_min_date};
 
 /// Name of the current request
 const REQUEST_NAME: &'static str = "INVOICES REQUEST";
@@ -45,12 +45,13 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
             GetI64Response::Response(response) => return response
         },
         // Getting `type_mod` from parameters
-        type_mod: match get_i64(REQUEST_NAME, &ip_address, &uuid, params.type_mod, error_struct_xml, Some("type_mod")) {
-            GetI64Response::Number(num) => Some(num),
-            _ => Some(1)
+        type_mod: if let GetI64Response::Number(num) = get_i64(REQUEST_NAME, &ip_address, &uuid, params.type_mod, error_struct_xml, Some("type_mod")) {
+            Some(num)
+        } else {
+            Some(1)
         },
         // Getting `from_date` from parameters
-        from_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, error_struct_xml,  Some("from_date")) {
+        from_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, error_struct_xml,  Some("from_date"), true) {
             GetDateResponse::DateTime(datetime) => Some(datetime),
             GetDateResponse::Response(response) => {
                 let first_date = get_first_date();
@@ -60,15 +61,15 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
                 Some(first_date)
             }
         },
-        // Getting `to_date` from parameters
-        to_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.to_date, error_struct_xml, Some("to_date")) {
-            GetDateResponse::DateTime(datetime) => Some(datetime),
-            _ => Some(get_datetime())
+        to_date: if let GetDateResponse::DateTime(datetime) = get_date(REQUEST_NAME, &ip_address, &uuid, params.to_date, error_struct_xml, Some("to_date"), true) {
+            Some(datetime)
+        } else {
+            None
         },
-        // Getting `unpaid` from parameters
-        unpaid: match get_i64(REQUEST_NAME, &ip_address, &uuid, params.unpaid, error_struct_xml, Some("unpaid")) {
-            GetI64Response::Number(num) => Some(num),
-            _ => Some(0)
+        unpaid: if let GetI64Response::Number(num) = get_i64(REQUEST_NAME, &ip_address, &uuid, params.unpaid, error_struct_xml, Some("unpaid")) {
+            Some(num)
+        } else {
+            Some(0)
         },
         ..Default::default()
     };

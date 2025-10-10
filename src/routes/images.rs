@@ -40,9 +40,10 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
         xmlns: xmlns,
         pid: None,
         // Getting `from_date` from parameters
-        from_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, error_struct_xml, Some("from_date")) {
-            GetDateResponse::DateTime(datetime) => Some(datetime),
-            _ => None
+        from_date: if let GetDateResponse::DateTime(datetime) = get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, error_struct_xml, Some("from_date"), true) {
+            Some(datetime)
+        } else {
+            None
         },
         ..Default::default()
     };

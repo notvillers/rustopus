@@ -100,12 +100,14 @@ pub fn get_pid(request_name: &str, ip_address: &str, uuid: &str, params: &Reques
 
 
 /// Tries to get date from parameter, sends back error xml on fail
-pub fn get_date(request_name: &str, ip_address: &str, uuid: &str, param: Option<DateTime<Utc>>, send_error_xml_fn: fn(u64, &str) -> String, param_name: Option<&str>) -> GetDateResponse {
+pub fn get_date(request_name: &str, ip_address: &str, uuid: &str, param: Option<DateTime<Utc>>, send_error_xml_fn: fn(u64, &str) -> String, param_name: Option<&str>, soft_error: bool) -> GetDateResponse {
     if let Some(s) = param {
         return GetDateResponse::DateTime(s)
     }
     let error = errors::GLOBAL_MISSING_ERROR;
-    elog_with_ip_uuid(ip_address, uuid, format!("{}: {} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name));
+    if !soft_error {
+        elog_with_ip_uuid(ip_address, uuid, format!("{}: {} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name));
+    }
     GetDateResponse::Response(send_xml(send_error_xml_fn(error.code, error.description)))
 }
 

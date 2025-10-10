@@ -34,26 +34,20 @@ pub async fn get_ip() -> RequestIP {
 
 
 pub async fn log_ip(req: HttpRequest) -> RequestIP {
-    match req
+    if let Some(ip) = req
         .headers()
         .get("X-Forwarded-For")
         .and_then(|x| x.to_str().ok())
         .and_then(|x| x.split(',').next()) {
-            Some(ip) => RequestIP::Ok(String::from(ip)),
-            _ => {
-                match req.peer_addr() {
-                    Some(peer_address) => {
-                        let ip = peer_address.ip().to_string();
-                        if ip == get_ip().await.to_string() {
-                            logger(format!("IP request is coming from the host: {}", ip));
-                        }
-                        RequestIP::Ok(ip)
-                    }
-                    _ => {
-                        elogger("Can not get IP address");
-                        RequestIP::Err("unknown ip address".into())
-                    }
-                }
-            }
+            return RequestIP::Ok(ip.into())
     }
+    if let Some(peer_address) = req.peer_addr() {
+        let ip = peer_address.ip().to_string();
+        if ip == get_ip().await.to_string() {
+            logger(format!("IP request is coming from the host: {}", ip));
+        }
+        return RequestIP::Ok(ip)
+    }
+    elogger("Can not get IP address");
+    RequestIP::Err("unknown IP address".into())
 }

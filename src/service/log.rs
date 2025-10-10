@@ -116,7 +116,7 @@ fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
             AppendFileError::Open => eprintln!("Error opening '{:#?}'", file_path),
             AppendFileError::Write => eprintln!("Error writing '{:#?}'", file_path),
             AppendFileError::NewLine => eprintln!("Error adding new line '{:#?}'", file_path),
-            AppendFileError::Unknown(e) => eprintln!("Error while appending '{:#?}': {}", file_path, e)
+            AppendFileError::Unknown(e) => eprintln!("General error while appending '{:#?}': {}", file_path, e)
         }
     }
 }
