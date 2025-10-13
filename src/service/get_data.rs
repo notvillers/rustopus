@@ -100,11 +100,11 @@ async fn get_products(call_data: o8_xml::defaults::CallData) -> partner_xml::pro
     let request = o8_xml::products::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::products::Envelope>(&response) {
-        Ok(envelope) => envelope.to_en(),
+        Ok(envelope) => return envelope.to_en(),
         Err(error) => {
             let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(error), &rustopus_error);
-            partner_xml::products::error_struct(rustopus_error.code, rustopus_error.description)
+            return partner_xml::products::error_struct(rustopus_error.code, rustopus_error.description)
         }
     }
 }
@@ -129,16 +129,16 @@ async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::price
         let request = o8_xml::prices::get_request_string(&call_data.xmlns, &call_data.authcode, &pid);
         let response = soap::get_response(&call_data.url, request).await;
         match quick_xml::de::from_str::<o8_xml::prices::Envelope>(&response) {
-            Ok(envelope) => envelope.to_en(),
+            Ok(envelope) => return envelope.to_en(),
             Err(error) => {
                 let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
                 error_logger(ErrorType::DeError(error), &rustopus_error);
-                partner_xml::prices::error_struct(rustopus_error.code, rustopus_error.description)
+                return partner_xml::prices::error_struct(rustopus_error.code, rustopus_error.description)
             }
         };
     }
     let rustopus_error = errors::GLOBAL_PID_ERROR;
-    error_logger(ErrorType::Text("PID missing"), &rustopus_error);
+    error_logger(ErrorType::Text("get_prices - PID missing"), &rustopus_error);
     partner_xml::prices::error_struct(rustopus_error.code, rustopus_error.description)
 }
 
@@ -147,11 +147,11 @@ async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::image
     let request = o8_xml::images::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::images::Envelope>(&response) {
-        Ok(envelope) => envelope.to_en(),
+        Ok(envelope) => return envelope.to_en(),
         Err(error) => {
             let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(error), &rustopus_error);
-            partner_xml::images::error_struct(rustopus_error.code, rustopus_error.description)
+            return partner_xml::images::error_struct(rustopus_error.code, rustopus_error.description)
         }
     }
 }
@@ -161,11 +161,11 @@ async fn get_barcode(call_data: o8_xml::defaults::CallData) -> partner_xml::barc
     let request = o8_xml::barcode::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::barcode::Envelope>(&response) {
-        Ok(envelope) => envelope.to_en(),
+        Ok(envelope) => return envelope.to_en(),
         Err(error) => {
             let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(error), &rustopus_error);
-            partner_xml::barcode::error_struct(rustopus_error.code, rustopus_error.description)
+            return partner_xml::barcode::error_struct(rustopus_error.code, rustopus_error.description)
         }
     }
 }
@@ -175,11 +175,11 @@ async fn get_invoices(call_data: o8_xml::defaults::CallData) -> partner_xml::inv
     let request = o8_xml::invoices::get_request_string_opt(&call_data.xmlns, &call_data.pid, &call_data.type_mod, &call_data.from_date, &call_data.to_date, &call_data.unpaid, &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::invoices::Envelope>(&response) {
-        Ok(envelope) => envelope.to_en(),
+        Ok(envelope) => return envelope.to_en(),
         Err(error) => {
             let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(error), &rustopus_error);
-            partner_xml::invoices::error_struct(rustopus_error.code, rustopus_error.description)
+            return partner_xml::invoices::error_struct(rustopus_error.code, rustopus_error.description)
         }
     }
 }
