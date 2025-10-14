@@ -18,12 +18,14 @@ lazy_static! {
 }
 
 
+/// `ErrorType` enum for `error_logger`
 pub enum ErrorType {
     DeError(quick_xml::DeError),
     Text(&'static str)
 }
 
 impl fmt::Display for ErrorType {
+    /// fmt display for `ErrorType` enum
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ErrorType::Text(e) => write!(f, "{}", e),
@@ -33,11 +35,13 @@ impl fmt::Display for ErrorType {
 }
 
 
+/// Logs special error with `ErrorType`` enum
 fn error_logger(in_error: ErrorType, error: &RustopusError) {
     elogger(format!("{}: {} ({})", error.code, error.description, in_error.to_string()));
 }
 
 
+/// `ResponseGet` enum for easier response handle
 #[derive(serde::Serialize)]
 #[serde(untagged)]
 pub enum ResponseGet {
@@ -50,6 +54,8 @@ pub enum ResponseGet {
     Bulk(partner_xml::bulk::Envelope)
 }
 
+
+/// `RequestGet` enum for easier request handle
 pub enum RequestGet {
     Products(o8_xml::defaults::CallData),
     Stocks(o8_xml::defaults::CallData),
@@ -61,6 +67,7 @@ pub enum RequestGet {
 }
 
 impl RequestGet {
+    /// This function converts the `RequestGet` enum to `ResponseGet`
     pub fn to_envelope(self) -> Pin<Box<dyn Future<Output = ResponseGet> + Send>> {
         Box::pin(async move {
             match self {
@@ -75,7 +82,7 @@ impl RequestGet {
         })
     }
 
-
+    /// This function converts the `RequestGet` enum directly into xml string
     pub fn to_xml(self) -> Pin<Box<dyn Future<Output=String> + Send>> {
         Box::pin(async move {
             let envelope = self.to_envelope().await;
@@ -85,17 +92,17 @@ impl RequestGet {
 }
 
 
+/// This function converts `T` into xml string, if possible, else `"<Envelope></Envelope>"` 
 fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
     match quick_xml::se::to_string(val) {
         Ok(val) => return val,
-        Err(de_error) => {
-            elogger(format!("{}: {} ({})", errors::GLOBAL_CONVERT_ERROR.code, errors::GLOBAL_CONVERT_ERROR.description, de_error));
-        }
+        Err(de_error) => elogger(format!("{}: {} ({})", errors::GLOBAL_CONVERT_ERROR.code, errors::GLOBAL_CONVERT_ERROR.description, de_error))
     }
     "<Envelope></Envelope>".into()
 }
 
 
+/// This function gets english products envelope from the given `CallData`
 async fn get_products(call_data: o8_xml::defaults::CallData) -> partner_xml::products::Envelope {
     let request = o8_xml::products::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
@@ -110,6 +117,7 @@ async fn get_products(call_data: o8_xml::defaults::CallData) -> partner_xml::pro
 }
 
 
+/// This function gets english stocks envelope from the given `CallData`
 async fn get_stocks(call_data: o8_xml::defaults::CallData) -> partner_xml::stocks::Envelope {
     let request = o8_xml::stocks::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
@@ -124,6 +132,7 @@ async fn get_stocks(call_data: o8_xml::defaults::CallData) -> partner_xml::stock
 }
 
 
+/// This function gets english prices envelope from the given `CallData`
 async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::prices::Envelope {
     if let Some(pid) = call_data.pid {
         let request = o8_xml::prices::get_request_string(&call_data.xmlns, &call_data.authcode, &pid);
@@ -136,13 +145,14 @@ async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::price
                 return partner_xml::prices::error_struct(rustopus_error.code, rustopus_error.description)
             }
         };
-    }
+    };
     let rustopus_error = errors::GLOBAL_PID_ERROR;
     error_logger(ErrorType::Text("get_prices - PID missing"), &rustopus_error);
     partner_xml::prices::error_struct(rustopus_error.code, rustopus_error.description)
 }
 
 
+/// This function gets english images envelope from the given `CallData`
 async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::images::Envelope {
     let request = o8_xml::images::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
@@ -157,6 +167,7 @@ async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::image
 }
 
 
+/// This function gets english barcodes envelope from the given `CallData`
 async fn get_barcode(call_data: o8_xml::defaults::CallData) -> partner_xml::barcode::Envelope {
     let request = o8_xml::barcode::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
@@ -171,6 +182,7 @@ async fn get_barcode(call_data: o8_xml::defaults::CallData) -> partner_xml::barc
 }
 
 
+/// This function gets english invoices envelope from the given `CallData`
 async fn get_invoices(call_data: o8_xml::defaults::CallData) -> partner_xml::invoices::Envelope {
     let request = o8_xml::invoices::get_request_string_opt(&call_data.xmlns, &call_data.pid, &call_data.type_mod, &call_data.from_date, &call_data.to_date, &call_data.unpaid, &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
@@ -185,6 +197,7 @@ async fn get_invoices(call_data: o8_xml::defaults::CallData) -> partner_xml::inv
 }
 
 
+/// This function gets english bulk envelope from the given `CallData`. It combines a lot of other requests.
 async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::Envelope {
     let products = if let ResponseGet::Products(envelope) = RequestGet::Products(call_data.clone()).to_envelope().await {
         if let Some(error) = envelope.body.response.result.answer.error {

@@ -9,6 +9,7 @@ use std::os::unix::ffi::OsStrExt;
 #[allow(unused_imports)]
 use std::os::windows::ffi::OsStrExt;
 
+/// This function returns the C string path based on the file system architect
 fn path_to_cstring(path: &Path) -> Result<CString, std::ffi::NulError> {
     #[cfg(unix)]
     {
@@ -21,7 +22,6 @@ fn path_to_cstring(path: &Path) -> Result<CString, std::ffi::NulError> {
     }
 }
 
-
 unsafe extern "C" {
     fn append_to_file_c(filename: *const c_char, string_to_append: *const c_char) -> i32;
     fn get_datetime_str_c() -> *const c_char;
@@ -29,6 +29,7 @@ unsafe extern "C" {
 }
 
 
+/// This function gets datetime string from C function
 fn get_datetime_str() -> String {
     unsafe {
         CStr::from_ptr(get_datetime_str_c()).to_str().unwrap_or("unknown").to_string()
@@ -36,6 +37,7 @@ fn get_datetime_str() -> String {
 }
 
 
+/// This function gets date string from C function
 fn get_date_str() -> String {
     unsafe {
         CStr::from_ptr(get_date_str_c()).to_str().unwrap_or("unknown").to_string()
@@ -43,6 +45,7 @@ fn get_date_str() -> String {
 }
 
 
+/// `AppendFile` enum
 enum AppendFileError {
     Open,
     Write,
@@ -51,6 +54,7 @@ enum AppendFileError {
 }
 
 
+/// This function append string to a file's content
 fn append_to_file(path: &PathBuf, content: &str) -> Result<(), AppendFileError> {
     let c_path = match path_to_cstring(&path) {
         Ok(csstring) => csstring,
@@ -80,12 +84,14 @@ fn append_to_file(path: &PathBuf, content: &str) -> Result<(), AppendFileError> 
 }
 
 
+/// `LogType` enum
 enum LogType {
     Ok,
     Error
 }
 
 
+/// This functions handles log content based on the given `LogType` enum
 fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
     let error_prefix: String = if let LogType::Error = log_type.as_ref().unwrap_or(&LogType::Ok) {
         "ERROR: ".into()
@@ -122,16 +128,19 @@ fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
 }
 
 
-pub fn elogger<S: AsRef<str>>(message: S) {
-    log_handler(message, Some(LogType::Error));
-}
-
-
+/// This function logs as not an error
 pub fn logger<S: AsRef<str>>(message: S) {
     log_handler(message, None);
 }
 
 
+/// This function logs as an error
+pub fn elogger<S: AsRef<str>>(message: S) {
+    log_handler(message, Some(LogType::Error));
+}
+
+
+/// This function logs with ip address based on `LogType`
 fn log_with_ip_handle<S: AsRef<str>>(ip_address: &str, message: S, log_type: Option<LogType>) {
     if let LogType::Error = log_type.unwrap_or(LogType::Ok) {
         elogger(format!("|{}| {}", ip_address, message.as_ref()));
@@ -141,16 +150,19 @@ fn log_with_ip_handle<S: AsRef<str>>(ip_address: &str, message: S, log_type: Opt
 }
 
 
+/// This function logs with ip as not an error
 pub fn log_with_ip<S: AsRef<str>>(ip_address: &str, message: S) {
     log_with_ip_handle(ip_address, message.as_ref(), None);
 }
 
 
+/// This function logs with ip as an error
 pub fn elog_with_ip<S: AsRef<str>>(ip_address: &str, message: S) {
     log_with_ip_handle(ip_address, message, Some(LogType::Error));
 }
 
 
+/// This function logs with ip address and uuid based on `LogType`
 fn log_with_ip_uuid_handle<S: AsRef<str>>(ip_address: &str, uuid: &str, message: S, log_type: Option<LogType>) {
     if let LogType::Error = log_type.unwrap_or(LogType::Ok) {
         elog_with_ip(ip_address, format!("{}: {}", uuid, message.as_ref()));
@@ -160,11 +172,13 @@ fn log_with_ip_uuid_handle<S: AsRef<str>>(ip_address: &str, uuid: &str, message:
 }
 
 
+/// This function logs with ip address and uuid as not an error
 pub fn log_with_ip_uuid<S: AsRef<str>>(ip_address: &str, uuid: &str, message: S) {
     log_with_ip_uuid_handle(ip_address, uuid, message, None);
 }
 
 
+/// This function logs with ip address and uuid as an error
 pub fn elog_with_ip_uuid<S: AsRef<str>>(ip_address: &str, uuid: &str, message: S) {
     log_with_ip_uuid_handle(ip_address, uuid, message, Some(LogType::Error));
 }

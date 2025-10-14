@@ -1,11 +1,10 @@
 use std::time::Duration;
 
-use reqwest::Client;
-use reqwest::header::CONTENT_TYPE;
+use reqwest::{Client, header::CONTENT_TYPE};
 
-use crate::service::config;
-use crate::service::log::{elogger};
+use crate::service::{config, log::elogger};
 
+/// This function handles the request to the given url with the given soap string, theoretically it can handle other requests too
 pub async fn get_response(url: &str, soap_request: String) -> String {
     let client = match Client::builder()
         .timeout(Duration::from_secs(config::get_settings().server.timeout))

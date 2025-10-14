@@ -54,7 +54,7 @@ pub struct GetProductImagesAuthResult {
 
 impl From<o8_xml::images::GetCikkKepekAuthResult> for GetProductImagesAuthResult{
     fn from(r: o8_xml::images::GetCikkKepekAuthResult) -> Self {
-        GetProductImagesAuthResult {
+        Self {
             answer: r.valasz.into()
         }
     }
@@ -70,7 +70,7 @@ pub struct Answer {
 
 impl From<o8_xml::images::Valasz> for Answer {
     fn from(v: o8_xml::images::Valasz) -> Self {
-        Answer {
+        Self {
             version: v.verzio,
             products: v.cikk
                         .into_iter()
@@ -88,7 +88,7 @@ pub struct Products {
 
 impl FromIterator<o8_xml::images::Cikk> for Products {
     fn from_iter<T: IntoIterator<Item = o8_xml::images::Cikk>>(iter: T) -> Self {
-        Products {
+        Self {
             product: iter
                         .into_iter()
                         .map(|x| x.into())
@@ -107,7 +107,7 @@ pub struct Product {
 
 impl From<o8_xml::images::Cikk> for Product {
     fn from(c: o8_xml::images::Cikk) -> Self {
-        Product {
+        Self {
             id: c.cikkid,
             no: c.cikkszam,
             images: c.kepek.into()
@@ -123,7 +123,7 @@ pub struct Images {
 
 impl From<o8_xml::images::Kepek> for Images {
     fn from(kk: o8_xml::images::Kepek) -> Self {
-        Images {
+        Self {
             image: kk.kep
                 .into_iter()
                 .map(|x| x.into())
@@ -141,7 +141,7 @@ pub struct Image {
 
 impl From<o8_xml::images::Kep> for Image {
     fn from(k: o8_xml::images::Kep) -> Self {
-        Image { 
+        Self { 
             gallery: k.galeria,
             url: k.url
         }

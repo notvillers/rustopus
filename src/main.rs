@@ -1,36 +1,20 @@
-use std::panic;
+use std::{env, panic};
 
-mod service;
-use std::env;
-
-use crate::service::{ipv4, log::{logger, elogger}};
-
-mod o8_xml;
-
-mod partner_xml;
-
-mod routes;
-
-mod global;
-
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
-use actix_web::http::header;
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use actix_files::Files;
 
-use crate::service::soap_config::{get_soap_path, check_soap_config};
+mod service;
+mod o8_xml;
+mod partner_xml;
+mod routes;
+mod global;
+
+use crate::service::{ipv4, log::{logger, elogger}, soap_config::{get_soap_path, check_soap_config}};
 
 async fn not_found() -> impl Responder {
     HttpResponse::NotFound()
         .content_type("text/plain")
         .body("Page not found")
-}
-
-
-#[get("/")]
-async fn index() -> impl Responder {
-    HttpResponse::Found()
-        .append_header((header::LOCATION, "/docs/"))
-        .finish()
 }
 
 
@@ -58,11 +42,11 @@ async fn main() -> std::io::Result<()> {
 
     let server = HttpServer::new(move || {
         App::new()
-            .service(index)
+            .default_service(web::to(not_found))
+            .service(routes::index::get_handler)
             .service(Files::new("/docs/", docs_dir.clone())
                 .index_file("index.html")
                 .use_last_modified(true))
-            .default_service(web::to(not_found))
             .service(routes::products::get_handler)
             .service(routes::stocks::get_handler)
             .service(routes::prices::get_handler)

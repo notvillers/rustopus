@@ -1,4 +1,5 @@
 pub mod default;
+pub mod index;
 pub mod products;
 pub mod stocks;
 pub mod prices;

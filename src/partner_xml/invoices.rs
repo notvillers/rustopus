@@ -27,7 +27,7 @@ pub struct Body {
 
 impl From<o8_xml::invoices::Body> for Body {
     fn from(b: o8_xml::invoices::Body) -> Self {
-        Body {
+        Self {
             response: b.get_szamlak_auth_response.into()
         }
     }
@@ -41,7 +41,7 @@ pub struct Response {
 
 impl From<o8_xml::invoices::GetSzamlakAuthResponse> for Response {
     fn from(r: o8_xml::invoices::GetSzamlakAuthResponse) -> Self {
-        Response {
+        Self {
             result: r.get_szamlak_auth_result.into()
         }
     }
@@ -55,7 +55,7 @@ pub struct Result {
 
 impl From<o8_xml::invoices::GetSzamlakAuthResult> for Result {
     fn from(r: o8_xml::invoices::GetSzamlakAuthResult) -> Self {
-        Result {
+        Self {
             answer: r.valasz.into()
         }
     }
@@ -71,7 +71,7 @@ pub struct Answer {
 
 impl From<o8_xml::invoices::Valasz> for Answer {
     fn from(v: o8_xml::invoices::Valasz) -> Self {
-        Answer {
+        Self {
             version: v.verzio,
             invoices: v.szamlak.into(),
             error: v.hiba.map(|e| e.into())
@@ -87,7 +87,7 @@ pub struct Invoices {
 
 impl From<o8_xml::invoices::Szamlak> for Invoices {
     fn from(sz: o8_xml::invoices::Szamlak) -> Self {
-        Invoices {
+        Self {
             invoice: sz.szamla.into_iter().map(Invoice::from).collect()
         }
     }
@@ -102,7 +102,7 @@ pub struct Invoice {
 
 impl From<o8_xml::invoices::Szamla> for Invoice {
     fn from(sz: o8_xml::invoices::Szamla) -> Self {
-        Invoice {
+        Self {
             head: sz.fej.into(),
             products: sz.tetelek.tetel.into()
         }
@@ -135,7 +135,7 @@ pub struct Head {
 
 impl From<o8_xml::invoices::Fej> for Head {
     fn from(f: o8_xml::invoices::Fej) -> Self {
-        Head {
+        Self {
             id: f.kiszamlakod,
             no: f.bizonylatszam,
             date: f.bizdatum,
@@ -167,7 +167,7 @@ pub struct Products {
 
 impl From<Vec<o8_xml::invoices::Tetel>> for Products {
     fn from(t: Vec<o8_xml::invoices::Tetel>) -> Self {
-        Products {
+        Self {
             product: t.into_iter().map(|x| x.into()).collect()
         }
     }
@@ -192,7 +192,7 @@ pub struct Product {
 
 impl From<o8_xml::invoices::Tetel> for Product {
     fn from(t: o8_xml::invoices::Tetel) -> Self {
-        Product {
+        Self {
             lot_no: t.tetelszam,
             id: t.cikkid,
             no: t.cikkszam,

@@ -25,7 +25,7 @@ pub struct CallData {
 
 impl Default for CallData {
     fn default() -> Self {
-        CallData {
+        Self {
             authcode: "".into(),
             url: "".into(),
             xmlns: "".into(),

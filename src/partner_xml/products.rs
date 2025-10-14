@@ -12,7 +12,7 @@ pub struct Envelope {
 
 impl From<o8_xml::products::Envelope> for Envelope {
     fn from(e: o8_xml::products::Envelope) -> Self {
-        Envelope {
+        Self {
             body: e.body.into()
         }
     }
@@ -26,7 +26,7 @@ pub struct Body {
 
 impl From<o8_xml::products::Body> for Body {
     fn from(b: o8_xml::products::Body) -> Self {
-        Body {
+        Self {
             response: b.get_cikkek_auth_response.into()
         }
     }
@@ -40,7 +40,7 @@ pub struct GetProductsAuthResponse {
 
 impl From<o8_xml::products::GetCikkekAuthResponse> for GetProductsAuthResponse {
     fn from(r: o8_xml::products::GetCikkekAuthResponse) -> Self {
-        GetProductsAuthResponse {
+        Self {
             result: r.get_cikkek_auth_result.into()
         }
     }
@@ -54,7 +54,7 @@ pub struct GetProductsAuthResult {
 
 impl From<o8_xml::products::GetCikkekAuthResult> for GetProductsAuthResult {
     fn from(r: o8_xml::products::GetCikkekAuthResult) -> Self {
-        GetProductsAuthResult {
+        Self {
             answer: r.valasz.into()
         }
     }
@@ -70,7 +70,7 @@ pub struct Answer {
 
 impl From<o8_xml::products::Valasz> for Answer {
     fn from(v: o8_xml::products::Valasz) -> Self {
-        Answer {
+        Self {
             version: v.verzio,
             products: v.cikk.into_iter().collect::<Products>(),
             error: v.hiba.map(|e| e.into())
@@ -86,7 +86,7 @@ pub struct Products {
 
 impl FromIterator<o8_xml::products::Cikk> for Products {
     fn from_iter<I: IntoIterator<Item = o8_xml::products::Cikk>>(iter: I) -> Self {
-        Products {
+        Self {
             product: iter.into_iter().map(|x| x.into()).collect()
         }
     }
@@ -116,7 +116,7 @@ pub struct Product {
 
 impl From<o8_xml::products::Cikk> for Product {
     fn from(c: o8_xml::products::Cikk) -> Self {
-        Product {
+        Self {
             id: c.cikkid,
             no: c.cikkszam,
             name: c.cikknev,
@@ -148,7 +148,7 @@ pub struct Size {
 
 impl From<o8_xml::products::Meret> for Size {
     fn from(meret: o8_xml::products::Meret) -> Self {
-        Size {
+        Self {
             x: meret.xmeret,
             y: meret.ymeret,
             z: meret.zmeret

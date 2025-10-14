@@ -12,7 +12,7 @@ pub struct Envelope {
 
 impl From<o8_xml::barcode::Envelope> for Envelope {
     fn from(v: o8_xml::barcode::Envelope) -> Self {
-        Envelope {
+        Self {
             body: v.body.into()
         }
     }
@@ -26,7 +26,7 @@ pub struct Body {
 
 impl From<o8_xml::barcode::Body> for Body {
     fn from(v: o8_xml::barcode::Body) -> Self {
-        Body {
+        Self {
             response: v.get_vonalkodok_auth_response.into()
         }
     }
@@ -40,7 +40,7 @@ pub struct GetProductBarcodesResponse {
 
 impl From<o8_xml::barcode::GetVonalkodokAuthResponse> for GetProductBarcodesResponse {
     fn from(v: o8_xml::barcode::GetVonalkodokAuthResponse) -> Self {
-        GetProductBarcodesResponse {
+        Self {
             result: v.get_vonalkodok_auth_result.into()
         }
     }
@@ -54,7 +54,7 @@ pub struct GetProductBarcodesResult {
 
 impl From<o8_xml::barcode::GetVonalkodokAuthResult> for GetProductBarcodesResult {
     fn from(v: o8_xml::barcode::GetVonalkodokAuthResult) -> Self {
-        GetProductBarcodesResult {
+        Self {
             answer: v.valasz.into()
         }
     }
@@ -70,7 +70,7 @@ pub struct Answer {
 
 impl From<o8_xml::barcode::Valasz> for Answer {
     fn from(v: o8_xml::barcode::Valasz) -> Self {
-        Answer {
+        Self {
             version: v.verzio,
             barcodes: v.vonalkodok.into(),
             error: v.hiba.map(|x| x.into())
@@ -86,7 +86,7 @@ pub struct Barcodes {
 
 impl From<o8_xml::barcode::Vonalkodok> for Barcodes {
     fn from(v: o8_xml::barcode::Vonalkodok) -> Self {
-        Barcodes {
+        Self {
             barcode: v.vonalkod
                 .into_iter()
                 .map(|x| x.into())
@@ -107,7 +107,7 @@ pub struct Barcode {
 
 impl From<o8_xml::barcode::Vonalkod> for Barcode {
     fn from(v: o8_xml::barcode::Vonalkod) -> Self {
-        Barcode {
+        Self {
             id: v.cikkid,
             no: v.cikkszam,
             ean: v.vonalkod,

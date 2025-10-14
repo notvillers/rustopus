@@ -4,12 +4,14 @@ use actix_web::HttpRequest;
 
 use crate::service::log::{logger, elogger};
 
+/// `RequestIP` enum
 pub enum RequestIP {
     Ok(String),
     Err(String)
 }
 
 impl fmt::Display for RequestIP {
+    /// fmt display for `RequestIP` enum
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             RequestIP::Ok(s) => write!(f, "{}", s),
@@ -19,6 +21,7 @@ impl fmt::Display for RequestIP {
 }
 
 
+/// This function gets the server's own ip, by curling an ipv4 address returner site
 pub async fn get_ip() -> RequestIP {
     match reqwest::get("https://ip.villers.website").await {
         Ok(response) => {
@@ -33,6 +36,7 @@ pub async fn get_ip() -> RequestIP {
 }
 
 
+/// This function tries to get ipv4 address from the request
 pub async fn log_ip(req: HttpRequest) -> RequestIP {
     if let Some(ip) = req
         .headers()

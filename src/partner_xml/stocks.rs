@@ -12,7 +12,7 @@ pub struct Envelope {
 
 impl From<o8_xml::stocks::Envelope> for Envelope {
     fn from(e: o8_xml::stocks::Envelope) -> Self {
-        Envelope {
+        Self {
             body: e.body.into()
         }
     }
@@ -26,7 +26,7 @@ pub struct Body {
 
 impl From<o8_xml::stocks::Body> for Body {
     fn from(b: o8_xml::stocks::Body) -> Self {
-        Body {
+        Self {
             response: b.get_cikkek_keszlet_valtozas_auth_response.into()
         }
     }
@@ -41,7 +41,7 @@ pub struct GetStockChangeAuthResponse {
 
 impl From<o8_xml::stocks::GetCikkekKeszletValtozasAuthResponse> for GetStockChangeAuthResponse {
     fn from(r: o8_xml::stocks::GetCikkekKeszletValtozasAuthResponse) -> Self {
-        GetStockChangeAuthResponse {
+        Self {
             result: r.get_cikkek_keszlet_valtozas_auth_result.into()
         }
     }
@@ -55,7 +55,7 @@ pub struct GetStockChangeAuthResult {
 
 impl From<o8_xml::stocks::GetCikkekKeszletValtozasAuthResult> for GetStockChangeAuthResult {
     fn from(r: o8_xml::stocks::GetCikkekKeszletValtozasAuthResult) -> Self {
-        GetStockChangeAuthResult {
+        Self {
             answer: r.valasz.into()
         }
     }
@@ -71,7 +71,7 @@ pub struct Answer {
 
 impl From<o8_xml::stocks::Valasz> for Answer {
     fn from(v: o8_xml::stocks::Valasz) -> Self {
-        Answer {
+        Self {
             version: v.verzio,
             products: v.cikkek.into(),
             error: v.hiba.map(|x| x.into())
@@ -87,7 +87,7 @@ pub struct Products {
 
 impl From<o8_xml::stocks::Cikkek> for Products {
     fn from(c: o8_xml::stocks::Cikkek) -> Self {
-        Products {
+        Self {
             product: c.cikk
                         .into_iter()
                         .map(|x| x.into())
@@ -106,7 +106,7 @@ pub struct Product {
 
 impl From<o8_xml::stocks::Cikk> for Product {
     fn from(c: o8_xml::stocks::Cikk) -> Self {
-        Product {
+        Self {
             id: c.cikkid,
             no: c.cikkszam, 
             stock: c.szabad

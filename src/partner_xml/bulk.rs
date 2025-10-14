@@ -11,7 +11,7 @@ pub struct Envelope {
 
 impl From<(partner_xml::products::Envelope, Option<partner_xml::prices::Envelope>, Option<partner_xml::stocks::Envelope>, Option<partner_xml::images::Envelope>, Option<partner_xml::barcode::Envelope>)> for Envelope {
     fn from((c, p, s, i, b): (partner_xml::products::Envelope, Option<partner_xml::prices::Envelope>, Option<partner_xml::stocks::Envelope>, Option<partner_xml::images::Envelope>, Option<partner_xml::barcode::Envelope>)) -> Self {
-        Envelope {
+        Self {
             body: (
                 c.body,
                 p.map(|x| x.body),
@@ -31,7 +31,7 @@ pub struct Body {
 
 impl From<(partner_xml::products::Body, Option<partner_xml::prices::Body>, Option<partner_xml::stocks::Body>, Option<partner_xml::images::Body>, Option<partner_xml::barcode::Body>)> for Body {
     fn from((c, p, s, i, b): (partner_xml::products::Body, Option<partner_xml::prices::Body>, Option<partner_xml::stocks::Body>, Option<partner_xml::images::Body>, Option<partner_xml::barcode::Body>)) -> Self {
-        Body {
+        Self {
             response: (
                 c.response,
                 p.map(|x| x.response),
@@ -51,7 +51,7 @@ pub struct Response {
 
 impl From<(partner_xml::products::GetProductsAuthResponse, Option<partner_xml::prices::GetPriceAuthResponse>, Option<partner_xml::stocks::GetStockChangeAuthResponse>, Option<partner_xml::images::GetProductImagesAuthResponse>, Option<partner_xml::barcode::GetProductBarcodesResponse>)> for Response {
     fn from((c, p , s, i, b): (partner_xml::products::GetProductsAuthResponse, Option<partner_xml::prices::GetPriceAuthResponse>, Option<partner_xml::stocks::GetStockChangeAuthResponse>, Option<partner_xml::images::GetProductImagesAuthResponse>, Option<partner_xml::barcode::GetProductBarcodesResponse>)) -> Self {
-        Response {
+        Self {
             result: (
                 c.result,
                 p.map(|x| x.result),
@@ -71,7 +71,7 @@ pub struct Result {
 
 impl From<(partner_xml::products::GetProductsAuthResult, Option<partner_xml::prices::GetPriceAuthResult>, Option<partner_xml::stocks::GetStockChangeAuthResult>, Option<partner_xml::images::GetProductImagesAuthResult>, Option<partner_xml::barcode::GetProductBarcodesResult>)> for Result {
     fn from((c, p, s, i, b): (partner_xml::products::GetProductsAuthResult, Option<partner_xml::prices::GetPriceAuthResult>, Option<partner_xml::stocks::GetStockChangeAuthResult>, Option<partner_xml::images::GetProductImagesAuthResult>, Option<partner_xml::barcode::GetProductBarcodesResult>)) -> Self {
-        Result {
+        Self {
             answer: (
                 c.answer,
                 p.map(|x| x.answer),
@@ -105,7 +105,7 @@ impl From<(partner_xml::products::Answer, Option<partner_xml::prices::Answer>, O
             .flatten()
             .for_each(|x| errors.push(x.clone()));
 
-        Answer {
+        Self {
             version: String::from("1.0"),
             products: (
                 c.products.product,
@@ -127,7 +127,7 @@ pub struct Products {
 
 impl From<(Vec<partner_xml::products::Product>, Vec<partner_xml::prices::Price>, Vec<partner_xml::stocks::Product>, Vec<partner_xml::images::Product>, Vec<partner_xml::barcode::Barcode>)> for Products {
     fn from((c, p, s , i, b): (Vec<partner_xml::products::Product>, Vec<partner_xml::prices::Price>, Vec<partner_xml::stocks::Product>, Vec<partner_xml::images::Product>, Vec<partner_xml::barcode::Barcode>)) -> Self {
-        Products {
+        Self {
             product: c.into_iter()
                 .map(|x| Product::from((x, &p, &s, &i, &b)))
                 .collect()
@@ -171,14 +171,13 @@ impl From<(partner_xml::products::Product, &Vec<partner_xml::prices::Price>, &Ve
             _ => b.iter().find(|x| x.id == c.id)
         };
         let image = i.iter().find(|x| x.id == c.id);
-        let product: Product = (c, price, stock, image, ean).into();
-        product
+        (c, price, stock, image, ean).into()
     }
 }
 
 impl From<(partner_xml::products::Product, Option<&partner_xml::prices::Price>, Option<&partner_xml::stocks::Product>, Option<&partner_xml::images::Product>, Option<&partner_xml::barcode::Barcode>)> for Product {
     fn from((c, a, k, i, b): (partner_xml::products::Product, Option<&partner_xml::prices::Price>, Option<&partner_xml::stocks::Product>, Option<&partner_xml::images::Product>, Option<&partner_xml::barcode::Barcode>)) -> Self {
-        Product {
+        Self {
             id: c.id,
             no: c.no.clone(),
             name: c.name.clone(),
@@ -214,7 +213,7 @@ pub struct Images {
 
 impl From<Option<&partner_xml::images::Product>> for Images {
     fn from(i: Option<&partner_xml::images::Product>) -> Self {
-        Images {
+        Self {
             image: i
                 .map(|i_c| {
                     i_c.images.image.iter().map(|img| Image {

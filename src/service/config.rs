@@ -3,12 +3,14 @@ use serde::Deserialize;
 use std::thread::available_parallelism;
 use crate::service::log::elogger;
 
+/// Settings struct
 #[derive(Debug, Deserialize)]
 pub struct Settings {
     pub server: ServerConfig
 }
 
 
+/// Server config struct
 #[derive(Debug, Deserialize)]
 pub struct ServerConfig {
     pub host: String,
@@ -18,6 +20,7 @@ pub struct ServerConfig {
 }
 
 
+/// This functions gets `Settings` struct from `Config.toml` based in the root directory.
 pub fn get_settings() -> Settings {
     match Config::builder().add_source(config::File::with_name("Config")).build() {
         Ok(config) => {

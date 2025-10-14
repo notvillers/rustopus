@@ -12,7 +12,7 @@ pub struct Envelope {
 
 impl From<(Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)> for Envelope {
     fn from((verion, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)) -> Self {
-        Envelope {
+        Self {
             body: (verion, ip, uuid, error).into()
         }
     }
@@ -26,7 +26,7 @@ pub struct Body {
 
 impl From<(Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)> for Body {
     fn from((version, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)) -> Self {
-        Body {
+        Self {
             response: (version, ip, uuid, error).into()
         }
     }
@@ -40,7 +40,7 @@ pub struct Response {
 
 impl From<(Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)> for Response {
     fn from((version, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)) -> Self {
-        Response {
+        Self {
             result: (version, ip, uuid, error).into()
         }
     }
@@ -54,7 +54,7 @@ pub struct Result {
 
 impl From<(Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)> for Result {
     fn from((version, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)) -> Self {
-        Result {
+        Self {
             answer: (version, ip, uuid, error).into()
         }
     }
@@ -70,7 +70,7 @@ pub struct Answer {
 
 impl From<(Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)> for Answer {
     fn from((version, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<partner_xml::defaults::Error>)) -> Self {
-        Answer {
+        Self {
             version: version.unwrap_or("1.0".into()),
             data: if ip.is_some() || uuid.is_some() { Some((ip, uuid).into()) } else { None },
             error: error
@@ -88,7 +88,7 @@ pub struct Data {
 
 impl From<(Option<String>, Option<String>)> for Data {
     fn from((ip, uuid): (Option<String>, Option<String>)) -> Self {
-        Data {
+        Self {
             ip: ip,
             uuid: uuid,
             time: Local::now()

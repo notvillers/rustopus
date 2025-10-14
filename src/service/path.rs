@@ -2,17 +2,7 @@ use std::env;
 use std::path::PathBuf;
 use crate::service::log::elogger;
 
-pub fn get_current_or_root_dir() -> PathBuf {
-    match env::current_dir() {
-        Ok(path) => return path,
-        Err(error) => {
-            elogger(format!("Error reading current directory: {}", error));
-        }
-    }
-    get_root_path()
-}
-
-
+/// This function gets the root dir based on the current filesystem architect
 fn get_root_path() -> PathBuf {
     #[cfg(windows)]
     {
@@ -22,4 +12,16 @@ fn get_root_path() -> PathBuf {
     {
         "/".into()
     }
+}
+
+
+// This function gets current or root dir
+pub fn get_current_or_root_dir() -> PathBuf {
+    match env::current_dir() {
+        Ok(path) => return path,
+        Err(error) => {
+            elogger(format!("Error reading current directory: {}", error));
+        }
+    }
+    get_root_path()
 }

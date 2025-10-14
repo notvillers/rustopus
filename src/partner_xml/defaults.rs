@@ -13,7 +13,7 @@ pub struct Error {
 
 impl Error {
     pub fn load<S: AsRef<str>>(code: u64, description: S) -> Self {
-        Error {
+        Self {
             code: code,
             description: description.as_ref().into()
         }
@@ -22,7 +22,7 @@ impl Error {
 
 impl From<o8_xml::defaults::Hiba> for Error {
     fn from(e: o8_xml::defaults::Hiba) -> Self {
-        Error {
+        Self {
             code: e.kod,
             description: errors::translate_error(&e.leiras)
         }
@@ -31,7 +31,7 @@ impl From<o8_xml::defaults::Hiba> for Error {
 
 impl From<global::errors::RustopusError> for Error {
     fn from(e: global::errors::RustopusError) -> Self {
-        Error {
+        Self {
             code: e.code,
             description: e.description.into()
         }
@@ -40,7 +40,7 @@ impl From<global::errors::RustopusError> for Error {
 
 impl From<&o8_xml::defaults::Hiba> for Error {
     fn from(e: &o8_xml::defaults::Hiba) -> Self {
-        Error {
+        Self {
             code: e.kod,
             description: e.leiras.clone()
         }
