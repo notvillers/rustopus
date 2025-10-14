@@ -30,7 +30,7 @@ async fn main() -> std::io::Result<()> {
         elogger(format!("'{:#?}' not found. (Do not bother this message if you are not willing to work with static 'url'.)", get_soap_path()));
     }
 
-    logger(format!("Running on '{}:{}', with {} worker(s)", config.server.host, config.server.port, config.server.workers));
+    logger(format!("Running on '{}:{}', with {} worker{}", config.server.host, config.server.port, config.server.workers, if config.server.workers > 1 { "s" } else { "" }));
     
     let docs_dir = match env::current_dir() {
         Ok(dir) => dir.join("src").join("static").join("docs"),
