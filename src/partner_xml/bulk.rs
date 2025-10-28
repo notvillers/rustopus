@@ -234,14 +234,6 @@ pub struct Image {
 }
 
 
-#[derive(Serialize)]
-pub struct Size {
-    pub x: Option<f64>,
-    pub y: Option<f64>,
-    pub z: Option<f64>
-}
-
-
 pub fn error_struct(errors: Vec<partner_xml::defaults::Error>) -> Envelope {
     Envelope {
         body: Body {
