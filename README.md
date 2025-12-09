@@ -21,9 +21,3 @@ Manages the defaults of the xml handling.
 If the file exists in the [repository](/) directory, it searches for an "url" tag, if its given, then this url will be the default for the gets and posts used for url and xmlns.
 
 - `"url"`: Default wsdl url
-
-## Building
-Can be build with simple cargo, but a [build_debug.sh](build_debug.sh) and a [build_release.sh](build_release.sh) is provided for easier tooling.
-
-## Running
-After build, it can be run with cargo, the binary or with [start](start) or [start.sh](start.sh)
