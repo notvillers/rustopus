@@ -213,7 +213,7 @@ async fn get_bulk(mut call_data: o8_xml::defaults::CallData) -> partner_xml::bul
     call_data.language = None;
 
     let ResponseGet::Products(ProductEnvelope::En(products)) = RequestGet::Products(call_data.clone()).to_envelope().await else {
-        let rustopus_error = errors::UNDEFINED_ERROR;
+        let rustopus_error = errors::BULK_GET_PRODUCTS_ERROR;
         error_logger(ErrorType::Text("'En' did not return!"), &rustopus_error);
         return partner_xml::bulk::error_struct(vec![rustopus_error.into()])
     };
