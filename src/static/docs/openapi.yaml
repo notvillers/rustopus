@@ -30,6 +30,12 @@ paths:
           description: Optional XML namespace
           schema:
             type: string
+        - name: language
+          in: query
+          required: false
+          description: Optional language (only supports `HU`)
+          schema:
+            type: string
       responses:
         '200':
           description: XML product list

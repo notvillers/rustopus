@@ -1,4 +1,5 @@
 use std::fmt;
+use std::vec;
 use chrono::{DateTime, Utc};
 use quick_xml;
 use lazy_static::lazy_static;
@@ -7,6 +8,7 @@ use futures::Future;
 
 use crate::global::errors;
 use crate::global::errors::RustopusError;
+use crate::global::envelope::{ProductEnvelope};
 use crate::o8_xml;
 use crate::partner_xml;
 use crate::service::soap;
@@ -16,7 +18,6 @@ use crate::service::dates;
 lazy_static! {
     static ref FIRST_DATE: DateTime<Utc> = dates::get_first_date();
 }
-
 
 /// `ErrorType` enum for `error_logger`
 pub enum ErrorType {
@@ -40,12 +41,11 @@ fn error_logger(in_error: ErrorType, error: &RustopusError) {
     elogger(format!("{}: {} ({})", error.code, error.description, in_error.to_string()));
 }
 
-
 /// `ResponseGet` enum for easier response handle
 #[derive(serde::Serialize)]
 #[serde(untagged)]
 pub enum ResponseGet {
-    Products(partner_xml::products::Envelope),
+    Products(ProductEnvelope),
     Stocks(partner_xml::stocks::Envelope),
     Prices(partner_xml::prices::Envelope),
     Images(partner_xml::images::Envelope),
@@ -83,10 +83,15 @@ impl RequestGet {
     }
 
     /// This function converts the `RequestGet` enum directly into xml string
+    /// Except Products, because its an `enum` too
     pub fn to_xml(self) -> Pin<Box<dyn Future<Output=String> + Send>> {
         Box::pin(async move {
             let envelope = self.to_envelope().await;
-            to_xml_string(&envelope)
+            match envelope {
+                ResponseGet::Products(ProductEnvelope::En(e)) => to_xml_string(&e),
+                ResponseGet::Products(ProductEnvelope::Hu(e)) => to_xml_string(&e),
+                _ => to_xml_string(&envelope)
+            }
         })
     }
 }
@@ -103,15 +108,21 @@ fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
 
 
 /// This function gets english products envelope from the given `CallData`
-async fn get_products(call_data: o8_xml::defaults::CallData) -> partner_xml::products::Envelope {
+async fn get_products(call_data: o8_xml::defaults::CallData) -> ProductEnvelope {
     let request = o8_xml::products::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = soap::get_response(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_xml::products::Envelope>(&response) {
-        Ok(envelope) => return envelope.to_en(),
+        Ok(envelope) => {
+            if call_data.is_hu() {
+                println!("HU request");
+                return ProductEnvelope::Hu(envelope)
+            }
+            return ProductEnvelope::En(envelope.to_en())
+        },
         Err(error) => {
             let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(error), &rustopus_error);
-            return partner_xml::products::error_struct(rustopus_error.code, rustopus_error.description)
+            return ProductEnvelope::En(partner_xml::products::error_struct(rustopus_error.code, rustopus_error.description))
         }
     }
 }
@@ -198,18 +209,19 @@ async fn get_invoices(call_data: o8_xml::defaults::CallData) -> partner_xml::inv
 
 
 /// This function gets english bulk envelope from the given `CallData`. It combines a lot of other requests.
-async fn get_bulk(call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::Envelope {
-    let products = if let ResponseGet::Products(envelope) = RequestGet::Products(call_data.clone()).to_envelope().await {
-        if let Some(error) = envelope.body.response.result.answer.error {
-            let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
-            error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
-            return partner_xml::bulk::error_struct(vec![rustopus_error.into(), error])
-        }
-        envelope
-    } else {
-        let rustopus_error = errors::BULK_GET_PRODUCTS_ERROR;
-        error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
+async fn get_bulk(mut call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::Envelope {
+    call_data.language = None;
+
+    let ResponseGet::Products(ProductEnvelope::En(products)) = RequestGet::Products(call_data.clone()).to_envelope().await else {
+        let rustopus_error = errors::UNDEFINED_ERROR;
+        error_logger(ErrorType::Text("'En' did not return!"), &rustopus_error);
         return partner_xml::bulk::error_struct(vec![rustopus_error.into()])
+    };
+
+    if let Some(error) = products.body.response.result.answer.error {
+        let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
+        error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
+        return partner_xml::bulk::error_struct(vec![rustopus_error.into(), error])
     };
 
     let stocks = match RequestGet::Stocks(call_data.clone()).to_envelope().await {

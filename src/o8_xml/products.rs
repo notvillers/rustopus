@@ -1,5 +1,6 @@
 /// Structs for GetCikkekAuth's XML
 use chrono::{DateTime, Utc};
+use serde::Serialize;
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
@@ -26,7 +27,7 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Envelope {
     pub body: Body,
@@ -39,28 +40,28 @@ impl Envelope {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Body {
     pub get_cikkek_auth_response: GetCikkekAuthResponse
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct GetCikkekAuthResponse {
     pub get_cikkek_auth_result: GetCikkekAuthResult,
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct GetCikkekAuthResult {
     pub valasz: Valasz,
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Valasz {
     #[serde(rename = "@verzio")]
     pub verzio: String,
@@ -74,7 +75,7 @@ pub struct Valasz {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Cikk {
     #[serde(rename = "@cikkid")]
@@ -101,7 +102,7 @@ pub struct Cikk {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Meret {
     #[serde(deserialize_with = "parse_comma_f64", default)]

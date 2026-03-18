@@ -16,7 +16,8 @@ pub struct RequestParameters {
     pub type_mod: Option<i64>,
     pub from_date: Option<DateTime<Utc>>,
     pub to_date: Option<DateTime<Utc>>,
-    pub unpaid: Option<i64>
+    pub unpaid: Option<i64>,
+    pub language: Option<String>
 }
 
 

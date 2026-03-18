@@ -20,7 +20,8 @@ pub struct CallData {
     pub type_mod: Option<i64>,
     pub from_date: Option<DateTime<Utc>>,
     pub to_date: Option<DateTime<Utc>>,
-    pub unpaid: Option<i64>
+    pub unpaid: Option<i64>,
+    pub language: Option<String>
 }
 
 impl Default for CallData {
@@ -33,7 +34,17 @@ impl Default for CallData {
             type_mod: None,
             from_date: None,
             to_date: None,
-            unpaid: None
+            unpaid: None,
+            language: None
         }
     }
+}
+
+impl CallData {
+    pub fn is_hu(self) -> bool {
+        if let Some(language) = self.language {
+            return matches!(language.to_lowercase().as_str(), "hu" | "hungary" | "hungarian")
+        }
+        false
+    } 
 }

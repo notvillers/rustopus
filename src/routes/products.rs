@@ -44,6 +44,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
         } else {
             None
         },
+        language: params.language,
         ..Default::default()
     };
 
