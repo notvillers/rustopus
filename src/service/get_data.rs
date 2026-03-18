@@ -16,7 +16,8 @@ use crate::service::{
 };
 
 use crate::service::get::{
-    product::{ProductEnvelope, get_products},
+    products::{ProductsEnvelope, get_products},
+    stocks::{StocksEnvelope, get_stocks},
     prices::{PricesEnvelope, get_prices}
 }
 ;
@@ -51,8 +52,8 @@ pub fn error_logger(in_error: ErrorType, error: &RustopusError) {
 #[derive(serde::Serialize)]
 #[serde(untagged)]
 pub enum ResponseGet {
-    Products(ProductEnvelope),
-    Stocks(partner_xml::stocks::Envelope),
+    Products(ProductsEnvelope),
+    Stocks(StocksEnvelope),
     Prices(PricesEnvelope),
     Images(partner_xml::images::Envelope),
     Barcodes(partner_xml::barcode::Envelope),
@@ -89,15 +90,16 @@ impl RequestGet {
     }
 
     /// This function converts the `RequestGet` enum directly into xml string
-    /// Except Products, because its an `enum` too
     pub fn to_xml(self) -> Pin<Box<dyn Future<Output=String> + Send>> {
         Box::pin(async move {
             let envelope = self.to_envelope().await;
             match envelope {
-                ResponseGet::Products(ProductEnvelope::En(e)) => to_xml_string(&e),
-                ResponseGet::Products(ProductEnvelope::Hu(e)) => to_xml_string(&e),
+                ResponseGet::Products(ProductsEnvelope::En(e)) => to_xml_string(&e),
+                ResponseGet::Products(ProductsEnvelope::Hu(e)) => to_xml_string(&e),
                 ResponseGet::Prices(PricesEnvelope::En(e)) => to_xml_string(&e),
                 ResponseGet::Prices(PricesEnvelope::Hu(e)) => to_xml_string(&e),
+                ResponseGet::Stocks(StocksEnvelope::En(e)) => to_xml_string(&e),
+                ResponseGet::Stocks(StocksEnvelope::Hu(e)) => to_xml_string(&e),
                 _ => to_xml_string(&envelope)
             }
         })
@@ -112,21 +114,6 @@ fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
         Err(de_error) => elogger(format!("{}: {} ({})", errors::GLOBAL_CONVERT_ERROR.code, errors::GLOBAL_CONVERT_ERROR.description, de_error))
     }
     "<Envelope></Envelope>".into()
-}
-
-
-/// This function gets english stocks envelope from the given `CallData`
-async fn get_stocks(call_data: o8_xml::defaults::CallData) -> partner_xml::stocks::Envelope {
-    let request = o8_xml::stocks::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
-    let response = soap::get_response(&call_data.url, request).await;
-    match quick_xml::de::from_str::<o8_xml::stocks::Envelope>(&response) {
-        Ok(envelope) => envelope.to_en(),
-        Err(error) => {
-            let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
-            error_logger(ErrorType::DeError(error), &rustopus_error);
-            partner_xml::stocks::error_struct(rustopus_error.code, rustopus_error.description)
-        }
-    }
 }
 
 
@@ -179,7 +166,7 @@ async fn get_invoices(call_data: o8_xml::defaults::CallData) -> partner_xml::inv
 async fn get_bulk(mut call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::Envelope {
     call_data.language = None;
 
-    let ResponseGet::Products(ProductEnvelope::En(products)) = RequestGet::Products(call_data.clone()).to_envelope().await else {
+    let ResponseGet::Products(ProductsEnvelope::En(products)) = RequestGet::Products(call_data.clone()).to_envelope().await else {
         let rustopus_error = errors::BULK_GET_PRODUCTS_ERROR;
         error_logger(ErrorType::Text("'En' did not return!"), &rustopus_error);
         return partner_xml::bulk::error_struct(vec![rustopus_error.into()])
@@ -191,8 +178,8 @@ async fn get_bulk(mut call_data: o8_xml::defaults::CallData) -> partner_xml::bul
         return partner_xml::bulk::error_struct(vec![rustopus_error.into(), error])
     };
 
-    let stocks = match RequestGet::Stocks(call_data.clone()).to_envelope().await {
-        ResponseGet::Stocks(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
+    let stocks = match RequestGet::Prices(call_data.clone()).to_envelope().await {
+        ResponseGet::Stocks(StocksEnvelope::En(envelope)) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(partner_xml::stocks::error_struct(errors::BULK_GET_STOCKS_ERROR.code, errors::BULK_GET_STOCKS_ERROR.description))
     };
 

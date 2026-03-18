@@ -1,5 +1,6 @@
 /// Structs for GetCikkekKeszletValtozasAuth's XML
 use chrono::{DateTime, Utc};
+use serde::Serialize;
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
@@ -26,7 +27,7 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Envelope {
     pub body: Body,
@@ -39,28 +40,28 @@ impl Envelope {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Body {
     pub get_cikkek_keszlet_valtozas_auth_response: GetCikkekKeszletValtozasAuthResponse,
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct GetCikkekKeszletValtozasAuthResponse {
     pub get_cikkek_keszlet_valtozas_auth_result: GetCikkekKeszletValtozasAuthResult,
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct GetCikkekKeszletValtozasAuthResult {
     pub valasz: Valasz,
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Valasz {
     #[serde(rename = "@verzio")]
     pub verzio: String,
@@ -70,13 +71,13 @@ pub struct Valasz {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Cikkek {
     pub cikk: Vec<Cikk>
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Cikk {
     pub cikkid: u64,

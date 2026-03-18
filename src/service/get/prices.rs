@@ -20,7 +20,7 @@ pub async fn get_prices(call_data: o8_xml::defaults::CallData) -> PricesEnvelope
             Ok(envelope) => {
                 match call_data.is_hu() {
                     true => return PricesEnvelope::Hu(envelope),
-                    false => return PricesEnvelope::En(envelope.to_en())
+                    _ => return PricesEnvelope::En(envelope.to_en())
                 }
             },
             Err(error) => {
