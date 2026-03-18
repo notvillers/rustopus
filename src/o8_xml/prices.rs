@@ -1,3 +1,4 @@
+use serde::Serialize;
 /// Structs for GetArlistaAuth's XML
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
@@ -27,7 +28,7 @@ pub fn get_request_string(xmlns: &str, authcode: &str, pid: &i64) -> String {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Envelope {
     pub body: Body,
@@ -39,28 +40,28 @@ impl Envelope {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Body {
     pub get_arlista_auth_response: GetArlistaAuthResponse 
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct GetArlistaAuthResponse {
     pub get_arlista_auth_result: GetArlistaAuthResult
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct GetArlistaAuthResult {
     pub valasz: Valasz
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Valasz {
     #[serde(rename = "@verzio")]
     pub verzio: String,
@@ -70,13 +71,13 @@ pub struct Valasz {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Arak {
     pub ar: Vec<Ar>
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Ar {
     pub cikkid: u64,
     pub cikkszam: String,

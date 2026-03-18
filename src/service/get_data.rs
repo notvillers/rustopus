@@ -6,17 +6,23 @@ use lazy_static::lazy_static;
 use std::pin::Pin;
 use futures::Future;
 
-use crate::global::errors;
-use crate::global::errors::RustopusError;
-use crate::global::envelope::{ProductEnvelope};
+use crate::global::errors::{self, RustopusError};
 use crate::o8_xml;
 use crate::partner_xml;
-use crate::service::soap;
-use crate::service::log::elogger;
-use crate::service::dates;
+use crate::service::{
+    soap,
+    log::elogger,
+    dates
+};
+
+use crate::service::get::{
+    product::{ProductEnvelope, get_products},
+    prices::{PricesEnvelope, get_prices}
+}
+;
 
 lazy_static! {
-    static ref FIRST_DATE: DateTime<Utc> = dates::get_first_date();
+    pub static ref FIRST_DATE: DateTime<Utc> = dates::get_first_date();
 }
 
 /// `ErrorType` enum for `error_logger`
@@ -37,7 +43,7 @@ impl fmt::Display for ErrorType {
 
 
 /// Logs special error with `ErrorType`` enum
-fn error_logger(in_error: ErrorType, error: &RustopusError) {
+pub fn error_logger(in_error: ErrorType, error: &RustopusError) {
     elogger(format!("{}: {} ({})", error.code, error.description, in_error.to_string()));
 }
 
@@ -47,7 +53,7 @@ fn error_logger(in_error: ErrorType, error: &RustopusError) {
 pub enum ResponseGet {
     Products(ProductEnvelope),
     Stocks(partner_xml::stocks::Envelope),
-    Prices(partner_xml::prices::Envelope),
+    Prices(PricesEnvelope),
     Images(partner_xml::images::Envelope),
     Barcodes(partner_xml::barcode::Envelope),
     Invoices(partner_xml::invoices::Envelope),
@@ -90,6 +96,8 @@ impl RequestGet {
             match envelope {
                 ResponseGet::Products(ProductEnvelope::En(e)) => to_xml_string(&e),
                 ResponseGet::Products(ProductEnvelope::Hu(e)) => to_xml_string(&e),
+                ResponseGet::Prices(PricesEnvelope::En(e)) => to_xml_string(&e),
+                ResponseGet::Prices(PricesEnvelope::Hu(e)) => to_xml_string(&e),
                 _ => to_xml_string(&envelope)
             }
         })
@@ -107,27 +115,6 @@ fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
 }
 
 
-/// This function gets english products envelope from the given `CallData`
-async fn get_products(call_data: o8_xml::defaults::CallData) -> ProductEnvelope {
-    let request = o8_xml::products::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
-    let response = soap::get_response(&call_data.url, request).await;
-    match quick_xml::de::from_str::<o8_xml::products::Envelope>(&response) {
-        Ok(envelope) => {
-            if call_data.is_hu() {
-                println!("HU request");
-                return ProductEnvelope::Hu(envelope)
-            }
-            return ProductEnvelope::En(envelope.to_en())
-        },
-        Err(error) => {
-            let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
-            error_logger(ErrorType::DeError(error), &rustopus_error);
-            return ProductEnvelope::En(partner_xml::products::error_struct(rustopus_error.code, rustopus_error.description))
-        }
-    }
-}
-
-
 /// This function gets english stocks envelope from the given `CallData`
 async fn get_stocks(call_data: o8_xml::defaults::CallData) -> partner_xml::stocks::Envelope {
     let request = o8_xml::stocks::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
@@ -140,26 +127,6 @@ async fn get_stocks(call_data: o8_xml::defaults::CallData) -> partner_xml::stock
             partner_xml::stocks::error_struct(rustopus_error.code, rustopus_error.description)
         }
     }
-}
-
-
-/// This function gets english prices envelope from the given `CallData`
-async fn get_prices(call_data: o8_xml::defaults::CallData) -> partner_xml::prices::Envelope {
-    if let Some(pid) = call_data.pid {
-        let request = o8_xml::prices::get_request_string(&call_data.xmlns, &call_data.authcode, &pid);
-        let response = soap::get_response(&call_data.url, request).await;
-        match quick_xml::de::from_str::<o8_xml::prices::Envelope>(&response) {
-            Ok(envelope) => return envelope.to_en(),
-            Err(error) => {
-                let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
-                error_logger(ErrorType::DeError(error), &rustopus_error);
-                return partner_xml::prices::error_struct(rustopus_error.code, rustopus_error.description)
-            }
-        };
-    };
-    let rustopus_error = errors::GLOBAL_PID_ERROR;
-    error_logger(ErrorType::Text("get_prices - PID missing"), &rustopus_error);
-    partner_xml::prices::error_struct(rustopus_error.code, rustopus_error.description)
 }
 
 
@@ -230,9 +197,10 @@ async fn get_bulk(mut call_data: o8_xml::defaults::CallData) -> partner_xml::bul
     };
 
     let prices = match RequestGet::Prices(call_data.clone()).to_envelope().await {
-        ResponseGet::Prices(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
+        ResponseGet::Prices(PricesEnvelope::En(envelope)) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(partner_xml::prices::error_struct(errors::BULK_GET_PRICES_ERROR.code, errors::BULK_GET_PRICES_ERROR.description))
     };
+
 
     let images = match RequestGet::Images(call_data.clone()).to_envelope().await {
         ResponseGet::Images(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
