@@ -69,6 +69,12 @@ paths:
           description: Optional XML namespace
           schema:
             type: string
+        - name: language
+          in: query
+          required: false
+          description: Optional language (only supports `HU`)
+          schema:
+            type: string
       responses:
         '200':
           description: XML stock list
@@ -108,6 +114,12 @@ paths:
           description: Partner ID
           schema:
             type: integer
+        - name: language
+          in: query
+          required: false
+          description: Optional language (only supports `HU`)
+          schema:
+            type: string
       responses:
         '200':
           description: XML price list
@@ -141,6 +153,12 @@ paths:
           description: Optional XML namespace
           schema:
             type: string
+        - name: language
+          in: query
+          required: false
+          description: Optional language (only supports `HU`)
+          schema:
+            type: string
       responses:
         '200':
           description: XML image list
@@ -172,6 +190,12 @@ paths:
           in: query
           required: false
           description: Optional XML namespace
+          schema:
+            type: string
+        - name: language
+          in: query
+          required: false
+          description: Optional language (only supports `HU`)
           schema:
             type: string
       responses:
@@ -237,6 +261,12 @@ paths:
           description: 1 if only the unpaid invoices should be inclouded
           schema:
             type: integer
+        - name: language
+          in: query
+          required: false
+          description: Optional language (only supports `HU`)
+          schema:
+            type: string
       responses:
         '200':
           description: XML invoice list
