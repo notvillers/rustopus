@@ -6,6 +6,7 @@ use actix_files::Files;
 mod service;
 mod o8_xml;
 mod partner_xml;
+mod partner_csv;
 mod routes;
 mod global;
 
@@ -55,6 +56,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::bulk::get_handler)
             .service(routes::invoices::get_handler)
             .service(routes::test::get_handler)
+            .service(routes::csv_products::get_handler)
     })
         .client_request_timeout(std::time::Duration::from_secs(1200))
         .keep_alive(std::time::Duration::from_secs(1200))

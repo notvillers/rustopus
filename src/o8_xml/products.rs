@@ -102,7 +102,7 @@ pub struct Cikk {
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Meret {
     #[serde(deserialize_with = "parse_comma_f64", default)]
