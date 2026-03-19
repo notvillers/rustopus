@@ -2,12 +2,11 @@
 .vscode/
 target/
 ping/
+test/
 *.xml
 *.env
 *.log
+*.txt
+*.csv
 rustopus
 soap.json
-test.bat
-test.ps1
-*.txt
-test/
