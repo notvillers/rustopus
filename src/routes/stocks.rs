@@ -44,11 +44,15 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
         } else {
             None
         },
+        language: params.language,
         ..Default::default()
     };
 
     // Before log
     log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}", REQUEST_NAME, call_data.url, call_data.authcode));
+    if call_data.clone().is_hu() {
+        log_with_ip_uuid(&ip_address, &uuid, format!("Request is hungarian ('{}')", call_data.clone().language.unwrap_or("Err.".to_string())));
+    }
 
     // Getting data
     let xml = RequestGet::Stocks(call_data).to_xml().await;

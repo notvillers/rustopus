@@ -43,11 +43,15 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
             GetI64Response::Number(pid) => Some(pid),
             GetI64Response::Response(response) => return response
         },
+        language: params.language,
         ..Default::default()
     };
 
     // Before log
     log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}, pid: {:#?}", REQUEST_NAME, call_data.url, call_data.authcode, call_data.pid.unwrap_or(0)));
+    if call_data.clone().is_hu() {
+        log_with_ip_uuid(&ip_address, &uuid, format!("Request is hungarian ('{}')", call_data.clone().language.unwrap_or("Err.".to_string())));
+    }
 
     // Getting data
     let xml = RequestGet::Prices(call_data).to_xml().await;
