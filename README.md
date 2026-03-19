@@ -18,6 +18,6 @@ Soap.json
 
 Manages the defaults of the xml handling.
 
-If the file exists in the [repository](/) directory, it searches for an "url" tag, if its given, then this url will be the default for the gets and posts used for url and xmlns.
+If the file exists in the repository [root](/) directory, it searches for an "url" tag, if its given, then this will be the default for the gets and posts used for url and xmlns.
 
 - `"url"`: Default wsdl url
