@@ -32,6 +32,7 @@ pub fn csv_response<T: serde::Serialize>(records: &[T], filename: &str) -> HttpR
         .body(data)
 }
 
+
 /// Handler
 async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder {
     // ID with UUID
