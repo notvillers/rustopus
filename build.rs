@@ -1,4 +1,4 @@
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
 const SRC_FOLDER: &'static str = "src";
 const C_FOLDER: &'static str = "C";
