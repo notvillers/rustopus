@@ -2,16 +2,16 @@
 use serde::Serialize;
 use quick_xml;
 
-use crate::o8_xml;
-use crate::partner_xml;
+use crate::o8_xml::stocks as o8_stocks;
+use crate::partner_xml::defaults as p_defaults;
 
 #[derive(Serialize)]
 pub struct Envelope {
     pub body: Body
 }
 
-impl From<o8_xml::stocks::Envelope> for Envelope {
-    fn from(e: o8_xml::stocks::Envelope) -> Self {
+impl From<o8_stocks::Envelope> for Envelope {
+    fn from(e: o8_stocks::Envelope) -> Self {
         Self {
             body: e.body.into()
         }
@@ -24,8 +24,8 @@ pub struct Body {
     pub response: GetStockChangeAuthResponse
 }
 
-impl From<o8_xml::stocks::Body> for Body {
-    fn from(b: o8_xml::stocks::Body) -> Self {
+impl From<o8_stocks::Body> for Body {
+    fn from(b: o8_stocks::Body) -> Self {
         Self {
             response: b.get_cikkek_keszlet_valtozas_auth_response.into()
         }
@@ -39,8 +39,8 @@ pub struct GetStockChangeAuthResponse {
     pub result: GetStockChangeAuthResult
 }
 
-impl From<o8_xml::stocks::GetCikkekKeszletValtozasAuthResponse> for GetStockChangeAuthResponse {
-    fn from(r: o8_xml::stocks::GetCikkekKeszletValtozasAuthResponse) -> Self {
+impl From<o8_stocks::GetCikkekKeszletValtozasAuthResponse> for GetStockChangeAuthResponse {
+    fn from(r: o8_stocks::GetCikkekKeszletValtozasAuthResponse) -> Self {
         Self {
             result: r.get_cikkek_keszlet_valtozas_auth_result.into()
         }
@@ -53,8 +53,8 @@ pub struct GetStockChangeAuthResult {
     pub answer: Answer
 }
 
-impl From<o8_xml::stocks::GetCikkekKeszletValtozasAuthResult> for GetStockChangeAuthResult {
-    fn from(r: o8_xml::stocks::GetCikkekKeszletValtozasAuthResult) -> Self {
+impl From<o8_stocks::GetCikkekKeszletValtozasAuthResult> for GetStockChangeAuthResult {
+    fn from(r: o8_stocks::GetCikkekKeszletValtozasAuthResult) -> Self {
         Self {
             answer: r.valasz.into()
         }
@@ -66,11 +66,11 @@ impl From<o8_xml::stocks::GetCikkekKeszletValtozasAuthResult> for GetStockChange
 pub struct Answer {
     pub version: String,
     pub products: Products,
-    pub error: Option<partner_xml::defaults::Error>
+    pub error: Option<p_defaults::Error>
 }
 
-impl From<o8_xml::stocks::Valasz> for Answer {
-    fn from(v: o8_xml::stocks::Valasz) -> Self {
+impl From<o8_stocks::Valasz> for Answer {
+    fn from(v: o8_stocks::Valasz) -> Self {
         Self {
             version: v.verzio,
             products: v.cikkek.into(),
@@ -85,8 +85,8 @@ pub struct Products {
     pub product: Vec<Product>
 }
 
-impl From<o8_xml::stocks::Cikkek> for Products {
-    fn from(c: o8_xml::stocks::Cikkek) -> Self {
+impl From<o8_stocks::Cikkek> for Products {
+    fn from(c: o8_stocks::Cikkek) -> Self {
         Self {
             product: c.cikk
                         .into_iter()
@@ -104,8 +104,8 @@ pub struct Product {
     pub stock: Option<f64>
 }
 
-impl From<o8_xml::stocks::Cikk> for Product {
-    fn from(c: o8_xml::stocks::Cikk) -> Self {
+impl From<o8_stocks::Cikk> for Product {
+    fn from(c: o8_stocks::Cikk) -> Self {
         Self {
             id: c.cikkid,
             no: c.cikkszam, 
@@ -125,7 +125,7 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
                         products: Products {
                             product: Vec::new()
                         },
-                        error: Some(partner_xml::defaults::Error::load(code, description))
+                        error: Some(p_defaults::Error::load(code, description))
                     }
                 }
             }

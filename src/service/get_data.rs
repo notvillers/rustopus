@@ -7,20 +7,18 @@ use std::pin::Pin;
 use futures::Future;
 
 use crate::global::errors::{self, RustopusError};
-use crate::o8_xml;
+use crate::o8_xml::defaults::CallData;
 use crate::partner_xml;
-use crate::service::{
-    soap,
-    log::elogger,
-    dates
-};
+use crate::service::{log::elogger, dates};
 
 use crate::service::get::{
     products::{ProductsEnvelope, get_products},
     stocks::{StocksEnvelope, get_stocks},
-    prices::{PricesEnvelope, get_prices}
-}
-;
+    prices::{PricesEnvelope, get_prices},
+    images::{ImagesEnvelope, get_images},
+    barcodes::{BarcodesEnvelope, get_barcode},
+    invoices::{InvoicesEnvelope, get_invoices}
+};
 
 lazy_static! {
     pub static ref FIRST_DATE: DateTime<Utc> = dates::get_first_date();
@@ -48,6 +46,7 @@ pub fn error_logger(in_error: ErrorType, error: &RustopusError) {
     elogger(format!("{}: {} ({})", error.code, error.description, in_error.to_string()));
 }
 
+
 /// `ResponseGet` enum for easier response handle
 #[derive(serde::Serialize)]
 #[serde(untagged)]
@@ -55,22 +54,22 @@ pub enum ResponseGet {
     Products(ProductsEnvelope),
     Stocks(StocksEnvelope),
     Prices(PricesEnvelope),
-    Images(partner_xml::images::Envelope),
-    Barcodes(partner_xml::barcode::Envelope),
-    Invoices(partner_xml::invoices::Envelope),
+    Images(ImagesEnvelope),
+    Barcodes(BarcodesEnvelope),
+    Invoices(InvoicesEnvelope),
     Bulk(partner_xml::bulk::Envelope)
 }
 
 
 /// `RequestGet` enum for easier request handle
 pub enum RequestGet {
-    Products(o8_xml::defaults::CallData),
-    Stocks(o8_xml::defaults::CallData),
-    Prices(o8_xml::defaults::CallData),
-    Images(o8_xml::defaults::CallData),
-    Barcodes(o8_xml::defaults::CallData),
-    Invoices(o8_xml::defaults::CallData),
-    Bulk(o8_xml::defaults::CallData)
+    Products(CallData),
+    Stocks(CallData),
+    Prices(CallData),
+    Images(CallData),
+    Barcodes(CallData),
+    Invoices(CallData),
+    Bulk(CallData)
 }
 
 impl RequestGet {
@@ -93,15 +92,7 @@ impl RequestGet {
     pub fn to_xml(self) -> Pin<Box<dyn Future<Output=String> + Send>> {
         Box::pin(async move {
             let envelope = self.to_envelope().await;
-            match envelope {
-                ResponseGet::Products(ProductsEnvelope::En(e)) => to_xml_string(&e),
-                ResponseGet::Products(ProductsEnvelope::Hu(e)) => to_xml_string(&e),
-                ResponseGet::Prices(PricesEnvelope::En(e)) => to_xml_string(&e),
-                ResponseGet::Prices(PricesEnvelope::Hu(e)) => to_xml_string(&e),
-                ResponseGet::Stocks(StocksEnvelope::En(e)) => to_xml_string(&e),
-                ResponseGet::Stocks(StocksEnvelope::Hu(e)) => to_xml_string(&e),
-                _ => to_xml_string(&envelope)
-            }
+            to_xml_string(&envelope)
         })
     }
 }
@@ -117,53 +108,8 @@ fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
 }
 
 
-/// This function gets english images envelope from the given `CallData`
-async fn get_images(call_data: o8_xml::defaults::CallData) -> partner_xml::images::Envelope {
-    let request = o8_xml::images::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
-    let response = soap::get_response(&call_data.url, request).await;
-    match quick_xml::de::from_str::<o8_xml::images::Envelope>(&response) {
-        Ok(envelope) => return envelope.to_en(),
-        Err(error) => {
-            let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
-            error_logger(ErrorType::DeError(error), &rustopus_error);
-            return partner_xml::images::error_struct(rustopus_error.code, rustopus_error.description)
-        }
-    }
-}
-
-
-/// This function gets english barcodes envelope from the given `CallData`
-async fn get_barcode(call_data: o8_xml::defaults::CallData) -> partner_xml::barcode::Envelope {
-    let request = o8_xml::barcode::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
-    let response = soap::get_response(&call_data.url, request).await;
-    match quick_xml::de::from_str::<o8_xml::barcode::Envelope>(&response) {
-        Ok(envelope) => return envelope.to_en(),
-        Err(error) => {
-            let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
-            error_logger(ErrorType::DeError(error), &rustopus_error);
-            return partner_xml::barcode::error_struct(rustopus_error.code, rustopus_error.description)
-        }
-    }
-}
-
-
-/// This function gets english invoices envelope from the given `CallData`
-async fn get_invoices(call_data: o8_xml::defaults::CallData) -> partner_xml::invoices::Envelope {
-    let request = o8_xml::invoices::get_request_string_opt(&call_data.xmlns, &call_data.pid, &call_data.type_mod, &call_data.from_date, &call_data.to_date, &call_data.unpaid, &call_data.authcode);
-    let response = soap::get_response(&call_data.url, request).await;
-    match quick_xml::de::from_str::<o8_xml::invoices::Envelope>(&response) {
-        Ok(envelope) => return envelope.to_en(),
-        Err(error) => {
-            let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
-            error_logger(ErrorType::DeError(error), &rustopus_error);
-            return partner_xml::invoices::error_struct(rustopus_error.code, rustopus_error.description)
-        }
-    }
-}
-
-
 /// This function gets english bulk envelope from the given `CallData`. It combines a lot of other requests.
-async fn get_bulk(mut call_data: o8_xml::defaults::CallData) -> partner_xml::bulk::Envelope {
+async fn get_bulk(mut call_data: CallData) -> partner_xml::bulk::Envelope {
     call_data.language = None;
 
     let ResponseGet::Products(ProductsEnvelope::En(products)) = RequestGet::Products(call_data.clone()).to_envelope().await else {
@@ -188,14 +134,13 @@ async fn get_bulk(mut call_data: o8_xml::defaults::CallData) -> partner_xml::bul
         _ => Some(partner_xml::prices::error_struct(errors::BULK_GET_PRICES_ERROR.code, errors::BULK_GET_PRICES_ERROR.description))
     };
 
-
     let images = match RequestGet::Images(call_data.clone()).to_envelope().await {
-        ResponseGet::Images(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
+        ResponseGet::Images(ImagesEnvelope::En(envelope)) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(partner_xml::images::error_struct(errors::BULK_GET_IMAGES_ERROR.code, errors::BULK_GET_IMAGES_ERROR.description))
     };
 
     let barcodes = match RequestGet::Barcodes(call_data).to_envelope().await {
-        ResponseGet::Barcodes(envelope) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
+        ResponseGet::Barcodes(BarcodesEnvelope::En(envelope)) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(partner_xml::barcode::error_struct(errors::BULK_GET_BARCODES_ERROR.code, errors::BULK_GET_BARCODES_ERROR.description))
     };
 

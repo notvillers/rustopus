@@ -1,9 +1,10 @@
 /// Structs for GetCikkKepekAuth's XML
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
+use serde::Serialize;
 
-use crate::o8_xml;
-use crate::partner_xml;
+use crate::o8_xml::defaults as o8_defaults;
+use crate::partner_xml::images as o8_images;
 
 /// Get the string for the request
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
@@ -24,41 +25,41 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
     ) 
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Envelope {
     pub body: Body,
 }
 
 impl Envelope {
-    pub fn to_en(self) -> partner_xml::images::Envelope {
+    pub fn to_en(self) -> o8_images::Envelope {
         self.into()
     }
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Body {
     pub get_cikk_kepek_auth_response: GetCikkKepekAuthResponse
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct GetCikkKepekAuthResponse {
     pub get_cikk_kepek_auth_result: GetCikkKepekAuthResult,
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct GetCikkKepekAuthResult {
     pub valasz: Valasz,
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Valasz {
     #[serde(rename = "@verzio")]
     pub verzio: String,
@@ -68,11 +69,11 @@ pub struct Valasz {
     pub cikk: Vec<Cikk>,
 
     #[serde(rename = "hiba")]
-    pub hiba: Option<o8_xml::defaults::Hiba>
+    pub hiba: Option<o8_defaults::Hiba>
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Cikk {
     #[serde(rename = "@cikkid")]
@@ -83,7 +84,7 @@ pub struct Cikk {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Kepek {
     #[serde(default)]
@@ -91,7 +92,7 @@ pub struct Kepek {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Kep {
     #[serde(rename = "@galeria")]

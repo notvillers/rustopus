@@ -2,8 +2,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::o8_xml;
-use crate::partner_xml;
+use crate::o8_xml::defaults as o8_defaults;
+use crate::partner_xml::barcode as o8_barcode;
 
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
     format!(
@@ -31,7 +31,7 @@ pub struct Envelope {
 }
 
 impl Envelope {
-    pub fn to_en(self) -> partner_xml::barcode::Envelope {
+    pub fn to_en(self) -> o8_barcode::Envelope {
         self.into()
     }
 }
@@ -65,7 +65,7 @@ pub struct Valasz {
     pub verzio: String,
     #[serde(rename = "vonalkodok")]
     pub vonalkodok: Vonalkodok,
-    pub hiba: Option<o8_xml::defaults::Hiba>
+    pub hiba: Option<o8_defaults::Hiba>
 }
 
 

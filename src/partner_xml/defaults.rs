@@ -1,9 +1,9 @@
 /// Default english struct(s) for XML(s) got from the Octopus call
 use serde::Serialize;
 
-use crate::o8_xml;
+use crate::o8_xml::defaults::Hiba as o8_error;
 use crate::service::errors;
-use crate::global;
+use crate::global::errors::RustopusError;
 
 #[derive(Serialize, Clone)]
 pub struct Error {
@@ -20,8 +20,8 @@ impl Error {
     }
 }
 
-impl From<o8_xml::defaults::Hiba> for Error {
-    fn from(e: o8_xml::defaults::Hiba) -> Self {
+impl From<o8_error> for Error {
+    fn from(e: o8_error) -> Self {
         Self {
             code: e.kod,
             description: errors::translate_error(&e.leiras)
@@ -29,8 +29,8 @@ impl From<o8_xml::defaults::Hiba> for Error {
     }
 }
 
-impl From<global::errors::RustopusError> for Error {
-    fn from(e: global::errors::RustopusError) -> Self {
+impl From<RustopusError> for Error {
+    fn from(e: RustopusError) -> Self {
         Self {
             code: e.code,
             description: e.description.into()
@@ -38,8 +38,8 @@ impl From<global::errors::RustopusError> for Error {
     }
 }
 
-impl From<&o8_xml::defaults::Hiba> for Error {
-    fn from(e: &o8_xml::defaults::Hiba) -> Self {
+impl From<&o8_error> for Error {
+    fn from(e: &o8_error) -> Self {
         Self {
             code: e.kod,
             description: e.leiras.clone()

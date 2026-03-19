@@ -2,16 +2,16 @@
 use serde::Serialize;
 use quick_xml;
 
-use crate::o8_xml;
-use crate::partner_xml;
+use crate::o8_xml::prices as o8_prices;
+use crate::partner_xml::defaults as p_defaults;
 
 #[derive(Serialize)]
 pub struct Envelope {
     pub body: Body
 }
 
-impl From<o8_xml::prices::Envelope> for Envelope {
-    fn from(envelope: o8_xml::prices::Envelope) -> Self {
+impl From<o8_prices::Envelope> for Envelope {
+    fn from(envelope: o8_prices::Envelope) -> Self {
         Self {
             body: envelope.body.into()
         }
@@ -24,8 +24,8 @@ pub struct Body {
     pub response: GetPriceAuthResponse
 }
 
-impl From<o8_xml::prices::Body> for Body {
-    fn from(body: o8_xml::prices::Body) -> Self {
+impl From<o8_prices::Body> for Body {
+    fn from(body: o8_prices::Body) -> Self {
         Self {
             response: body.get_arlista_auth_response.into()
         }
@@ -38,8 +38,8 @@ pub struct GetPriceAuthResponse {
     pub result: GetPriceAuthResult
 }
 
-impl From<o8_xml::prices::GetArlistaAuthResponse> for GetPriceAuthResponse {
-    fn from(response: o8_xml::prices::GetArlistaAuthResponse) -> Self {
+impl From<o8_prices::GetArlistaAuthResponse> for GetPriceAuthResponse {
+    fn from(response: o8_prices::GetArlistaAuthResponse) -> Self {
         Self {
             result: response.get_arlista_auth_result.into()
         }
@@ -52,8 +52,8 @@ pub struct GetPriceAuthResult {
     pub answer: Answer
 }
 
-impl From<o8_xml::prices::GetArlistaAuthResult> for GetPriceAuthResult {
-    fn from(result: o8_xml::prices::GetArlistaAuthResult) -> Self {
+impl From<o8_prices::GetArlistaAuthResult> for GetPriceAuthResult {
+    fn from(result: o8_prices::GetArlistaAuthResult) -> Self {
         Self {
             answer: result.valasz.into()
         }
@@ -65,11 +65,11 @@ impl From<o8_xml::prices::GetArlistaAuthResult> for GetPriceAuthResult {
 pub struct Answer {
     pub version: String,
     pub prices: Prices,
-    pub error: Option<partner_xml::defaults::Error>
+    pub error: Option<p_defaults::Error>
 }
 
-impl From<o8_xml::prices::Valasz> for Answer {
-    fn from(valasz: o8_xml::prices::Valasz) -> Self {
+impl From<o8_prices::Valasz> for Answer {
+    fn from(valasz: o8_prices::Valasz) -> Self {
         Self {
             version: valasz.verzio,
             prices: valasz.arak.into(),
@@ -84,8 +84,8 @@ pub struct Prices {
     pub price: Vec<Price>
 }
 
-impl From<o8_xml::prices::Arak> for Prices {
-    fn from(arak: o8_xml::prices::Arak) -> Self {
+impl From<o8_prices::Arak> for Prices {
+    fn from(arak: o8_prices::Arak) -> Self {
         Self {
             price: arak.ar
                 .into_iter()
@@ -106,8 +106,8 @@ pub struct Price {
     pub currency: String
 }
 
-impl From<o8_xml::prices::Ar> for Price {
-    fn from(ar: o8_xml::prices::Ar) -> Self {
+impl From<o8_prices::Ar> for Price {
+    fn from(ar: o8_prices::Ar) -> Self {
         Self {
             id: ar.cikkid,
             no: ar.cikkszam,
@@ -130,7 +130,7 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
                         prices: Prices {
                             price: vec![]
                         },
-                        error: Some(partner_xml::defaults::Error::load(code, description))
+                        error: Some(p_defaults::Error::load(code, description))
                     }
                 }
             }

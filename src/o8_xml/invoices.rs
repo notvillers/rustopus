@@ -1,10 +1,11 @@
 // Structs for GetSzamlakAuth's XML
 use chrono::{NaiveDate, DateTime, Utc};
+use serde::Serialize;
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
-use crate::o8_xml;
-use crate::partner_xml;
+use crate::o8_xml::defaults as o8_defaults;
+use crate::partner_xml::invoices as p_invoices;
 use crate::service::dates::{get_first_date, get_datetime};
 
 pub fn get_request_string_opt(xmlns: &str, pid: &Option<i64>, tipus: &Option<i64>, datumtol: &Option<DateTime<Utc>>, datumig: &Option<DateTime<Utc>>, osszes_fizetetlen: &Option<i64>, authcode: &str) -> String {
@@ -47,59 +48,59 @@ pub fn get_request_string(xmlns: &str, pid: &i64, tipus: &i64, datumtol: &DateTi
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Envelope {
     pub body: Body
 }
 
 impl Envelope {
-    pub fn to_en(self) -> partner_xml::invoices::Envelope {
+    pub fn to_en(self) -> p_invoices::Envelope {
         self.into()
     }
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Body {
     pub get_szamlak_auth_response: GetSzamlakAuthResponse
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct GetSzamlakAuthResponse {
     pub get_szamlak_auth_result: GetSzamlakAuthResult
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct GetSzamlakAuthResult {
     pub valasz: Valasz
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Valasz {
     #[serde(rename = "@verzio")]
     pub verzio: String,
     pub szamlak: Szamlak,
     #[serde(rename = "hiba")]
-    pub hiba: Option<o8_xml::defaults::Hiba>
+    pub hiba: Option<o8_defaults::Hiba>
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Szamlak {
     pub szamla: Vec<Szamla>
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Szamla {
     pub fej: Fej,
@@ -107,7 +108,7 @@ pub struct Szamla {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Fej {
     pub kiszamlakod: i64,
@@ -138,14 +139,14 @@ pub struct Fej {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Tetelek {
     pub tetel: Vec<Tetel>
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Tetel {
     pub tetelszam: u64,
@@ -172,6 +173,16 @@ pub struct Tetel {
 mod hungarian_date_format_opt {
     use super::*;
     const FORMAT: &str = "%Y.%m.%d";
+
+    pub fn serialize<S>(date: &Option<NaiveDate>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match date {
+            Some(d) => serializer.serialize_str(&d.format(FORMAT).to_string()),
+            None => serializer.serialize_none(),
+        }
+    }
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<NaiveDate>, D::Error>
     where

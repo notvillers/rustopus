@@ -3,16 +3,16 @@ use chrono::NaiveDate;
 use serde::Serialize;
 use quick_xml;
 
-use crate::o8_xml;
-use crate::partner_xml;
+use crate::o8_xml::invoices as o8_invoices;
+use crate::partner_xml::defaults as p_defaults;
 
 #[derive(Serialize)]
 pub struct Envelope {
     pub body: Body
 }
 
-impl From<o8_xml::invoices::Envelope> for Envelope {
-    fn from(e: o8_xml::invoices::Envelope) -> Self {
+impl From<o8_invoices::Envelope> for Envelope {
+    fn from(e: o8_invoices::Envelope) -> Self {
         Envelope {
             body: e.body.into()
         }
@@ -25,8 +25,8 @@ pub struct Body {
     pub response: Response
 }
 
-impl From<o8_xml::invoices::Body> for Body {
-    fn from(b: o8_xml::invoices::Body) -> Self {
+impl From<o8_invoices::Body> for Body {
+    fn from(b: o8_invoices::Body) -> Self {
         Self {
             response: b.get_szamlak_auth_response.into()
         }
@@ -39,8 +39,8 @@ pub struct Response {
     pub result: Result
 }
 
-impl From<o8_xml::invoices::GetSzamlakAuthResponse> for Response {
-    fn from(r: o8_xml::invoices::GetSzamlakAuthResponse) -> Self {
+impl From<o8_invoices::GetSzamlakAuthResponse> for Response {
+    fn from(r: o8_invoices::GetSzamlakAuthResponse) -> Self {
         Self {
             result: r.get_szamlak_auth_result.into()
         }
@@ -53,8 +53,8 @@ pub struct Result {
     pub answer: Answer
 }
 
-impl From<o8_xml::invoices::GetSzamlakAuthResult> for Result {
-    fn from(r: o8_xml::invoices::GetSzamlakAuthResult) -> Self {
+impl From<o8_invoices::GetSzamlakAuthResult> for Result {
+    fn from(r: o8_invoices::GetSzamlakAuthResult) -> Self {
         Self {
             answer: r.valasz.into()
         }
@@ -66,11 +66,11 @@ impl From<o8_xml::invoices::GetSzamlakAuthResult> for Result {
 pub struct Answer {
     pub version: String,
     pub invoices: Invoices,
-    pub error: Option<partner_xml::defaults::Error>
+    pub error: Option<p_defaults::Error>
 }
 
-impl From<o8_xml::invoices::Valasz> for Answer {
-    fn from(v: o8_xml::invoices::Valasz) -> Self {
+impl From<o8_invoices::Valasz> for Answer {
+    fn from(v: o8_invoices::Valasz) -> Self {
         Self {
             version: v.verzio,
             invoices: v.szamlak.into(),
@@ -85,8 +85,8 @@ pub struct Invoices {
     pub invoice: Vec<Invoice>,
 }
 
-impl From<o8_xml::invoices::Szamlak> for Invoices {
-    fn from(sz: o8_xml::invoices::Szamlak) -> Self {
+impl From<o8_invoices::Szamlak> for Invoices {
+    fn from(sz: o8_invoices::Szamlak) -> Self {
         Self {
             invoice: sz.szamla.into_iter().map(Invoice::from).collect()
         }
@@ -100,8 +100,8 @@ pub struct Invoice {
     pub products: Products
 }
 
-impl From<o8_xml::invoices::Szamla> for Invoice {
-    fn from(sz: o8_xml::invoices::Szamla) -> Self {
+impl From<o8_invoices::Szamla> for Invoice {
+    fn from(sz: o8_invoices::Szamla) -> Self {
         Self {
             head: sz.fej.into(),
             products: sz.tetelek.tetel.into()
@@ -133,8 +133,8 @@ pub struct Head {
     pub delivery_street: Option<String>
 }
 
-impl From<o8_xml::invoices::Fej> for Head {
-    fn from(f: o8_xml::invoices::Fej) -> Self {
+impl From<o8_invoices::Fej> for Head {
+    fn from(f: o8_invoices::Fej) -> Self {
         Self {
             id: f.kiszamlakod,
             no: f.bizonylatszam,
@@ -165,8 +165,8 @@ pub struct Products {
     pub product: Vec<Product>
 }
 
-impl From<Vec<o8_xml::invoices::Tetel>> for Products {
-    fn from(t: Vec<o8_xml::invoices::Tetel>) -> Self {
+impl From<Vec<o8_invoices::Tetel>> for Products {
+    fn from(t: Vec<o8_invoices::Tetel>) -> Self {
         Self {
             product: t.into_iter().map(|x| x.into()).collect()
         }
@@ -190,8 +190,8 @@ pub struct Product {
     pub order_foreign_no: Option<String>
 }
 
-impl From<o8_xml::invoices::Tetel> for Product {
-    fn from(t: o8_xml::invoices::Tetel) -> Self {
+impl From<o8_invoices::Tetel> for Product {
+    fn from(t: o8_invoices::Tetel) -> Self {
         Self {
             lot_no: t.tetelszam,
             id: t.cikkid,
@@ -220,7 +220,7 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
                         invoices: Invoices {
                             invoice: vec![]
                         },
-                        error: Some(partner_xml::defaults::Error::load(code, description))
+                        error: Some(p_defaults::Error::load(code, description))
                     }
                 }
             }

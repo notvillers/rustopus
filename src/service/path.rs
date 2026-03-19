@@ -19,9 +19,7 @@ fn get_root_path() -> PathBuf {
 pub fn get_current_or_root_dir() -> PathBuf {
     match env::current_dir() {
         Ok(path) => return path,
-        Err(error) => {
-            elogger(format!("Error reading current directory: {}", error));
-        }
+        Err(error) => elogger(format!("Error reading current directory: {}", error))
     }
     get_root_path()
 }

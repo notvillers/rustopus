@@ -2,16 +2,16 @@
 use serde::Serialize;
 use quick_xml;
 
-use crate::o8_xml;
-use crate::partner_xml;
+use crate::o8_xml::products as o8_products;
+use crate::partner_xml::defaults as p_defaults;
 
 #[derive(Serialize)]
 pub struct Envelope {
     pub body: Body
 }
 
-impl From<o8_xml::products::Envelope> for Envelope {
-    fn from(e: o8_xml::products::Envelope) -> Self {
+impl From<o8_products::Envelope> for Envelope {
+    fn from(e: o8_products::Envelope) -> Self {
         Self {
             body: e.body.into()
         }
@@ -24,8 +24,8 @@ pub struct Body {
     pub response: GetProductsAuthResponse
 }
 
-impl From<o8_xml::products::Body> for Body {
-    fn from(b: o8_xml::products::Body) -> Self {
+impl From<o8_products::Body> for Body {
+    fn from(b: o8_products::Body) -> Self {
         Self {
             response: b.get_cikkek_auth_response.into()
         }
@@ -38,8 +38,8 @@ pub struct GetProductsAuthResponse {
     pub result: GetProductsAuthResult
 }
 
-impl From<o8_xml::products::GetCikkekAuthResponse> for GetProductsAuthResponse {
-    fn from(r: o8_xml::products::GetCikkekAuthResponse) -> Self {
+impl From<o8_products::GetCikkekAuthResponse> for GetProductsAuthResponse {
+    fn from(r: o8_products::GetCikkekAuthResponse) -> Self {
         Self {
             result: r.get_cikkek_auth_result.into()
         }
@@ -52,8 +52,8 @@ pub struct GetProductsAuthResult {
     pub answer: Answer
 }
 
-impl From<o8_xml::products::GetCikkekAuthResult> for GetProductsAuthResult {
-    fn from(r: o8_xml::products::GetCikkekAuthResult) -> Self {
+impl From<o8_products::GetCikkekAuthResult> for GetProductsAuthResult {
+    fn from(r: o8_products::GetCikkekAuthResult) -> Self {
         Self {
             answer: r.valasz.into()
         }
@@ -65,11 +65,11 @@ impl From<o8_xml::products::GetCikkekAuthResult> for GetProductsAuthResult {
 pub struct Answer {
     pub version: String,
     pub products: Products,
-    pub error: Option<partner_xml::defaults::Error>
+    pub error: Option<p_defaults::Error>
 }
 
-impl From<o8_xml::products::Valasz> for Answer {
-    fn from(v: o8_xml::products::Valasz) -> Self {
+impl From<o8_products::Valasz> for Answer {
+    fn from(v: o8_products::Valasz) -> Self {
         Self {
             version: v.verzio,
             products: v.cikk.into_iter().collect::<Products>(),
@@ -84,8 +84,8 @@ pub struct Products {
     pub product: Vec<Product>
 }
 
-impl FromIterator<o8_xml::products::Cikk> for Products {
-    fn from_iter<I: IntoIterator<Item = o8_xml::products::Cikk>>(iter: I) -> Self {
+impl FromIterator<o8_products::Cikk> for Products {
+    fn from_iter<I: IntoIterator<Item = o8_products::Cikk>>(iter: I) -> Self {
         Self {
             product: iter.into_iter().map(|x| x.into()).collect()
         }
@@ -114,8 +114,8 @@ pub struct Product {
     pub origin_country: String
 }
 
-impl From<o8_xml::products::Cikk> for Product {
-    fn from(c: o8_xml::products::Cikk) -> Self {
+impl From<o8_products::Cikk> for Product {
+    fn from(c: o8_products::Cikk) -> Self {
         Self {
             id: c.cikkid,
             no: c.cikkszam,
@@ -146,8 +146,8 @@ pub struct Size {
     pub z: Option<f64>
 }
 
-impl From<o8_xml::products::Meret> for Size {
-    fn from(meret: o8_xml::products::Meret) -> Self {
+impl From<o8_products::Meret> for Size {
+    fn from(meret: o8_products::Meret) -> Self {
         Self {
             x: meret.xmeret,
             y: meret.ymeret,
@@ -167,7 +167,7 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
                         products: Products {
                             product: vec![]
                         },
-                        error: Some(partner_xml::defaults::Error::load(code, description))
+                        error: Some(p_defaults::Error::load(code, description))
                     }
                 }
             }

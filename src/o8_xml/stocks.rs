@@ -4,8 +4,8 @@ use serde::Serialize;
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
-use crate::o8_xml;
-use crate::partner_xml;
+use crate::o8_xml::defaults as o8_defaults;
+use crate::partner_xml::stocks as p_stocks;
 
 /// Get the string for the request
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
@@ -34,7 +34,7 @@ pub struct Envelope {
 }
 
 impl Envelope {
-    pub fn to_en(self) -> partner_xml::stocks::Envelope {
+    pub fn to_en(self) -> p_stocks::Envelope {
         self.into()
     }
 }
@@ -67,7 +67,7 @@ pub struct Valasz {
     pub verzio: String,
     pub cikkek: Cikkek,
     #[serde(rename = "hiba")]
-    pub hiba: Option<o8_xml::defaults::Hiba>
+    pub hiba: Option<o8_defaults::Hiba>
 }
 
 

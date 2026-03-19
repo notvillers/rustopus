@@ -2,16 +2,16 @@
 use serde::Serialize;
 use quick_xml;
 
-use crate::o8_xml;
-use crate::partner_xml;
+use crate::o8_xml::barcode as o8_barcode;
+use crate::partner_xml::defaults as p_defaults;
 
 #[derive(Serialize)]
 pub struct Envelope {
     pub body: Body
 }
 
-impl From<o8_xml::barcode::Envelope> for Envelope {
-    fn from(v: o8_xml::barcode::Envelope) -> Self {
+impl From<o8_barcode::Envelope> for Envelope {
+    fn from(v: o8_barcode::Envelope) -> Self {
         Self {
             body: v.body.into()
         }
@@ -24,8 +24,8 @@ pub struct Body {
     pub response: GetProductBarcodesResponse
 }
 
-impl From<o8_xml::barcode::Body> for Body {
-    fn from(v: o8_xml::barcode::Body) -> Self {
+impl From<o8_barcode::Body> for Body {
+    fn from(v: o8_barcode::Body) -> Self {
         Self {
             response: v.get_vonalkodok_auth_response.into()
         }
@@ -38,8 +38,8 @@ pub struct GetProductBarcodesResponse {
     pub result: GetProductBarcodesResult
 }
 
-impl From<o8_xml::barcode::GetVonalkodokAuthResponse> for GetProductBarcodesResponse {
-    fn from(v: o8_xml::barcode::GetVonalkodokAuthResponse) -> Self {
+impl From<o8_barcode::GetVonalkodokAuthResponse> for GetProductBarcodesResponse {
+    fn from(v: o8_barcode::GetVonalkodokAuthResponse) -> Self {
         Self {
             result: v.get_vonalkodok_auth_result.into()
         }
@@ -52,8 +52,8 @@ pub struct GetProductBarcodesResult {
     pub answer: Answer
 }
 
-impl From<o8_xml::barcode::GetVonalkodokAuthResult> for GetProductBarcodesResult {
-    fn from(v: o8_xml::barcode::GetVonalkodokAuthResult) -> Self {
+impl From<o8_barcode::GetVonalkodokAuthResult> for GetProductBarcodesResult {
+    fn from(v: o8_barcode::GetVonalkodokAuthResult) -> Self {
         Self {
             answer: v.valasz.into()
         }
@@ -65,11 +65,11 @@ impl From<o8_xml::barcode::GetVonalkodokAuthResult> for GetProductBarcodesResult
 pub struct Answer {
     pub version: String,
     pub barcodes: Barcodes,
-    pub error: Option<partner_xml::defaults::Error>
+    pub error: Option<p_defaults::Error>
 }
 
-impl From<o8_xml::barcode::Valasz> for Answer {
-    fn from(v: o8_xml::barcode::Valasz) -> Self {
+impl From<o8_barcode::Valasz> for Answer {
+    fn from(v: o8_barcode::Valasz) -> Self {
         Self {
             version: v.verzio,
             barcodes: v.vonalkodok.into(),
@@ -84,8 +84,8 @@ pub struct Barcodes {
     pub barcode: Vec<Barcode>
 }
 
-impl From<o8_xml::barcode::Vonalkodok> for Barcodes {
-    fn from(v: o8_xml::barcode::Vonalkodok) -> Self {
+impl From<o8_barcode::Vonalkodok> for Barcodes {
+    fn from(v: o8_barcode::Vonalkodok) -> Self {
         Self {
             barcode: v.vonalkod
                 .into_iter()
@@ -105,8 +105,8 @@ pub struct Barcode {
     pub main_ean: bool
 }
 
-impl From<o8_xml::barcode::Vonalkod> for Barcode {
-    fn from(v: o8_xml::barcode::Vonalkod) -> Self {
+impl From<o8_barcode::Vonalkod> for Barcode {
+    fn from(v: o8_barcode::Vonalkod) -> Self {
         Self {
             id: v.cikkid,
             no: v.cikkszam,
@@ -128,7 +128,7 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
                         barcodes: Barcodes {
                             barcode: vec![]
                         },
-                        error: Some(partner_xml::defaults::Error::load(code, description))
+                        error: Some(p_defaults::Error::load(code, description))
                     }
                 }
             }
