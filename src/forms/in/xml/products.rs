@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
-use crate::o8_xml::defaults as o8_defaults;
+use crate::forms::r#in::xml::defaults as o8_defaults;
 use crate::partner_xml::products as p_products;
 
 /// Get the string for the request

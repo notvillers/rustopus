@@ -2,7 +2,7 @@
 use serde::Serialize;
 use quick_xml;
 
-use crate::o8_xml::products as o8_products;
+use crate::forms::r#in::xml::products as o8_products;
 use crate::partner_xml::defaults as p_defaults;
 
 #[derive(Serialize)]

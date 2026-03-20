@@ -3,7 +3,7 @@ use chrono::NaiveDate;
 use serde::Serialize;
 use quick_xml;
 
-use crate::o8_xml::invoices as o8_invoices;
+use crate::forms::r#in::xml::invoices as o8_invoices;
 use crate::partner_xml::defaults as p_defaults;
 
 #[derive(Serialize)]

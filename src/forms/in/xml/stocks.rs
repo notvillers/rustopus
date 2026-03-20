@@ -1,10 +1,11 @@
-/// Structs for GetCikkKepekAuth's XML
+/// Structs for GetCikkekKeszletValtozasAuth's XML
 use chrono::{DateTime, Utc};
-use serde::Deserialize;
 use serde::Serialize;
+use serde::{Deserialize, Deserializer};
+use std::str::FromStr;
 
-use crate::o8_xml::defaults as o8_defaults;
-use crate::partner_xml::images as o8_images;
+use crate::forms::r#in::xml::defaults as o8_defaults;
+use crate::partner_xml::stocks as p_stocks;
 
 /// Get the string for the request
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
@@ -12,18 +13,19 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
         r#"<?xml version="1.0" encoding="utf-8"?>
             <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
                 <soap:Body>
-                    <GetCikkKepekAuth xmlns="{}">
+                    <GetCikkekKeszletValtozasAuth xmlns="{}">
                         <web_update>{}</web_update>
                         <authcode>{}</authcode>
-                    </GetCikkKepekAuth>
+                    </GetCikkekKeszletValtozasAuth>
                 </soap:Body>
             </soap:Envelope>
         "#,
         xmlns,
         web_update.format("%Y-%m-%dT%H:%M:%S").to_string(),
         authcode
-    ) 
+    )
 }
+
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
@@ -32,7 +34,7 @@ pub struct Envelope {
 }
 
 impl Envelope {
-    pub fn to_en(self) -> o8_images::Envelope {
+    pub fn to_en(self) -> p_stocks::Envelope {
         self.into()
     }
 }
@@ -41,20 +43,20 @@ impl Envelope {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Body {
-    pub get_cikk_kepek_auth_response: GetCikkKepekAuthResponse
+    pub get_cikkek_keszlet_valtozas_auth_response: GetCikkekKeszletValtozasAuthResponse,
 }
 
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct GetCikkKepekAuthResponse {
-    pub get_cikk_kepek_auth_result: GetCikkKepekAuthResult,
+pub struct GetCikkekKeszletValtozasAuthResponse {
+    pub get_cikkek_keszlet_valtozas_auth_result: GetCikkekKeszletValtozasAuthResult,
 }
 
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub struct GetCikkKepekAuthResult {
+pub struct GetCikkekKeszletValtozasAuthResult {
     pub valasz: Valasz,
 }
 
@@ -63,40 +65,41 @@ pub struct GetCikkKepekAuthResult {
 pub struct Valasz {
     #[serde(rename = "@verzio")]
     pub verzio: String,
-
-    #[serde(rename = "cikk")]
-    #[serde(default)]
-    pub cikk: Vec<Cikk>,
-
+    pub cikkek: Cikkek,
     #[serde(rename = "hiba")]
     pub hiba: Option<o8_defaults::Hiba>
 }
 
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct Cikkek {
+    pub cikk: Vec<Cikk>
+}
+
+
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Cikk {
-    #[serde(rename = "@cikkid")]
     pub cikkid: u64,
-    #[serde(rename = "@cikkszam")]
     pub cikkszam: String,
-    pub kepek: Kepek
+    #[serde(deserialize_with = "parse_comma_f64", default)]
+    pub szabad: Option<f64>
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Kepek {
-    #[serde(default)]
-    pub kep: Vec<Kep>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Kep {
-    #[serde(rename = "@galeria")]
-    pub galeria: String,
-    #[serde(rename = "$value")]
-    pub url: String
+// Octopus sends floats (actually strings) with ',' separator, we need to convert it to '.' separator
+fn parse_comma_f64<'de, D>(deserializer: D) -> Result<Option<f64>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: Option<String> = Option::deserialize(deserializer)?;
+    match s {
+        Some(value) if value.is_empty() => Ok(None),
+        Some(value) => {
+            f64::from_str(&value.replace(",", "."))
+                .map(Some)
+                .map_err(|_| serde::de::Error::custom("invalid float format"))
+        }
+        None => Ok(None)
+    }
 }

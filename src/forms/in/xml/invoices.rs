@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
-use crate::o8_xml::defaults as o8_defaults;
+use crate::forms::r#in::xml::defaults as o8_defaults;
 use crate::partner_xml::invoices as p_invoices;
 use crate::service::dates::{get_first_date, get_datetime};
 

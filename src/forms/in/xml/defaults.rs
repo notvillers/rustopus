@@ -21,7 +21,8 @@ pub struct CallData {
     pub from_date: Option<DateTime<Utc>>,
     pub to_date: Option<DateTime<Utc>>,
     pub unpaid: Option<i64>,
-    pub language: Option<String>
+    pub language: Option<String>,
+    pub data_type: Option<String>
 }
 
 impl Default for CallData {
@@ -35,7 +36,8 @@ impl Default for CallData {
             from_date: None,
             to_date: None,
             unpaid: None,
-            language: None
+            language: None,
+            data_type: None
         }
     }
 }

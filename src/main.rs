@@ -4,9 +4,8 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use actix_files::Files;
 
 mod service;
-mod o8_xml;
+mod forms;
 mod partner_xml;
-mod partner_csv;
 mod routes;
 mod global;
 

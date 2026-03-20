@@ -17,7 +17,8 @@ pub struct RequestParameters {
     pub from_date: Option<DateTime<Utc>>,
     pub to_date: Option<DateTime<Utc>>,
     pub unpaid: Option<i64>,
-    pub language: Option<String>
+    pub language: Option<String>,
+    pub data_type: Option<String>
 }
 
 
@@ -43,6 +44,23 @@ pub fn send_xml(xml: String) -> HttpResponse {
     HttpResponse::Ok()
         .content_type("application/xml")
         .body(xml)
+}
+
+
+pub fn send_csv<T: serde::Serialize>(records: &[T], filename: &str) -> HttpResponse {
+    let mut wtr = csv::WriterBuilder::new()
+        .delimiter(b';')
+        .from_writer(vec![]);
+
+    for record in records {
+        wtr.serialize(record).unwrap();
+    }
+    let data = wtr.into_inner().unwrap();
+
+    HttpResponse::Ok()
+        .content_type("text/csv")
+        .insert_header(("Content-Disposition", format!("attachment; filename=\"{}\"", filename)))
+        .body(data)
 }
 
 

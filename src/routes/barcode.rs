@@ -5,7 +5,7 @@ use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::ipv4::log_ip;
 use crate::partner_xml::barcode::error_struct_xml;
-use crate::o8_xml::defaults::CallData;
+use crate::forms::r#in::xml::defaults::CallData;
 use crate::service::get_data::RequestGet;
 
 /// Name of the current request

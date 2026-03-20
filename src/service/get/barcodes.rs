@@ -1,4 +1,4 @@
-use crate::o8_xml::{barcode as o8_barcode, defaults::CallData};
+use crate::forms::r#in::xml::{barcode as o8_barcode, defaults::CallData};
 use crate::partner_xml::barcode as p_barcode;
 use crate::service::soap::get_response;
 use crate::global::errors::GLOBAL_GET_DATA_ERROR;

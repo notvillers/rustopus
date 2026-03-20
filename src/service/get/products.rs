@@ -1,5 +1,6 @@
-use crate::o8_xml::{products as o8_products, defaults::CallData};
+use crate::forms::r#in::xml::{products as o8_products, defaults::CallData};
 use crate::partner_xml::products as p_products;
+use crate::forms::out::csv::products as csv_products;
 use crate::service::soap::get_response;
 use crate::global::errors::GLOBAL_GET_DATA_ERROR;
 use crate::service::get_data::{FIRST_DATE, ErrorType, error_logger};
@@ -9,6 +10,18 @@ use crate::service::get_data::{FIRST_DATE, ErrorType, error_logger};
 pub enum ProductsEnvelope {
     Hu(o8_products::Envelope),
     En(p_products::Envelope)
+}
+
+
+pub enum ProductsXML {
+    Hu(o8_products::Envelope),
+    En(p_products::Envelope)
+}
+
+
+pub enum ProductsData {
+    XML(ProductsXML),
+    CSV(csv_products::Products)
 }
 
 

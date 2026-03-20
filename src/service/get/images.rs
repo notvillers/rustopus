@@ -1,4 +1,4 @@
-use crate::o8_xml::{images as o8_images, defaults::CallData};
+use crate::forms::r#in::xml::{images as o8_images, defaults::CallData};
 use crate::partner_xml::images as p_images;
 use crate::service::soap::get_response;
 use crate::global::errors::GLOBAL_GET_DATA_ERROR;

@@ -5,11 +5,11 @@ use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::service::ipv4::log_ip;
 use crate::partner_xml::products::error_struct_xml;
-use crate::o8_xml::defaults::CallData;
+use crate::forms::r#in::xml::defaults::CallData;
 use actix_web::HttpResponse;
 
-use crate::o8_xml::products::{self as o8_products};
-use crate::partner_csv::products::{self as csv_products, Products};
+use crate::forms::r#in::xml::products::{self as o8_products};
+use crate::forms::out::csv::products::{self as csv_products, Products};
 use crate::service::get_data::FIRST_DATE;
 use crate::service::soap::get_response;
 

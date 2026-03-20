@@ -2,7 +2,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::o8_xml::defaults as o8_defaults;
+use crate::forms::r#in::xml::defaults as o8_defaults;
 use crate::partner_xml::barcode as o8_barcode;
 
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {

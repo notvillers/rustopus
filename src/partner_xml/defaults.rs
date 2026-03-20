@@ -1,7 +1,7 @@
 /// Default english struct(s) for XML(s) got from the Octopus call
 use serde::Serialize;
 
-use crate::o8_xml::defaults::Hiba as o8_error;
+use crate::forms::r#in::xml::defaults::Hiba as o8_error;
 use crate::service::errors;
 use crate::global::errors::RustopusError;
 

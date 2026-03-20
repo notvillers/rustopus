@@ -2,7 +2,7 @@
 use serde::Serialize;
 use quick_xml;
 
-use crate::o8_xml::barcode as o8_barcode;
+use crate::forms::r#in::xml::barcode as o8_barcode;
 use crate::partner_xml::defaults as p_defaults;
 
 #[derive(Serialize)]

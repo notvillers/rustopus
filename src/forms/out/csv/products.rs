@@ -1,5 +1,5 @@
 use serde::Serialize;
-use crate::o8_xml::products as o8_products;
+use crate::forms::r#in::xml::products as o8_products;
 
 #[derive(Serialize)]
 pub struct Product {
