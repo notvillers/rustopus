@@ -19,7 +19,7 @@ use crate::service::{log::elogger, dates};
 
 use crate::service::get::{
     products::{ProductsData, ProductsXML, get_products},
-    stocks::{StocksEnvelope, get_stocks},
+    stocks::{StocksData, StocksXML, get_stocks},
     prices::{PricesEnvelope, get_prices},
     images::{ImagesEnvelope, get_images},
     barcodes::{BarcodesEnvelope, get_barcode},
@@ -58,7 +58,7 @@ pub fn error_logger(in_error: ErrorType, error: &RustopusError) {
 #[serde(untagged)]
 pub enum ResponseGet {
     Products(ProductsData),
-    Stocks(StocksEnvelope),
+    Stocks(StocksData),
     Prices(PricesEnvelope),
     Images(ImagesEnvelope),
     Barcodes(BarcodesEnvelope),
@@ -132,14 +132,14 @@ async fn get_bulk(mut call_data: CallData) -> bulk::Envelope {
         return bulk::error_struct(vec![rustopus_error.into(), error])
     };
 
-    let stocks = match RequestGet::Prices(call_data.clone()).to_data().await {
-        ResponseGet::Stocks(StocksEnvelope::En(envelope)) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
-        _ => Some(stocks::error_struct(errors::BULK_GET_STOCKS_ERROR.code, errors::BULK_GET_STOCKS_ERROR.description))
-    };
-
     let prices = match RequestGet::Prices(call_data.clone()).to_data().await {
         ResponseGet::Prices(PricesEnvelope::En(envelope)) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(prices::error_struct(errors::BULK_GET_PRICES_ERROR.code, errors::BULK_GET_PRICES_ERROR.description))
+    };
+
+    let stocks = match RequestGet::Stocks(call_data.clone()).to_data().await {
+        ResponseGet::Stocks(StocksData::XML(StocksXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
+        _ => Some(stocks::error_struct(errors::BULK_GET_STOCKS_ERROR.code, errors::BULK_GET_STOCKS_ERROR.description))
     };
 
     let images = match RequestGet::Images(call_data.clone()).to_data().await {

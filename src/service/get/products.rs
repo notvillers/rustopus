@@ -1,6 +1,13 @@
-use crate::forms::r#in::xml::{products as o8_products, defaults::CallData};
-use crate::forms::out::xml::products as p_products;
-use crate::forms::out::csv::products as csv_products;
+use crate::forms::{
+    r#in::xml::{
+        products as o8_products,
+        defaults::CallData
+    },
+    out::{
+        xml::products as p_products,
+        csv::products as csv_products
+    }
+};
 use crate::service::soap::get_response;
 use crate::global::errors::GLOBAL_GET_DATA_ERROR;
 use crate::service::get_data::{
@@ -40,7 +47,7 @@ pub enum ProductsData {
 pub async fn get_products(call_data: CallData) -> ProductsData {
     let request = o8_products::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = get_response(&call_data.url, request).await;
-    match quick_xml::de::from_str::<o8_products::Envelope>(&response) {
+    return match quick_xml::de::from_str::<o8_products::Envelope>(&response) {
         Ok(envelope) => {
             match call_data.clone().is_csv() {
                 true => return ProductsData::CSV(ProductsCSV::En(envelope.into())),

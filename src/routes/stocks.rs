@@ -1,12 +1,17 @@
 use actix_web::{get, web, HttpRequest, Responder};
 
-use crate::routes::default::{RequestParameters, GetStringResponse, GetDateResponse, send_xml, get_auth, get_url, get_xmlns, get_date};
+use crate::routes::default::{
+    RequestParameters, GetStringResponse, GetDateResponse,
+    send_xml, send_csv, return_internal_server_error,
+    get_auth, get_url, get_xmlns, get_date
+};
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::service::ipv4::log_ip;
 use crate::forms::out::xml::stocks::error_struct_xml;
 use crate::forms::r#in::xml::defaults::CallData;
-use crate::service::get_data::RequestGet;
+use crate::service::get_data::{RequestGet, ResponseGet};
+use crate::service::get::stocks::{StocksData, StocksCSV};
 
 /// Name of the current request
 const REQUEST_NAME: &'static str = "STOCKS REQUEST";
@@ -45,6 +50,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
             None
         },
         language: params.language,
+        data_type: params.data_type,
         ..Default::default()
     };
 
@@ -53,15 +59,25 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     if call_data.clone().is_hu() {
         log_with_ip_uuid(&ip_address, &uuid, format!("Request is hungarian ('{}')", call_data.clone().language.unwrap_or("Err.".to_string())));
     }
+    if call_data.clone().is_csv() {
+        log_with_ip_uuid(&ip_address, &uuid, format!("Request is csv ('{}')", call_data.clone().data_type.unwrap_or("Err.".to_string())));
+    }
 
     // Getting data
-    let xml = RequestGet::Stocks(call_data).to_xml().await;
+    let raw = RequestGet::Stocks(call_data).to_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
-    // Sending xml back as response
-    send_xml(xml)
+    // Handling got data
+    match raw {
+        ResponseGet::Stocks(StocksData::CSV(StocksCSV::En(d))) => return send_csv(&d.products, "stocks.csv"),
+        ResponseGet::Stocks(StocksData::XML(d)) => return send_xml(d.to_xml()),
+        _ => {}
+    }
+
+    // Error if something went wrong at handling
+    return_internal_server_error()
 }
 
 

@@ -1,31 +1,68 @@
-use crate::forms::r#in::xml::{stocks as o8_stocks, defaults::CallData };
-use crate::forms::out::xml::stocks as p_stocks;
+use crate::forms::{
+    r#in::xml::{
+        stocks as o8_stocks,
+        defaults::CallData
+    },
+    out::{
+        xml::stocks as p_stocks,
+        csv::stocks as csv_stocks
+    }
+};
 use crate::service::soap::get_response;
 use crate::global::errors::GLOBAL_GET_DATA_ERROR;
-use crate::service::get_data::{FIRST_DATE, ErrorType, error_logger};
+use crate::service::get_data::{
+    FIRST_DATE, ErrorType,
+    error_logger, to_xml_string
+};
 
 #[derive(serde::Serialize)]
 #[serde(untagged)]
-pub enum StocksEnvelope {
+pub enum StocksXML {
     Hu(o8_stocks::Envelope),
     En(p_stocks::Envelope)
 }
 
+impl StocksXML {
+    pub fn to_xml(&self) -> String {
+        to_xml_string(self)
+    }
+}
+
+
+#[derive(serde::Serialize)]
+#[serde(untagged)]
+pub enum StocksCSV {
+    En(csv_stocks::Products)
+}
+
+
+#[derive(serde::Serialize)]
+#[serde(untagged)]
+pub enum StocksData {
+    XML(StocksXML),
+    CSV(StocksCSV)
+}
+
 
 /// This function gets english stocks envelope from the given `CallData`
-pub async fn get_stocks(call_data: CallData) -> StocksEnvelope {
+pub async fn get_stocks(call_data: CallData) -> StocksData {
     let request = o8_stocks::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = get_response(&call_data.url, request).await;
-    match quick_xml::de::from_str::<o8_stocks::Envelope>(&response) {
+    return match quick_xml::de::from_str::<o8_stocks::Envelope>(&response) {
         Ok(envelope) => {
+            match call_data.clone().is_csv() {
+                true => return StocksData::CSV(StocksCSV::En(envelope.into())),
+                _ => {}
+            }
             match call_data.is_hu() {
-                true => StocksEnvelope::Hu(envelope),
-                _ => StocksEnvelope::En(envelope.to_en())
+                true => StocksData::XML(StocksXML::Hu(envelope)),
+                _ => StocksData::XML(StocksXML::En(envelope.to_en()))
             }
         },
         Err(error) => {
-            error_logger(ErrorType::DeError(error), &GLOBAL_GET_DATA_ERROR);
-            StocksEnvelope::En(p_stocks::error_struct(GLOBAL_GET_DATA_ERROR.code, GLOBAL_GET_DATA_ERROR.description))
+            let rustopus_error = GLOBAL_GET_DATA_ERROR;
+            error_logger(ErrorType::DeError(error), &rustopus_error);
+            StocksData::XML(StocksXML::En(p_stocks::error_struct(rustopus_error.code, rustopus_error.description)))
         }
     }
 }
