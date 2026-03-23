@@ -67,13 +67,10 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     // Handling got data
-    if let ResponseGet::Products(data) = raw {
-        match data {
-            ProductsData::CSV(csv_data) => match csv_data {
-                ProductsCSV::En(en_csv_data) => return send_csv(&en_csv_data.products, "products.csv")
-            },
-            ProductsData::XML(xml_data) => return send_xml(xml_data.to_xml())
-        }
+    match raw {
+        ResponseGet::Products(ProductsData::CSV(ProductsCSV::En(d))) => return send_csv(&d.products, "products.csv"),
+        ResponseGet::Products(ProductsData::XML(d)) => return send_xml(d.to_xml()),
+        _ => {}
     }
 
     // Error if something went wrong at handling
