@@ -3,8 +3,10 @@ use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::forms::r#in::xml::defaults as o8_defaults;
-use crate::partner_xml::images as o8_images;
+use crate::forms::{
+    r#in::xml::defaults as o8_defaults,
+    out::xml::images as p_images
+};
 
 /// Get the string for the request
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
@@ -32,7 +34,7 @@ pub struct Envelope {
 }
 
 impl Envelope {
-    pub fn to_en(self) -> o8_images::Envelope {
+    pub fn to_en(self) -> p_images::Envelope {
         self.into()
     }
 }

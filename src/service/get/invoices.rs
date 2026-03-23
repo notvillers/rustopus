@@ -1,5 +1,5 @@
 use crate::forms::r#in::xml::{invoices as o8_invoices, defaults::CallData};
-use crate::partner_xml::invoices as p_invoices;
+use crate::forms::out::xml::invoices as p_invoices;
 use crate::service::soap::get_response;
 use crate::global::errors::GLOBAL_GET_DATA_ERROR;
 use crate::service::get_data::{ErrorType, error_logger};

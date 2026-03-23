@@ -5,7 +5,6 @@ use actix_files::Files;
 
 mod service;
 mod forms;
-mod partner_xml;
 mod routes;
 mod global;
 

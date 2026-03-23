@@ -2,8 +2,10 @@
 use serde::Serialize;
 use quick_xml;
 
-use crate::forms::r#in::xml::prices as o8_prices;
-use crate::partner_xml::defaults as p_defaults;
+use crate::forms::{
+    r#in::xml::prices as o8_prices,
+    out::xml::defaults as p_defaults
+};
 
 #[derive(Serialize)]
 pub struct Envelope {

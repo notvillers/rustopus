@@ -8,4 +8,3 @@ pub mod images;
 pub mod test;
 pub mod barcode;
 pub mod invoices;
-pub mod csv_products;

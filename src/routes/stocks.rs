@@ -4,7 +4,7 @@ use crate::routes::default::{RequestParameters, GetStringResponse, GetDateRespon
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::service::ipv4::log_ip;
-use crate::partner_xml::stocks::error_struct_xml;
+use crate::forms::out::xml::stocks::error_struct_xml;
 use crate::forms::r#in::xml::defaults::CallData;
 use crate::service::get_data::RequestGet;
 

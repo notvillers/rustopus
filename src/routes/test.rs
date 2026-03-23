@@ -4,7 +4,7 @@ use crate::routes::default::send_xml;
 use crate::service::slave::get_uuid;
 use crate::service::ipv4::{log_ip, RequestIP};
 use crate::service::log::log_with_ip_uuid;
-use crate::partner_xml::test::create_xml;
+use crate::forms::out::xml::test::create_xml;
 use crate::global::errors;
 
 /// Name of the current request

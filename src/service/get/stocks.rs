@@ -1,5 +1,5 @@
 use crate::forms::r#in::xml::{stocks as o8_stocks, defaults::CallData };
-use crate::partner_xml::stocks as p_stocks;
+use crate::forms::out::xml::stocks as p_stocks;
 use crate::service::soap::get_response;
 use crate::global::errors::GLOBAL_GET_DATA_ERROR;
 use crate::service::get_data::{FIRST_DATE, ErrorType, error_logger};

@@ -140,3 +140,9 @@ pub fn get_i64(request_name: &str, ip_address: &str, uuid: &str, param: Option<i
     elog_with_ip_uuid(ip_address, uuid, format!("{}: {} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name));
     GetI64Response::Response(send_xml(send_error_xml_fn(error.code, error.description)))
 }
+
+
+/// `Something went wrong` response
+pub fn return_internal_server_error() -> HttpResponse {
+    HttpResponse::InternalServerError().body("Something went wrong...")
+}

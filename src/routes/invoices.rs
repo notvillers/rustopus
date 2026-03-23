@@ -5,7 +5,7 @@ use crate::routes::default::{RequestParameters, send_xml, get_auth, get_url, get
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::ipv4::log_ip;
-use crate::partner_xml::invoices::error_struct_xml;
+use crate::forms::out::xml::invoices::error_struct_xml;
 use crate::forms::r#in::xml::defaults::CallData;
 use crate::service::get_data::RequestGet;
 use crate::service::dates::{get_first_date, is_min_date};

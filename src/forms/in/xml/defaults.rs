@@ -45,8 +45,17 @@ impl Default for CallData {
 impl CallData {
     pub fn is_hu(self) -> bool {
         if let Some(language) = self.language {
-            return matches!(language.to_lowercase().as_str(), "hu" | "hungary" | "hungarian")
+            return matches!(language.to_lowercase().as_str(), "hu" | "hun" | "hungary" | "hungarian")
         }
         false
     } 
+}
+
+impl CallData {
+    pub fn is_csv(self) -> bool {
+        if let Some(data_type) = self.data_type {
+            return matches!(data_type.to_lowercase().as_str(), "csv")
+        }
+        false
+    }
 }

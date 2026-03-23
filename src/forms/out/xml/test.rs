@@ -3,7 +3,7 @@ use serde::Serialize;
 use quick_xml;
 use chrono::{DateTime, Local};
 
-use crate::partner_xml::defaults as p_defaults;
+use crate::forms::out::xml::defaults as p_defaults;
 
 #[derive(Serialize)]
 pub struct Envelope {

@@ -3,8 +3,10 @@ use serde::Serialize;
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
-use crate::forms::r#in::xml::defaults as o8_defaults;
-use crate::partner_xml::prices as p_prices;
+use crate::forms::{
+    r#in::xml::defaults as o8_defaults,
+    out::xml::prices as p_prices
+};
 
 /// Get the string for the request
 pub fn get_request_string(xmlns: &str, authcode: &str, pid: &i64) -> String {

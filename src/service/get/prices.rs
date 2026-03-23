@@ -1,5 +1,5 @@
 use crate::forms::r#in::xml::{prices as o8_prices, defaults::CallData};
-use crate::partner_xml::prices as p_prices;
+use crate::forms::out::xml::prices as p_prices;
 use crate::service::soap::get_response;
 use crate::global::errors::{GLOBAL_GET_DATA_ERROR, GLOBAL_PID_ERROR};
 use crate::service::get_data::{ErrorType, error_logger};

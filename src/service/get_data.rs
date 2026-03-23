@@ -8,11 +8,17 @@ use futures::Future;
 
 use crate::global::errors::{self, RustopusError};
 use crate::forms::r#in::xml::defaults::CallData;
-use crate::partner_xml;
+use crate::forms::out::xml::{
+    bulk,
+    stocks,
+    prices,
+    images,
+    barcode
+};
 use crate::service::{log::elogger, dates};
 
 use crate::service::get::{
-    products::{ProductsEnvelope, get_products},
+    products::{ProductsData, ProductsXML, get_products},
     stocks::{StocksEnvelope, get_stocks},
     prices::{PricesEnvelope, get_prices},
     images::{ImagesEnvelope, get_images},
@@ -51,13 +57,13 @@ pub fn error_logger(in_error: ErrorType, error: &RustopusError) {
 #[derive(serde::Serialize)]
 #[serde(untagged)]
 pub enum ResponseGet {
-    Products(ProductsEnvelope),
+    Products(ProductsData),
     Stocks(StocksEnvelope),
     Prices(PricesEnvelope),
     Images(ImagesEnvelope),
     Barcodes(BarcodesEnvelope),
     Invoices(InvoicesEnvelope),
-    Bulk(partner_xml::bulk::Envelope)
+    Bulk(bulk::Envelope)
 }
 
 
@@ -74,7 +80,7 @@ pub enum RequestGet {
 
 impl RequestGet {
     /// This function converts the `RequestGet` enum to `ResponseGet`
-    pub fn to_envelope(self) -> Pin<Box<dyn Future<Output = ResponseGet> + Send>> {
+    pub fn to_data(self) -> Pin<Box<dyn Future<Output = ResponseGet> + Send>> {
         Box::pin(async move {
             match self {
                 RequestGet::Products(call_data) => ResponseGet::Products(get_products(call_data).await),
@@ -91,7 +97,7 @@ impl RequestGet {
     /// This function converts the `RequestGet` enum directly into xml string
     pub fn to_xml(self) -> Pin<Box<dyn Future<Output=String> + Send>> {
         Box::pin(async move {
-            let envelope = self.to_envelope().await;
+            let envelope = self.to_data().await;
             to_xml_string(&envelope)
         })
     }
@@ -99,7 +105,7 @@ impl RequestGet {
 
 
 /// This function converts `T` into xml string, if possible, else `"<Envelope></Envelope>"` 
-fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
+pub fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
     match quick_xml::se::to_string(val) {
         Ok(val) => return val,
         Err(de_error) => elogger(format!("{}: {} ({})", errors::GLOBAL_CONVERT_ERROR.code, errors::GLOBAL_CONVERT_ERROR.description, de_error))
@@ -109,39 +115,41 @@ fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
 
 
 /// This function gets english bulk envelope from the given `CallData`. It combines a lot of other requests.
-async fn get_bulk(mut call_data: CallData) -> partner_xml::bulk::Envelope {
+async fn get_bulk(mut call_data: CallData) -> bulk::Envelope {
     call_data.language = None;
+    call_data.data_type = None;
 
-    let ResponseGet::Products(ProductsEnvelope::En(products)) = RequestGet::Products(call_data.clone()).to_envelope().await else {
+    // Handling products
+    let ResponseGet::Products(ProductsData::XML(ProductsXML::En(products))) = RequestGet::Products(call_data.clone()).to_data().await else {
         let rustopus_error = errors::BULK_GET_PRODUCTS_ERROR;
-        error_logger(ErrorType::Text("'En' did not return!"), &rustopus_error);
-        return partner_xml::bulk::error_struct(vec![rustopus_error.into()])
+        error_logger(ErrorType::Text("`ProductsData::XML(ProductsXML::En())` did not return!"), &rustopus_error);
+        return bulk::error_struct(vec![rustopus_error.into()])
     };
 
     if let Some(error) = products.body.response.result.answer.error {
         let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
         error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
-        return partner_xml::bulk::error_struct(vec![rustopus_error.into(), error])
+        return bulk::error_struct(vec![rustopus_error.into(), error])
     };
 
-    let stocks = match RequestGet::Prices(call_data.clone()).to_envelope().await {
+    let stocks = match RequestGet::Prices(call_data.clone()).to_data().await {
         ResponseGet::Stocks(StocksEnvelope::En(envelope)) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
-        _ => Some(partner_xml::stocks::error_struct(errors::BULK_GET_STOCKS_ERROR.code, errors::BULK_GET_STOCKS_ERROR.description))
+        _ => Some(stocks::error_struct(errors::BULK_GET_STOCKS_ERROR.code, errors::BULK_GET_STOCKS_ERROR.description))
     };
 
-    let prices = match RequestGet::Prices(call_data.clone()).to_envelope().await {
+    let prices = match RequestGet::Prices(call_data.clone()).to_data().await {
         ResponseGet::Prices(PricesEnvelope::En(envelope)) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
-        _ => Some(partner_xml::prices::error_struct(errors::BULK_GET_PRICES_ERROR.code, errors::BULK_GET_PRICES_ERROR.description))
+        _ => Some(prices::error_struct(errors::BULK_GET_PRICES_ERROR.code, errors::BULK_GET_PRICES_ERROR.description))
     };
 
-    let images = match RequestGet::Images(call_data.clone()).to_envelope().await {
+    let images = match RequestGet::Images(call_data.clone()).to_data().await {
         ResponseGet::Images(ImagesEnvelope::En(envelope)) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
-        _ => Some(partner_xml::images::error_struct(errors::BULK_GET_IMAGES_ERROR.code, errors::BULK_GET_IMAGES_ERROR.description))
+        _ => Some(images::error_struct(errors::BULK_GET_IMAGES_ERROR.code, errors::BULK_GET_IMAGES_ERROR.description))
     };
 
-    let barcodes = match RequestGet::Barcodes(call_data).to_envelope().await {
+    let barcodes = match RequestGet::Barcodes(call_data).to_data().await {
         ResponseGet::Barcodes(BarcodesEnvelope::En(envelope)) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
-        _ => Some(partner_xml::barcode::error_struct(errors::BULK_GET_BARCODES_ERROR.code, errors::BULK_GET_BARCODES_ERROR.description))
+        _ => Some(barcode::error_struct(errors::BULK_GET_BARCODES_ERROR.code, errors::BULK_GET_BARCODES_ERROR.description))
     };
 
     (products, prices, stocks, images, barcodes).into()

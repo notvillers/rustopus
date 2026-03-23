@@ -1,12 +1,17 @@
 use actix_web::{get, web, HttpRequest, Responder};
 
-use crate::routes::default::{RequestParameters, GetStringResponse, GetDateResponse, get_auth, get_url, get_xmlns, send_xml, get_date};
+use crate::routes::default::{
+    RequestParameters, GetStringResponse, GetDateResponse, 
+    send_xml, send_csv, return_internal_server_error,
+    get_auth, get_url, get_xmlns, get_date
+};
 use crate::service::slave::get_uuid;
 use crate::service::log::log_with_ip_uuid;
 use crate::service::ipv4::log_ip;
-use crate::partner_xml::products::error_struct_xml;
+use crate::forms::out::xml::products::error_struct_xml;
 use crate::forms::r#in::xml::defaults::CallData;
-use crate::service::get_data::RequestGet;
+use crate::service::get_data::{RequestGet, ResponseGet};
+use crate::service::get::products::{ProductsData, ProductsCSV};
 
 /// Name of the current request
 const REQUEST_NAME: &'static str = "PRODUCTS REQUEST";
@@ -45,6 +50,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
             None
         },
         language: params.language,
+        data_type: params.data_type,
         ..Default::default()
     };
 
@@ -55,13 +61,23 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     }
 
     // Getting data
-    let xml = RequestGet::Products(call_data).to_xml().await;
+    let raw = RequestGet::Products(call_data).to_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
-    // Sending back xml as reponse
-    send_xml(xml)
+    // Handling got data
+    if let ResponseGet::Products(data) = raw {
+        match data {
+            ProductsData::CSV(csv_data) => match csv_data {
+                ProductsCSV::En(en_csv_data) => return send_csv(&en_csv_data.products, "products.csv")
+            },
+            ProductsData::XML(xml_data) => return send_xml(xml_data.to_xml())
+        }
+    }
+
+    // Error if something went wrong at handling
+    return_internal_server_error()
 }
 
 

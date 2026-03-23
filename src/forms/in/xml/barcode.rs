@@ -2,8 +2,11 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::forms::r#in::xml::defaults as o8_defaults;
-use crate::partner_xml::barcode as o8_barcode;
+use crate::forms::{
+    r#in::xml::defaults as o8_defaults,
+    out::xml::barcode as p_barcode
+};
+
 
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
     format!(
@@ -31,7 +34,7 @@ pub struct Envelope {
 }
 
 impl Envelope {
-    pub fn to_en(self) -> o8_barcode::Envelope {
+    pub fn to_en(self) -> p_barcode::Envelope {
         self.into()
     }
 }
