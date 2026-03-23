@@ -26,7 +26,7 @@ pub struct Product {
 
 impl From<o8_products::Cikk> for Product {
     fn from(c: o8_products::Cikk) -> Self {
-        Product {
+        Self {
             id: c.cikkid,
             no: c.cikkszam,
             name: c.cikknev,
@@ -60,7 +60,10 @@ impl From<o8_products::Envelope> for Products {
     fn from(e: o8_products::Envelope) -> Self {
         let products = e.body.get_cikkek_auth_response.get_cikkek_auth_result.valasz.cikk;
         Self {
-            products: products.into_iter().map(|x| x.into()).collect()
+            products: products
+                .into_iter()
+                .map(|x| x.into())
+                .collect()
         }
     }
 }

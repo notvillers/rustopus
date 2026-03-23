@@ -28,7 +28,10 @@ impl From<o8_stocks::Envelope> for Products {
     fn from(e: o8_stocks::Envelope) -> Self {
         let products = e.body.get_cikkek_keszlet_valtozas_auth_response.get_cikkek_keszlet_valtozas_auth_result.valasz.cikkek.cikk;
         Self {
-            products: products.into_iter().map(|x| x.into()).collect()
+            products: products
+                .into_iter()
+                .map(|x| x.into())
+                .collect()
         }
     }
 }
