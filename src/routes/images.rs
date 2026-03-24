@@ -1,13 +1,20 @@
 use actix_web::{get, web, HttpRequest, Responder};
 
-use crate::routes::default::{RequestParameters, GetStringResponse, GetDateResponse, get_auth, get_date, get_url, get_xmlns, send_xml};
-use crate::service::slave::get_uuid;
-use crate::service::log::log_with_ip_uuid;
-use crate::ipv4::log_ip;
-use crate::forms::out::xml::images::error_struct_xml;
-use crate::forms::r#in::xml::defaults::CallData;
-use crate::service::get_data::RequestGet;
-
+use crate::routes::default::{
+    RequestParameters, GetStringResponse, GetDateResponse,
+    send_xml, send_csv, return_internal_server_error,
+    get_auth, get_date, get_url, get_xmlns};
+use crate::forms::{
+    r#in::xml::defaults::CallData,
+    out::xml::images::error_struct_xml
+};
+use crate::service::{
+    slave::get_uuid,
+    log::log_with_ip_uuid,
+    ipv4::log_ip,
+    get_data::{RequestGet, ResponseGet},
+    get::images::{ImagesData, ImagesCSV}
+};
 
 /// Name of the current request
 const REQUEST_NAME: &'static str = "IMAGES REQUEST";
@@ -56,13 +63,20 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     }
 
     // Getting data
-    let xml = RequestGet::Images(call_data).to_xml().await;
+    let data = RequestGet::Images(call_data).to_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
-    // Sending back xml as response
-    send_xml(xml)
+    // Handling got data
+    match data {
+        ResponseGet::Images(ImagesData::CSV(ImagesCSV::En(d))) => return send_csv(&d.products, "images.csv"),
+        ResponseGet::Images(ImagesData::XML(d)) => return send_xml(d.to_xml()),
+        _ => {}
+    }
+
+    // Error if something went wrong at handling
+    return_internal_server_error()
 }
 
 

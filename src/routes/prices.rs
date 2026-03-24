@@ -1,13 +1,21 @@
 use actix_web::{get, web, HttpRequest, Responder};
 
-use crate::routes::default::{GetStringResponse, GetI64Response};
-use crate::routes::default::{RequestParameters, send_xml, get_auth, get_url, get_xmlns, get_pid};
-use crate::service::slave::get_uuid;
-use crate::service::log::log_with_ip_uuid;
-use crate::service::ipv4::log_ip;
-use crate::forms::out::xml::prices::error_struct_xml;
-use crate::forms::r#in::xml::defaults::CallData;
-use crate::service::get_data::RequestGet;
+use crate::routes::default::{
+    RequestParameters, GetStringResponse, GetI64Response,
+    send_xml, send_csv, return_internal_server_error,
+    get_auth, get_url, get_xmlns, get_pid
+};
+use crate::forms::{
+    r#in::xml::defaults::CallData,
+    out::xml::prices::error_struct_xml
+};
+use crate::service::{
+    slave::get_uuid,
+    log::log_with_ip_uuid,
+    ipv4::log_ip,
+    get_data::{RequestGet, ResponseGet},
+    get::prices::{PricesData, PricesCSV}
+};
 
 /// Name of the current request
 const REQUEST_NAME: &'static str = "PRICES REQUEST";
@@ -44,6 +52,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
             GetI64Response::Response(response) => return response
         },
         language: params.language,
+        data_type: params.data_type,
         ..Default::default()
     };
 
@@ -54,13 +63,20 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     }
 
     // Getting data
-    let xml = RequestGet::Prices(call_data).to_xml().await;
+    let data = RequestGet::Prices(call_data).to_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
-    // Sending back xml as response
-    send_xml(xml)
+    // Handling got data
+    match data {
+        ResponseGet::Prices(PricesData::CSV(PricesCSV::En(d))) => return send_csv(&d.prices, "prices.csv"),
+        ResponseGet::Prices(PricesData::XML(d)) => return send_xml(d.to_xml()),
+        _ => {}
+    }
+
+    // Error if something went wrong at handling
+    return_internal_server_error()
 }
 
 

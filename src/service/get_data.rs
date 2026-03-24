@@ -20,8 +20,8 @@ use crate::service::{log::elogger, dates};
 use crate::service::get::{
     products::{ProductsData, ProductsXML, get_products},
     stocks::{StocksData, StocksXML, get_stocks},
-    prices::{PricesEnvelope, get_prices},
-    images::{ImagesEnvelope, get_images},
+    prices::{PricesData, PricesXML, get_prices},
+    images::{ImagesData, ImagesXML, get_images},
     barcodes::{BarcodesEnvelope, get_barcode},
     invoices::{InvoicesEnvelope, get_invoices}
 };
@@ -59,8 +59,8 @@ pub fn error_logger(in_error: ErrorType, error: &RustopusError) {
 pub enum ResponseGet {
     Products(ProductsData),
     Stocks(StocksData),
-    Prices(PricesEnvelope),
-    Images(ImagesEnvelope),
+    Prices(PricesData),
+    Images(ImagesData),
     Barcodes(BarcodesEnvelope),
     Invoices(InvoicesEnvelope),
     Bulk(bulk::Envelope)
@@ -133,7 +133,7 @@ async fn get_bulk(mut call_data: CallData) -> bulk::Envelope {
     };
 
     let prices = match RequestGet::Prices(call_data.clone()).to_data().await {
-        ResponseGet::Prices(PricesEnvelope::En(envelope)) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
+        ResponseGet::Prices(PricesData::XML(PricesXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(prices::error_struct(errors::BULK_GET_PRICES_ERROR.code, errors::BULK_GET_PRICES_ERROR.description))
     };
 
@@ -143,7 +143,7 @@ async fn get_bulk(mut call_data: CallData) -> bulk::Envelope {
     };
 
     let images = match RequestGet::Images(call_data.clone()).to_data().await {
-        ResponseGet::Images(ImagesEnvelope::En(envelope)) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
+        ResponseGet::Images(ImagesData::XML(ImagesXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(images::error_struct(errors::BULK_GET_IMAGES_ERROR.code, errors::BULK_GET_IMAGES_ERROR.description))
     };
 

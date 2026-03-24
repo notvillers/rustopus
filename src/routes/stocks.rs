@@ -5,13 +5,17 @@ use crate::routes::default::{
     send_xml, send_csv, return_internal_server_error,
     get_auth, get_url, get_xmlns, get_date
 };
-use crate::service::slave::get_uuid;
-use crate::service::log::log_with_ip_uuid;
-use crate::service::ipv4::log_ip;
-use crate::forms::out::xml::stocks::error_struct_xml;
-use crate::forms::r#in::xml::defaults::CallData;
-use crate::service::get_data::{RequestGet, ResponseGet};
-use crate::service::get::stocks::{StocksData, StocksCSV};
+use crate::forms::{
+    r#in::xml::defaults::CallData,
+    out::xml::stocks::error_struct_xml
+};
+use crate::service::{
+    slave::get_uuid,
+    log::log_with_ip_uuid,
+    ipv4::log_ip,
+    get_data::{RequestGet, ResponseGet},
+    get::stocks::{StocksData, StocksCSV}
+};
 
 /// Name of the current request
 const REQUEST_NAME: &'static str = "STOCKS REQUEST";
@@ -64,13 +68,13 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     }
 
     // Getting data
-    let raw = RequestGet::Stocks(call_data).to_data().await;
+    let data = RequestGet::Stocks(call_data).to_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     // Handling got data
-    match raw {
+    match data {
         ResponseGet::Stocks(StocksData::CSV(StocksCSV::En(d))) => return send_csv(&d.products, "stocks.csv"),
         ResponseGet::Stocks(StocksData::XML(d)) => return send_xml(d.to_xml()),
         _ => {}
