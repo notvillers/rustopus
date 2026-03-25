@@ -7,11 +7,13 @@ use crate::forms::{
         csv::images as csv_images
     }
 };
-use crate::service::soap::get_response;
 use crate::global::errors::GLOBAL_GET_DATA_ERROR;
-use crate::service::get_data::{
-    FIRST_DATE, ErrorType,
-    error_logger, to_xml_string
+use crate::service::{
+    soap::get_response,
+    get_data::{
+        FIRST_DATE, ErrorType,
+        error_logger, to_xml_string
+    }
 };
 
 

@@ -1,8 +1,18 @@
-use crate::forms::r#in::xml::{invoices as o8_invoices, defaults::CallData};
-use crate::forms::out::xml::invoices as p_invoices;
-use crate::service::soap::get_response;
+use crate::forms::{
+    r#in::xml::{
+        invoices as o8_invoices,
+        defaults::CallData
+    },
+    out::xml::invoices as p_invoices
+};
 use crate::global::errors::GLOBAL_GET_DATA_ERROR;
-use crate::service::get_data::{ErrorType, error_logger};
+use crate::service::{
+    soap::get_response,
+    get_data::{
+        ErrorType,
+        error_logger
+    }
+};
 
 #[derive(serde::Serialize)]
 #[serde(untagged)]

@@ -8,11 +8,13 @@ use crate::forms::{
         csv::prices as csv_prices
     }
 };
-use crate::service::soap::get_response;
-use crate::global::errors::{GLOBAL_GET_DATA_ERROR,GLOBAL_PID_ERROR};
-use crate::service::get_data::{
-    ErrorType,
-    error_logger, to_xml_string
+use crate::global::errors::{GLOBAL_GET_DATA_ERROR, GLOBAL_PID_ERROR};
+use crate::service::{
+    soap::get_response,
+    get_data::{
+        ErrorType,
+        error_logger, to_xml_string
+    }
 };
 
 #[derive(serde::Serialize)]
