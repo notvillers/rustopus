@@ -1,12 +1,21 @@
 use actix_web::{get, web, HttpRequest, Responder};
 
-use crate::routes::default::{RequestParameters, GetStringResponse, GetDateResponse, send_xml, get_auth, get_url, get_xmlns, get_date};
-use crate::service::slave::get_uuid;
-use crate::service::log::log_with_ip_uuid;
-use crate::ipv4::log_ip;
-use crate::forms::out::xml::barcode::error_struct_xml;
-use crate::forms::r#in::xml::defaults::CallData;
-use crate::service::get_data::RequestGet;
+use crate::routes::default::{
+    RequestParameters, GetStringResponse, GetDateResponse, 
+    send_xml, send_csv, return_internal_server_error,
+    get_auth, get_url, get_xmlns, get_date
+};
+use crate::forms::{
+    r#in::xml::defaults::CallData,
+    out::xml::barcode::error_struct_xml
+};
+use crate::service::{
+    slave::get_uuid,
+    log::log_with_ip_uuid,
+    ipv4::log_ip,
+    get_data::{RequestGet, ResponseGet},
+    get::barcodes::{BarcodesData, BarcodesCSV}
+};
 
 /// Name of the current request
 const REQUEST_NAME: &'static str = "BARCODE REQUEST";
@@ -45,6 +54,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
             None
         },
         language: params.language,
+        data_type: params.data_type,
         ..Default::default()
     };
 
@@ -55,13 +65,20 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     }
 
     // Getting data
-    let xml = RequestGet::Barcodes(call_data).to_xml().await;
+    let data = RequestGet::Barcodes(call_data).to_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
-    // Sending xml back as response
-    send_xml(xml)
+    // Handling got data
+    match data {
+        ResponseGet::Barcodes(BarcodesData::CSV(BarcodesCSV::En(d))) => return send_csv(&d.barcodes, "barcodes.csv"),
+        ResponseGet::Barcodes(BarcodesData::XML(d)) => return send_xml(d.to_xml()),
+        _ => {}
+    }
+
+    // Error if something went wrong at handling
+    return_internal_server_error()
 }
 
 

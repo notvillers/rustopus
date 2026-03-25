@@ -14,7 +14,10 @@ impl From<o8_images::Cikk> for Product {
         Self {
             id: c.cikkid,
             no: c.cikkszam,
-            url: c.kepek.kep.first().map(|k| k.url.clone()).unwrap_or_else(|| "".to_string())
+            url: c.kepek.kep
+                .first()
+                .map(|k| k.url.clone())
+                .unwrap_or_else(|| "".to_string())
         }
     }
 }

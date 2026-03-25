@@ -1,29 +1,26 @@
 use std::fmt;
-use std::vec;
 use chrono::{DateTime, Utc};
 use quick_xml;
 use lazy_static::lazy_static;
 use std::pin::Pin;
 use futures::Future;
-
 use crate::global::errors::{self, RustopusError};
-use crate::forms::r#in::xml::defaults::CallData;
-use crate::forms::out::xml::{
-    bulk,
-    stocks,
-    prices,
-    images,
-    barcode
+use crate::forms::{
+    r#in::xml::defaults::CallData,
+    out::xml::bulk
 };
-use crate::service::{log::elogger, dates};
-
-use crate::service::get::{
-    products::{ProductsData, ProductsXML, get_products},
-    stocks::{StocksData, StocksXML, get_stocks},
-    prices::{PricesData, PricesXML, get_prices},
-    images::{ImagesData, ImagesXML, get_images},
-    barcodes::{BarcodesEnvelope, get_barcode},
-    invoices::{InvoicesEnvelope, get_invoices}
+use crate::service::{
+    log::elogger,
+    dates,
+    get::{
+        products::{ProductsData, get_products},
+        stocks::{StocksData, get_stocks},
+        prices::{PricesData, get_prices},
+        images::{ImagesData, get_images},
+        barcodes::{BarcodesData, get_barcode},
+        invoices::{InvoicesEnvelope, get_invoices},
+        bulk::get_bulk
+    }
 };
 
 lazy_static! {
@@ -61,7 +58,7 @@ pub enum ResponseGet {
     Stocks(StocksData),
     Prices(PricesData),
     Images(ImagesData),
-    Barcodes(BarcodesEnvelope),
+    Barcodes(BarcodesData),
     Invoices(InvoicesEnvelope),
     Bulk(bulk::Envelope)
 }
@@ -111,46 +108,4 @@ pub fn to_xml_string<T: serde::Serialize>(val: &T) -> String {
         Err(de_error) => elogger(format!("{}: {} ({})", errors::GLOBAL_CONVERT_ERROR.code, errors::GLOBAL_CONVERT_ERROR.description, de_error))
     }
     "<Envelope></Envelope>".into()
-}
-
-
-/// This function gets english bulk envelope from the given `CallData`. It combines a lot of other requests.
-async fn get_bulk(mut call_data: CallData) -> bulk::Envelope {
-    call_data.language = None;
-    call_data.data_type = None;
-
-    // Handling products
-    let ResponseGet::Products(ProductsData::XML(ProductsXML::En(products))) = RequestGet::Products(call_data.clone()).to_data().await else {
-        let rustopus_error = errors::BULK_GET_PRODUCTS_ERROR;
-        error_logger(ErrorType::Text("`ProductsData::XML(ProductsXML::En())` did not return!"), &rustopus_error);
-        return bulk::error_struct(vec![rustopus_error.into()])
-    };
-
-    if let Some(error) = products.body.response.result.answer.error {
-        let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
-        error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
-        return bulk::error_struct(vec![rustopus_error.into(), error])
-    };
-
-    let prices = match RequestGet::Prices(call_data.clone()).to_data().await {
-        ResponseGet::Prices(PricesData::XML(PricesXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
-        _ => Some(prices::error_struct(errors::BULK_GET_PRICES_ERROR.code, errors::BULK_GET_PRICES_ERROR.description))
-    };
-
-    let stocks = match RequestGet::Stocks(call_data.clone()).to_data().await {
-        ResponseGet::Stocks(StocksData::XML(StocksXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
-        _ => Some(stocks::error_struct(errors::BULK_GET_STOCKS_ERROR.code, errors::BULK_GET_STOCKS_ERROR.description))
-    };
-
-    let images = match RequestGet::Images(call_data.clone()).to_data().await {
-        ResponseGet::Images(ImagesData::XML(ImagesXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
-        _ => Some(images::error_struct(errors::BULK_GET_IMAGES_ERROR.code, errors::BULK_GET_IMAGES_ERROR.description))
-    };
-
-    let barcodes = match RequestGet::Barcodes(call_data).to_data().await {
-        ResponseGet::Barcodes(BarcodesEnvelope::En(envelope)) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
-        _ => Some(barcode::error_struct(errors::BULK_GET_BARCODES_ERROR.code, errors::BULK_GET_BARCODES_ERROR.description))
-    };
-
-    (products, prices, stocks, images, barcodes).into()
 }

@@ -38,9 +38,14 @@ impl From<o8_products::Cikk> for Product {
             category_name: c.cikkcsoportnev,
             description: c.leiras,
             weight: c.tomeg,
-            xsize: c.meret.clone().and_then(|s| s.xmeret),
-            ysize: c.meret.clone().and_then(|s| s.ymeret),
-            zsize: c.meret.and_then(|s| s.zmeret),
+            xsize: c.meret
+                .clone()
+                .and_then(|s| s.xmeret),
+            ysize: c.meret
+                .clone()
+                .and_then(|s| s.ymeret),
+            zsize: c.meret
+                .and_then(|s| s.zmeret),
             oem_code: c.gycikkszam,
             main_category_code: c.focsoportkod,
             main_category_name: c.focsoportnev,
