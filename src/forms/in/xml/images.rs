@@ -3,10 +3,7 @@ use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::forms::{
-    r#in::xml::defaults as o8_defaults,
-    out::xml::images as p_images
-};
+use crate::forms::r#in::xml::defaults as o8_defaults;
 
 /// Get the string for the request
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
@@ -31,12 +28,6 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
 #[serde(rename_all = "PascalCase")]
 pub struct Envelope {
     pub body: Body,
-}
-
-impl Envelope {
-    pub fn to_en(self) -> p_images::Envelope {
-        self.into()
-    }
 }
 
 

@@ -3,10 +3,7 @@ use serde::Serialize;
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
-use crate::forms::{
-    r#in::xml::defaults as o8_defaults,
-    out::xml::prices as p_prices
-};
+use crate::forms::r#in::xml::defaults as o8_defaults;
 
 /// Get the string for the request
 pub fn get_request_string(xmlns: &str, authcode: &str, pid: &i64) -> String {
@@ -36,11 +33,6 @@ pub struct Envelope {
     pub body: Body,
 }
 
-impl Envelope {
-    pub fn to_en(self) -> p_prices::Envelope {
-        self.into()
-    }
-}
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]

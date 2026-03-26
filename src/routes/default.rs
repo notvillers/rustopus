@@ -1,10 +1,14 @@
 use chrono::{DateTime, Utc};
 use actix_web::HttpResponse;
 use serde::Deserialize;
-
-use crate::global::errors;
-use crate::service::log::{log_with_ip_uuid, elog_with_ip_uuid};
-use crate::service::soap_config::get_default_url;
+use crate::global::errors::{
+    GLOBAL_AUTH_ERROR, GLOBAL_URL_ERROR,
+    GLOBAL_PID_ERROR, GLOBAL_MISSING_ERROR
+};
+use crate::service::{
+    log::{log_with_ip_uuid, elog_with_ip_uuid},
+    soap_config::get_default_url
+};
 
 #[derive(Deserialize)]
 pub struct RequestParameters {
@@ -72,7 +76,7 @@ pub fn get_auth(request_name: &str, ip_address: &str, uuid: &str, params: &Reque
     if let Some(s) = params.auth.as_ref().filter(|x| !x.trim().is_empty()) {
         return GetStringResponse::Text(s.to_string())
     }
-    let error = errors::GLOBAL_AUTH_ERROR;
+    let error = GLOBAL_AUTH_ERROR;
     elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
     GetStringResponse::Response(send_xml(send_error_xml_fn(error.code, error.description)))
 }
@@ -87,7 +91,7 @@ pub fn get_url(request_name: &str, ip_address: &str, uuid: &str, params: &Reques
         log_with_ip_uuid(ip_address, uuid, format!("Using default url: '{}'", s));
         return GetStringResponse::Text(s)
     }
-    let error = errors::GLOBAL_URL_ERROR;
+    let error = GLOBAL_URL_ERROR;
     elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
     GetStringResponse::Response(send_xml(send_error_xml_fn(error.code, error.description)))
 }
@@ -112,7 +116,7 @@ pub fn get_pid(request_name: &str, ip_address: &str, uuid: &str, params: &Reques
     if let Some(s) = params.pid {
         return GetI64Response::Number(s)
     }
-    let error = errors::GLOBAL_PID_ERROR;
+    let error = GLOBAL_PID_ERROR;
     elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
     GetI64Response::Response(send_xml(send_error_xml_fn(error.code, error.description)))
 }
@@ -123,7 +127,7 @@ pub fn get_date(request_name: &str, ip_address: &str, uuid: &str, param: Option<
     if let Some(s) = param {
         return GetDateResponse::DateTime(s)
     }
-    let error = errors::GLOBAL_MISSING_ERROR;
+    let error = GLOBAL_MISSING_ERROR;
     if !soft_error {
         elog_with_ip_uuid(ip_address, uuid, format!("{}: {} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name));
     }
@@ -136,7 +140,7 @@ pub fn get_i64(request_name: &str, ip_address: &str, uuid: &str, param: Option<i
     if let Some(s) = param {
         return GetI64Response::Number(s)
     }
-    let error = errors::GLOBAL_MISSING_ERROR;
+    let error = GLOBAL_MISSING_ERROR;
     elog_with_ip_uuid(ip_address, uuid, format!("{}: {} -> {} ({})", error.code, error.description, param_name.unwrap_or("_"), request_name));
     GetI64Response::Response(send_xml(send_error_xml_fn(error.code, error.description)))
 }

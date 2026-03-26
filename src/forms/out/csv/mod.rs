@@ -3,4 +3,5 @@ pub mod stocks;
 pub mod prices;
 pub mod images;
 pub mod barcodes;
+pub mod invoices;
 pub mod bulk;

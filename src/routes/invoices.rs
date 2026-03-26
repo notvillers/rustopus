@@ -1,14 +1,21 @@
 use actix_web::{get, web, HttpRequest, Responder};
-
-use crate::routes::default::{GetStringResponse, GetI64Response, GetDateResponse};
-use crate::routes::default::{RequestParameters, send_xml, get_auth, get_url, get_xmlns, get_pid, get_i64, get_date};
-use crate::service::slave::get_uuid;
-use crate::service::log::log_with_ip_uuid;
-use crate::ipv4::log_ip;
-use crate::forms::out::xml::invoices::error_struct_xml;
-use crate::forms::r#in::xml::defaults::CallData;
-use crate::service::get_data::RequestGet;
-use crate::service::dates::{get_first_date, is_min_date};
+use crate::routes::default::{
+    GetStringResponse, GetI64Response, GetDateResponse, RequestParameters,
+    send_xml, send_csv, return_internal_server_error,
+    get_auth, get_url, get_xmlns, get_pid, get_i64, get_date
+};
+use crate::forms::{
+    r#in::xml::defaults::CallData,
+    out::xml::invoices::error_struct_xml
+};
+use crate::service::{
+    slave::get_uuid,
+    log::log_with_ip_uuid,
+    ipv4::log_ip,
+    get_data::{RequestGet, ResponseGet},
+    dates::{get_first_date, is_min_date},
+    get::invoices::{InvoicesData, InvoicesCSV}
+};
 
 /// Name of the current request
 const REQUEST_NAME: &'static str = "INVOICES REQUEST";
@@ -72,6 +79,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
             Some(0)
         },
         language: params.language,
+        data_type: params.data_type,
         ..Default::default()
     };
 
@@ -82,13 +90,20 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     }
 
     // Getting data
-    let xml = RequestGet::Invoices(call_data).to_xml().await;
+    let data = RequestGet::Invoices(call_data).to_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
-    // Sending back xml as response
-    send_xml(xml)
+    // Handling got data
+    match data {
+        ResponseGet::Invoices(InvoicesData::CSV(InvoicesCSV::En(d))) => return send_csv(&d.products, "invoices.csv"),
+        ResponseGet::Invoices(InvoicesData::XML(d)) => return send_xml(d.to_xml()),
+        _ => {}
+    }
+
+    // Error if something went wrong at handling
+    return_internal_server_error()
 }
 
 

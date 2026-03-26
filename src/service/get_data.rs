@@ -15,7 +15,7 @@ use crate::service::{
         prices::{PricesData, get_prices},
         images::{ImagesData, get_images},
         barcodes::{BarcodesData, get_barcode},
-        invoices::{InvoicesEnvelope, get_invoices},
+        invoices::{InvoicesData, get_invoices},
         bulk::{BulkData, get_bulk}
     }
 };
@@ -56,7 +56,7 @@ pub enum ResponseGet {
     Prices(PricesData),
     Images(ImagesData),
     Barcodes(BarcodesData),
-    Invoices(InvoicesEnvelope),
+    Invoices(InvoicesData),
     Bulk(BulkData)
 }
 
@@ -85,14 +85,6 @@ impl RequestGet {
                 RequestGet::Invoices(call_data) => ResponseGet::Invoices(get_invoices(call_data).await),
                 RequestGet::Bulk(call_data) => ResponseGet::Bulk(get_bulk(call_data).await)
             }
-        })
-    }
-
-    /// This function converts the `RequestGet` enum directly into xml string
-    pub fn to_xml(self) -> Pin<Box<dyn Future<Output=String> + Send>> {
-        Box::pin(async move {
-            let envelope = self.to_data().await;
-            to_xml_string(&envelope)
         })
     }
 }

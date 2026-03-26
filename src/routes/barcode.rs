@@ -72,13 +72,10 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
     // Handling got data
     match data {
-        ResponseGet::Barcodes(BarcodesData::CSV(BarcodesCSV::En(d))) => return send_csv(&d.barcodes, "barcodes.csv"),
-        ResponseGet::Barcodes(BarcodesData::XML(d)) => return send_xml(d.to_xml()),
-        _ => {}
+        ResponseGet::Barcodes(BarcodesData::CSV(BarcodesCSV::En(d))) => send_csv(&d.barcodes, "barcodes.csv"),
+        ResponseGet::Barcodes(BarcodesData::XML(d)) => send_xml(d.to_xml()),
+        _ => return_internal_server_error()
     }
-
-    // Error if something went wrong at handling
-    return_internal_server_error()
 }
 
 

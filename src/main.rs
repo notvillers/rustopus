@@ -8,7 +8,10 @@ mod forms;
 mod routes;
 mod global;
 
-use crate::service::{ipv4, log::{logger, elogger}, soap_config::{get_soap_path, check_soap_config}};
+use crate::service::{
+    log::{logger, elogger},
+    soap_config::{get_soap_path, check_soap_config}
+};
 
 async fn not_found() -> impl Responder {
     HttpResponse::NotFound()

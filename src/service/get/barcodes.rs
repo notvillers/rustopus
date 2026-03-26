@@ -52,13 +52,12 @@ pub async fn get_barcode(call_data: CallData) -> BarcodesData {
     let response = get_response(&call_data.url, request).await;
     return match quick_xml::de::from_str::<o8_barcode::Envelope>(&response) {
         Ok(envelope) => {
-            match call_data.clone().is_csv() {
-                true => return BarcodesData::CSV(BarcodesCSV::En(envelope.into())),
-                _ => {}
+            if call_data.clone().is_csv() {
+                return BarcodesData::CSV(BarcodesCSV::En(envelope.into()))
             }
             match call_data.is_hu() {
                 true => BarcodesData::XML(BarcodesXML::Hu(envelope)),
-                _ => BarcodesData::XML(BarcodesXML::En(envelope.to_en()))
+                _ => BarcodesData::XML(BarcodesXML::En(envelope.into()))
             }
         },
         Err(error) => {

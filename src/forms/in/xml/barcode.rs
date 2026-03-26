@@ -2,10 +2,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::forms::{
-    r#in::xml::defaults as o8_defaults,
-    out::xml::barcode as p_barcode
-};
+use crate::forms::r#in::xml::defaults as o8_defaults;
 
 
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
@@ -31,12 +28,6 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
 #[serde(rename_all = "PascalCase")]
 pub struct Envelope {
     pub body: Body
-}
-
-impl Envelope {
-    pub fn to_en(self) -> p_barcode::Envelope {
-        self.into()
-    }
 }
 
 

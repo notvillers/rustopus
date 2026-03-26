@@ -52,7 +52,7 @@ pub enum BulkData {
 
 /// This function gets english bulk envelope from the given `CallData`. It combines a lot of other requests.
 pub async fn get_bulk(mut call_data: CallData) -> BulkData {
-    let call_data_bulk = call_data.clone();
+    let is_csv = call_data.clone().is_csv();
     call_data.language = None;
     call_data.data_type = None;
 
@@ -91,10 +91,8 @@ pub async fn get_bulk(mut call_data: CallData) -> BulkData {
 
     let envelope: bulk::Envelope = (products, prices, stocks, images, barcodes).into();
 
-    match call_data_bulk.is_csv() {
-        true => return BulkData::CSV(BulkCSV::En(envelope.into())),
-        _ => {}
+    match is_csv {
+        true => BulkData::CSV(BulkCSV::En(envelope.into())),
+        false => BulkData::XML(BulkXML::En(envelope))
     }
-
-    BulkData::XML(BulkXML::En(envelope))
 }

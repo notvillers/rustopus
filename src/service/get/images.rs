@@ -52,13 +52,12 @@ pub async fn get_images(call_data: CallData) -> ImagesData {
     let response = get_response(&call_data.url, request).await;
     return match quick_xml::de::from_str::<o8_images::Envelope>(&response) {
         Ok(envelope) => {
-            match call_data.clone().is_csv() {
-                true => return ImagesData::CSV(ImagesCSV::En(envelope.into())),
-                _ => {}
+            if call_data.clone().is_csv() {
+                return ImagesData::CSV(ImagesCSV::En(envelope.into()))
             }
             match call_data.is_hu() {
                 true => ImagesData::XML(ImagesXML::Hu(envelope)),
-                _ => ImagesData::XML(ImagesXML::En(envelope.to_en()))
+                _ => ImagesData::XML(ImagesXML::En(envelope.into()))
             }
         },
         Err(error) => {

@@ -70,13 +70,10 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
     // Handling got data
     match data {
-        ResponseGet::Bulk(BulkData::CSV(BulkCSV::En(d))) => return send_csv(&d.products, "bulk.csv"),
-        ResponseGet::Bulk(BulkData::XML(d)) => return send_xml(d.to_xml()),
-        _ => {}
+        ResponseGet::Bulk(BulkData::CSV(BulkCSV::En(d))) => send_csv(&d.products, "bulk.csv"),
+        ResponseGet::Bulk(BulkData::XML(d)) => send_xml(d.to_xml()),
+        _ => return_internal_server_error()
     }
-
-    // Error if something went wrong at handling
-    return_internal_server_error()
 }
 
 

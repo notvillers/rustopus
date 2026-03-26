@@ -51,13 +51,12 @@ pub async fn get_products(call_data: CallData) -> ProductsData {
     let response = get_response(&call_data.url, request).await;
     return match quick_xml::de::from_str::<o8_products::Envelope>(&response) {
         Ok(envelope) => {
-            match call_data.clone().is_csv() {
-                true => return ProductsData::CSV(ProductsCSV::En(envelope.into())),
-                _ => {}
+            if call_data.clone().is_csv() {
+                return ProductsData::CSV(ProductsCSV::En(envelope.into()))
             }
             match call_data.is_hu() {
                 true => ProductsData::XML(ProductsXML::Hu(envelope)),
-                _ => ProductsData::XML(ProductsXML::En(envelope.to_en()))
+                _ => ProductsData::XML(ProductsXML::En(envelope.into()))
             }
         }
         Err(error) => {
