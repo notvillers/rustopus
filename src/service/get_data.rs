@@ -5,10 +5,7 @@ use lazy_static::lazy_static;
 use std::pin::Pin;
 use futures::Future;
 use crate::global::errors::{self, RustopusError};
-use crate::forms::{
-    r#in::xml::defaults::CallData,
-    out::xml::bulk
-};
+use crate::forms::r#in::xml::defaults::CallData;
 use crate::service::{
     log::elogger,
     dates,
@@ -19,7 +16,7 @@ use crate::service::{
         images::{ImagesData, get_images},
         barcodes::{BarcodesData, get_barcode},
         invoices::{InvoicesEnvelope, get_invoices},
-        bulk::get_bulk
+        bulk::{BulkData, get_bulk}
     }
 };
 
@@ -60,7 +57,7 @@ pub enum ResponseGet {
     Images(ImagesData),
     Barcodes(BarcodesData),
     Invoices(InvoicesEnvelope),
-    Bulk(bulk::Envelope)
+    Bulk(BulkData)
 }
 
 

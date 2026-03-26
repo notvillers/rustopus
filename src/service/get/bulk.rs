@@ -1,6 +1,11 @@
-use crate::forms::{
-    r#in::xml::defaults::CallData,
-    out::xml::{prices, stocks, images, barcode, bulk}
+use crate::{
+    forms::{
+        r#in::xml::defaults::CallData,
+        out::{
+            csv::bulk as csv_bulk, xml::{barcode, bulk, images, prices, stocks}
+        }
+    },
+    service::get_data::to_xml_string
 };
 use crate::global::errors;
 use crate::service::{
@@ -17,8 +22,37 @@ use crate::service::{
     }
 };
 
+#[derive(serde::Serialize)]
+#[serde(untagged)]
+pub enum BulkXML {
+    En(bulk::Envelope)
+}
+
+impl BulkXML {
+    pub fn to_xml(&self) -> String {
+        to_xml_string(self)
+    }
+}
+
+
+#[derive(serde::Serialize)]
+#[serde(untagged)]
+pub enum BulkCSV {
+    En(csv_bulk::Products)
+}
+
+
+#[derive(serde::Serialize)]
+#[serde(untagged)]
+pub enum BulkData {
+    XML(BulkXML),
+    CSV(BulkCSV)
+}
+
+
 /// This function gets english bulk envelope from the given `CallData`. It combines a lot of other requests.
-pub async fn get_bulk(mut call_data: CallData) -> bulk::Envelope {
+pub async fn get_bulk(mut call_data: CallData) -> BulkData {
+    let call_data_bulk = call_data.clone();
     call_data.language = None;
     call_data.data_type = None;
 
@@ -26,13 +60,13 @@ pub async fn get_bulk(mut call_data: CallData) -> bulk::Envelope {
     let ResponseGet::Products(ProductsData::XML(ProductsXML::En(products))) = RequestGet::Products(call_data.clone()).to_data().await else {
         let rustopus_error = errors::BULK_GET_PRODUCTS_ERROR;
         error_logger(ErrorType::Text("`ProductsData::XML(ProductsXML::En())` did not return!"), &rustopus_error);
-        return bulk::error_struct(vec![rustopus_error.into()])
+        return BulkData::XML(BulkXML::En(bulk::error_struct(vec![rustopus_error.into()])))
     };
 
     if let Some(error) = products.body.response.result.answer.error {
         let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
         error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
-        return bulk::error_struct(vec![rustopus_error.into(), error])
+        return BulkData::XML(BulkXML::En(bulk::error_struct(vec![rustopus_error.into(), error])))
     };
 
     let prices = match RequestGet::Prices(call_data.clone()).to_data().await {
@@ -55,5 +89,12 @@ pub async fn get_bulk(mut call_data: CallData) -> bulk::Envelope {
         _ => Some(barcode::error_struct(errors::BULK_GET_BARCODES_ERROR.code, errors::BULK_GET_BARCODES_ERROR.description))
     };
 
-    (products, prices, stocks, images, barcodes).into()
+    let envelope: bulk::Envelope = (products, prices, stocks, images, barcodes).into();
+
+    match call_data_bulk.is_csv() {
+        true => return BulkData::CSV(BulkCSV::En(envelope.into())),
+        _ => {}
+    }
+
+    BulkData::XML(BulkXML::En(envelope))
 }

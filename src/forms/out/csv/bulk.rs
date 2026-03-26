@@ -69,6 +69,7 @@ impl From<p_bulk::Product> for Product {
 }
 
 
+#[derive(Serialize)]
 pub struct Products {
     pub products: Vec<Product>
 }
