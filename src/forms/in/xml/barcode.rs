@@ -1,9 +1,7 @@
 // Structs for GetVonalkodokAuth's XML
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-
 use crate::forms::r#in::xml::defaults as o8_defaults;
-
 
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
     format!(

@@ -15,7 +15,7 @@ pub struct Order {
 #[serde(rename_all = "lowercase")]
 pub struct Header {
     pub pid: u64,
-    pub foreign_order_numbers: Option<String>,
+    pub foreign_order_number: Option<String>,
     pub delivery_mode: u8,
     pub delivery_note: Option<String>,
     pub enduser_id: Option<String>,

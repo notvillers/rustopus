@@ -1,17 +1,19 @@
 use actix_web::{post, web, HttpRequest, HttpResponse, Responder};
 use crate::routes::default::{
-    RequestParameters,
+    RequestParameters, GetStringResponse,
+    get_url, get_xmlns, get_auth,
     send_xml
 };
 use crate::forms::{
     r#in::xml::orders::Order,
-    out::xml::orders::Rendeles
+    out::xml::orders::{Rendeles, get_request_string, error_struct_xml}
 };
 use crate::service::{
     slave::get_uuid,
     log::log_with_ip_uuid,
     ipv4::log_ip,
-    get_data::to_xml_string
+    get_data::to_xml_string,
+    soap::get_response
 };
 
 const REQUEST_NAME: &str = "ORDER SUBMISSION";
@@ -30,9 +32,23 @@ fn to_single_line(xml: &str) -> String {
 }
 
 
-async fn handler(req: HttpRequest, _: RequestParameters, body: web::Bytes) -> impl Responder {
+async fn handler(req: HttpRequest, params: RequestParameters, body: web::Bytes) -> impl Responder {
     let uuid = get_uuid();
-    let ip = log_ip(req).await.to_string();
+    let ip_address = log_ip(req).await.to_string();
+
+    let authcode = match get_auth(REQUEST_NAME, &ip_address, &uuid, &params, error_struct_xml) {
+        GetStringResponse::Text(auth) => auth,
+        GetStringResponse::Response(response) => return response
+    };
+
+    // Trying to get url from parameters
+    let url = match get_url(REQUEST_NAME, &ip_address, &uuid, &params, error_struct_xml) {
+        GetStringResponse::Text(url) => url,
+        GetStringResponse::Response(response) => return response
+    };
+
+    // Getting XMLNS from parameters, otherwise using url
+    let xmlns = get_xmlns(&params, &url);
 
     // 1. Decode body
     let raw = match std::str::from_utf8(&body) {
@@ -42,13 +58,13 @@ async fn handler(req: HttpRequest, _: RequestParameters, body: web::Bytes) -> im
             .body("<error><message>Body is not valid UTF-8</message></error>")
     };
 
-    log_with_ip_uuid(&ip, &uuid, format!("{REQUEST_NAME}: received: {}", to_single_line(&raw)));
+    log_with_ip_uuid(&ip_address, &uuid, format!("{REQUEST_NAME}: received: {}", to_single_line(&raw)));
 
     // 2. Parse into Order struct
     let order: Order = match quick_xml::de::from_str(&raw) {
         Ok(o) => o,
         Err(e) => {
-            log_with_ip_uuid(&ip, &uuid, format!("{REQUEST_NAME}: parse error: {e}"));
+            log_with_ip_uuid(&ip_address, &uuid, format!("{REQUEST_NAME}: parse error: {e}"));
             return HttpResponse::BadRequest()
                 .content_type("application/xml")
                 .body(format!("<error><message>Invalid XML: {e}</message></error>"));
@@ -57,10 +73,15 @@ async fn handler(req: HttpRequest, _: RequestParameters, body: web::Bytes) -> im
 
     let order_hu: Rendeles = order.into();
     let order_hu_xml_string = to_xml_string(&order_hu);
+    log_with_ip_uuid(&ip_address, &uuid, format!("{REQUEST_NAME}: formatted to: {}", to_single_line(&order_hu_xml_string)));
 
-    log_with_ip_uuid(&ip, &uuid, format!("{REQUEST_NAME}: formatted to: {}", to_single_line(&order_hu_xml_string)));
+    let request = get_request_string(&xmlns, &order_hu_xml_string, &authcode);
+    log_with_ip_uuid(&ip_address, &uuid, format!("Request: {}", request));
 
-    send_xml(order_hu_xml_string)
+    let response = get_response(&url, request).await;
+    log_with_ip_uuid(&ip_address, &uuid, format!("Response: {}", response));
+    
+    send_xml(response)
 }
 
 

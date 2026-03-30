@@ -1,8 +1,26 @@
 use chrono::NaiveDate;
 use serde::Serialize;
-use crate::forms::{
-    r#in::xml::orders as p_orders
-};
+use quick_xml::escape::escape;
+use crate::forms::r#in::xml::orders as p_orders;
+
+pub fn get_request_string(xmlns: &str, rendelesxml: &str, authcode: &str) -> String {
+    format!(
+        r#"<?xml version="1.0" encoding="utf-8"?>
+            <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+            <soap:Body>
+                <RendelesFeladasAuth xmlns="{}">
+                    <rendelesxml>{}</rendelesxml>
+                    <authcode>{}</authcode>
+                </RendelesFeladasAuth>
+            </soap:Body>
+            </soap:Envelope>
+        "#,
+        xmlns,
+        escape(rendelesxml),
+        authcode
+    )
+}
+
 
 #[derive(Debug, Serialize)]
 #[serde(rename = "rendeles")]
@@ -75,7 +93,7 @@ impl From<p_orders::Header> for Fej {
     fn from(h: p_orders::Header) -> Self {
         Self {
             partnerid: h.pid,
-            idegen_megrendelesszam: h.foreign_order_numbers,
+            idegen_megrendelesszam: h.foreign_order_number,
             szallitasi_mod: h.delivery_mode,
             szallitasi_megj: h.delivery_note,
             vegfelhasznaloazon: h.enduser_id,
@@ -161,7 +179,9 @@ pub struct Tetel {
     pub tetelszam: u64,
     pub cikkszam: String,
     pub mennyiseg: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub vegfegysar: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub megj: Option<String>
 }
 
@@ -175,4 +195,8 @@ impl From<p_orders::Item> for Tetel {
             megj: i.note
         }
     }
+}
+
+pub fn error_struct_xml(_: u64, _: &str) -> String {
+    "<Envelope></Envelope>".to_string()
 }
