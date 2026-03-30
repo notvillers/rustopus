@@ -6,7 +6,10 @@ use crate::routes::default::{
 };
 use crate::forms::{
     r#in::xml::orders::Order,
-    out::xml::orders::{Rendeles, get_request_string, error_struct_xml}
+    out::xml::orders::{
+        Rendeles,
+        get_request_string, error_struct_xml
+    }
 };
 use crate::service::{
     slave::get_uuid,
