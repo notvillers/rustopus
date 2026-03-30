@@ -5,3 +5,4 @@ pub mod prices;
 pub mod images;
 pub mod barcode;
 pub mod invoices;
+pub mod orders;

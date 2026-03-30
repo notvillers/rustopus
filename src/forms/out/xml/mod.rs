@@ -7,3 +7,4 @@ pub mod images;
 pub mod barcode;
 pub mod test;
 pub mod invoices;
+pub mod orders;

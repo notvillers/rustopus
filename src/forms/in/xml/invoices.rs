@@ -1,9 +1,7 @@
 // Structs for GetSzamlakAuth's XML
 use chrono::{NaiveDate, DateTime, Utc};
-use serde::Serialize;
-use serde::{Deserialize, Deserializer};
+use serde::{Serialize, Deserialize, Deserializer};
 use std::str::FromStr;
-
 use crate::forms::{
     r#in::xml::defaults as o8_defaults,
     out::xml::invoices as p_invoices
