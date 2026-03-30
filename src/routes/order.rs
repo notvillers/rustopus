@@ -19,7 +19,13 @@ use crate::service::{
 const REQUEST_NAME: &str = "ORDER SUBMISSION";
 
 fn lowercase_xml_tags(xml: &str) -> String {
-        let re = regex::Regex::new(r"<(/?)([A-Za-z][A-Za-z0-9_\-.]*)").unwrap();
+        let re = match regex::Regex::new(r"<(/?)([A-Za-z][A-Za-z0-9_\-.]*)") {
+            Ok(regex) => regex,
+            Err(e) => {
+                eprintln!("`lowercase_xml_tags`: {}", e);
+                return xml.into()
+            }
+        };
     re.replace_all(xml, |c: &regex::Captures| {
         format!("<{}{}", &c[1], c[2].to_lowercase())
     }).to_string()
@@ -27,7 +33,13 @@ fn lowercase_xml_tags(xml: &str) -> String {
 
 
 fn to_single_line(xml: &str) -> String {
-    let re = regex::Regex::new(r">\s+<").unwrap();
+    let re = match regex::Regex::new(r">\s+<") {
+        Ok(regex) => regex,
+        Err(e) => {
+            eprintln!("`to_single_line`: {}", e);
+            return xml.into()
+        }
+    };
     re.replace_all(xml.trim(), "> <").to_string()
 }
 
@@ -60,7 +72,7 @@ async fn handler(req: HttpRequest, params: RequestParameters, body: web::Bytes) 
 
     log_with_ip_uuid(&ip_address, &uuid, format!("{REQUEST_NAME}: received: {}", to_single_line(&raw)));
 
-    // 2. Parse into Order struct
+    // 2. Parse into `Order`
     let order: Order = match quick_xml::de::from_str(&raw) {
         Ok(o) => o,
         Err(e) => {
@@ -71,16 +83,20 @@ async fn handler(req: HttpRequest, params: RequestParameters, body: web::Bytes) 
         }
     };
 
+    // 3. Convert `Order` to `Rendeles`
     let order_hu: Rendeles = order.into();
     let order_hu_xml_string = to_xml_string(&order_hu);
     log_with_ip_uuid(&ip_address, &uuid, format!("{REQUEST_NAME}: formatted to: {}", to_single_line(&order_hu_xml_string)));
 
+    // 4. Get the request string
     let request = get_request_string(&xmlns, &order_hu_xml_string, &authcode);
     log_with_ip_uuid(&ip_address, &uuid, format!("Request: {}", request));
 
+    // 5. Gets the response string
     let response = get_response(&url, request).await;
     log_with_ip_uuid(&ip_address, &uuid, format!("Response: {}", response));
     
+    // 6. Sends back response to client
     send_xml(response)
 }
 
