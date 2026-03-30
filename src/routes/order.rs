@@ -1,8 +1,7 @@
-use actix_web::web::Redirect;
 use actix_web::{post, web, HttpRequest, HttpResponse, Responder};
 use crate::routes::default::{
-    RequestParameters, GetStringResponse,
-    get_auth, get_url, send_xml
+    RequestParameters,
+    send_xml
 };
 use crate::forms::{
     r#in::xml::orders::Order,
