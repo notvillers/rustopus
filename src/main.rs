@@ -1,6 +1,6 @@
 use std::{env, panic};
 
-use actix_web::{App, HttpResponse, HttpServer, Responder, web::{self, route}};
+use actix_web::{App, HttpResponse, HttpServer, Responder, web};
 use actix_files::Files;
 
 mod service;

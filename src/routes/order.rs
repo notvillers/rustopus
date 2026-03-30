@@ -23,6 +23,13 @@ fn lowercase_xml_tags(xml: &str) -> String {
     }).to_string()
 }
 
+
+fn to_single_line(xml: &str) -> String {
+    let re = regex::Regex::new(r">\s+<").unwrap();
+    re.replace_all(xml.trim(), "> <").to_string()
+}
+
+
 async fn handler(req: HttpRequest, _: RequestParameters, body: web::Bytes) -> impl Responder {
     let uuid = get_uuid();
     let ip = log_ip(req).await.to_string();
@@ -35,6 +42,8 @@ async fn handler(req: HttpRequest, _: RequestParameters, body: web::Bytes) -> im
             .body("<error><message>Body is not valid UTF-8</message></error>")
     };
 
+    log_with_ip_uuid(&ip, &uuid, format!("{REQUEST_NAME}: received: {}", to_single_line(&raw)));
+
     // 2. Parse into Order struct
     let order: Order = match quick_xml::de::from_str(&raw) {
         Ok(o) => o,
@@ -46,15 +55,16 @@ async fn handler(req: HttpRequest, _: RequestParameters, body: web::Bytes) -> im
         }
     };
 
-    send_xml(to_xml_string(&Into::<Rendeles>::into(order)))
+    let order_hu: Rendeles = order.into();
+    let order_hu_xml_string = to_xml_string(&order_hu);
+
+    log_with_ip_uuid(&ip, &uuid, format!("{REQUEST_NAME}: formatted to: {}", to_single_line(&order_hu_xml_string)));
+
+    send_xml(order_hu_xml_string)
 }
 
 
 #[post("/post-order")]
-pub async fn post_handler(
-    req: HttpRequest,
-    query: web::Query<RequestParameters>,
-    body: web::Bytes,
-) -> impl Responder {
+pub async fn post_handler(req: HttpRequest, query: web::Query<RequestParameters>, body: web::Bytes, ) -> impl Responder {
     handler(req, query.into_inner(), body).await
 }

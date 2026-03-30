@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::Serialize;
 use crate::forms::{
     r#in::xml::orders as p_orders
 };
@@ -7,7 +7,7 @@ use crate::forms::{
 #[derive(Debug, Serialize)]
 #[serde(rename = "rendeles")]
 pub struct Rendeles {
-    #[serde(rename = "@verzió")]
+    #[serde(rename = "@verzio")]
     pub verzio: Option<String>,
     pub fej: Fej,
     pub tetelek: Tetelek
@@ -134,17 +134,6 @@ mod hungarian_date_format_opt {
         match date {
             Some(d) => serializer.serialize_str(&d.format(FORMAT).to_string()),
             None => serializer.serialize_none(),
-        }
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<NaiveDate>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s: Option<&str> = Option::deserialize(deserializer)?;
-        match s {
-            Some(text) => Ok(NaiveDate::parse_from_str(text, FORMAT).ok()),
-            None => Ok(None),
         }
     }
 }
