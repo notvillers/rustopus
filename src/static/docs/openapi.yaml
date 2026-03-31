@@ -916,75 +916,103 @@ components:
     OrderResponse:
       type: object
       xml:
-        name: response
+        name: Envelope
       properties:
-        version:
-          type: string
-          example: "1.0"
-        header:
+        body:
           type: object
-          xml:
-            name: header
           properties:
-            identifier:
-              type: integer
-              example: 1772685
-            web_identifier:
-              type: string
-              format: uuid
-              example: "f16526d5-f260-417e-bad8-dace91ad8ecc"
-            document_number:
-              type: string
-              example: "XKBRE2608402"
-            delivery_date:
-              type: string
-              format: date
-              example: "2026.03.30"
-        items:
-          type: array
-          xml:
-            name: items
-          items:
-            type: object
-            xml:
-              name: item
-            properties:
-              item_number:
-                type: integer
-              recorded_item_number:
-                type: integer
-              product_number:
-                type: string
-              quantity:
-                type: object
-                properties:
-                  type:
-                    type: string
-                  coverage:
-                    type: string
-                  date:
-                    type: string
-                    format: date-time
-                  value:
-                    type: number
-              unit_price_net:
-                type: number
-              unit_price_gross:
-                type: number
-              value_net:
-                type: number
-              value_gross:
-                type: number
-              currency:
-                type: string
-                example: "HUF"
-        extra_items:
-          type: object
-        shipping_cost:
-          type: object
-        cash_on_delivery:
-          type: object
-        extra_services:
-          type: object
-        return_fee:
-          type: object
+            response:
+              type: object
+              properties:
+                result:
+                  type: object
+                  properties:
+                    answer:
+                      type: object
+                      properties:
+                        version:
+                          type: string
+                          example: "1.0"
+                        header:
+                          type: object
+                          xml:
+                            name: header
+                          properties:
+                            identifier:
+                              type: integer
+                              example: 1773747
+                            web_identifier:
+                              type: string
+                              format: uuid
+                              example: "f6f9f502-1446-4183-aaeb-9df2245457fe"
+                            document_number:
+                              type: string
+                              example: "XKBRE2608459"
+                            delivery_date:
+                              type: string
+                              format: date
+                              example: "2026.03.31"
+                        items:
+                          type: array
+                          xml:
+                            name: items
+                          items:
+                            type: object
+                            xml:
+                              name: item
+                            properties:
+                              item_number:
+                                type: integer
+                                example: 1
+                              recorded_item_number:
+                                type: integer
+                                example: 1
+                              product_number:
+                                type: string
+                                example: "PAPIRA4CAN"
+                              quantity:
+                                type: object
+                                properties:
+                                  type:
+                                    type: string
+                                    example: "1"
+                                  coverage:
+                                    type: string
+                                    example: "1-50"
+                                  date:
+                                    type: string
+                                    format: date-time
+                                    example: "2026-03-31T00:00:00"
+                                  value:
+                                    type: number
+                                    example: 1.0
+                              unit_price_net:
+                                type: number
+                                example: 1193.5007520
+                              unit_price_gross:
+                                type: number
+                                example: 1515.74595504
+                              value_net:
+                                type: number
+                                example: 1193.500752
+                              value_gross:
+                                type: number
+                                example: 1515.745955
+                              currency:
+                                type: string
+                                example: "HUF"
+                        extra_items:
+                          type: string
+                          nullable: true
+                        shipping_cost:
+                          type: string
+                          nullable: true
+                        cash_on_delivery:
+                          type: string
+                          nullable: true
+                        extra_services:
+                          type: string
+                          nullable: true
+                        return_fee:
+                          type: string
+                          nullable: true
