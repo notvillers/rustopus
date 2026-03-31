@@ -67,6 +67,7 @@ impl From<o8_barcode::GetVonalkodokAuthResult> for GetProductBarcodesResult {
 pub struct Answer {
     pub version: String,
     pub barcodes: Barcodes,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<p_defaults::Error>
 }
 

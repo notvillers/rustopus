@@ -6,3 +6,4 @@ pub mod images;
 pub mod barcode;
 pub mod invoices;
 pub mod orders;
+pub mod orders_response;

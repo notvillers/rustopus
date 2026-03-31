@@ -67,6 +67,7 @@ impl From<o8_prices::GetArlistaAuthResult> for GetPriceAuthResult {
 pub struct Answer {
     pub version: String,
     pub prices: Prices,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<p_defaults::Error>
 }
 

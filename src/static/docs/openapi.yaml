@@ -313,6 +313,55 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/BulkResponse'
+
+  /post-order:
+    post:
+      summary: Submit an order to Octopus 8 ERP
+      description: Submit an order in English XML format. Converts to Hungarian, sends to Octopus, and returns the response in English XML format.
+      tags:
+        - Orders
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: Endpoint URL with the ```.asmx``` file
+          schema:
+            type: string
+        - name: authcode
+          in: query
+          required: true
+          description: Authorization code
+          schema:
+            type: string
+        - name: xmlns
+          in: query
+          required: false
+          description: Optional XML namespace
+          schema:
+            type: string
+        - name: pid
+          in: query
+          required: true
+          description: Partner ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+      responses:
+        '200':
+          description: Order submission response with confirmation details
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          description: Invalid XML format
+        '500':
+          description: Failed to parse Octopus response
     
 components:
   schemas:
@@ -823,3 +872,119 @@ components:
               type: string
             order_foreign_no:
               type: string
+
+    OrderRequest:
+      type: object
+      xml:
+        name: order
+      properties:
+        version:
+          type: string
+          example: "1.0"
+        header:
+          type: object
+          properties:
+            pid:
+              type: integer
+              example: 7824
+            foreign_order_number:
+              type: string
+              example: "rustopus_test_1"
+            delivery_mode:
+              type: integer
+              example: 1
+        items:
+          type: array
+          xml:
+            name: items
+          items:
+            type: object
+            xml:
+              name: item
+            properties:
+              lot_no:
+                type: integer
+                example: 1
+              no:
+                type: string
+                description: Product/article number
+                example: "PAPIRA4CAN"
+              qty:
+                type: number
+                example: 1.0
+
+    OrderResponse:
+      type: object
+      xml:
+        name: response
+      properties:
+        version:
+          type: string
+          example: "1.0"
+        header:
+          type: object
+          xml:
+            name: header
+          properties:
+            identifier:
+              type: integer
+              example: 1772685
+            web_identifier:
+              type: string
+              format: uuid
+              example: "f16526d5-f260-417e-bad8-dace91ad8ecc"
+            document_number:
+              type: string
+              example: "XKBRE2608402"
+            delivery_date:
+              type: string
+              format: date
+              example: "2026.03.30"
+        items:
+          type: array
+          xml:
+            name: items
+          items:
+            type: object
+            xml:
+              name: item
+            properties:
+              item_number:
+                type: integer
+              recorded_item_number:
+                type: integer
+              product_number:
+                type: string
+              quantity:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  coverage:
+                    type: string
+                  date:
+                    type: string
+                    format: date-time
+                  value:
+                    type: number
+              unit_price_net:
+                type: number
+              unit_price_gross:
+                type: number
+              value_net:
+                type: number
+              value_gross:
+                type: number
+              currency:
+                type: string
+                example: "HUF"
+        extra_items:
+          type: object
+        shipping_cost:
+          type: object
+        cash_on_delivery:
+          type: object
+        extra_services:
+          type: object
+        return_fee:
+          type: object

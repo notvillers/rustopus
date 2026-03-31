@@ -68,6 +68,7 @@ impl From<o8_stocks::GetCikkekKeszletValtozasAuthResult> for GetStockChangeAuthR
 pub struct Answer {
     pub version: String,
     pub products: Products,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<p_defaults::Error>
 }
 

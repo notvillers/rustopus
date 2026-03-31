@@ -68,6 +68,7 @@ impl From<o8_invoices::GetSzamlakAuthResult> for Result {
 pub struct Answer {
     pub version: String,
     pub invoices: Invoices,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<p_defaults::Error>
 }
 

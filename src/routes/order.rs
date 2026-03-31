@@ -5,10 +5,16 @@ use crate::routes::default::{
     send_xml
 };
 use crate::forms::{
-    r#in::xml::orders::Order,
-    out::xml::orders::{
-        Rendeles,
-        get_request_string, error_struct_xml
+    r#in::xml::{
+        orders::Order,
+        orders_response::Envelope
+    },
+    out::xml::{
+        orders::{
+            Rendeles,
+            get_request_string, error_struct_xml
+        },
+        orders_response::Envelope as p_Envelope
     }
 };
 use crate::service::{
@@ -18,8 +24,6 @@ use crate::service::{
     get_data::to_xml_string,
     soap::get_response
 };
-
-const REQUEST_NAME: &str = "ORDER SUBMISSION";
 
 fn lowercase_xml_tags(xml: &str) -> String {
         let re = match regex::Regex::new(r"<(/?)([A-Za-z][A-Za-z0-9_\-.]*)") {
@@ -46,6 +50,7 @@ fn to_single_line(xml: &str) -> String {
     re.replace_all(xml.trim(), "> <").to_string()
 }
 
+const REQUEST_NAME: &str = "ORDER SUBMISSION";
 
 async fn handler(req: HttpRequest, params: RequestParameters, body: web::Bytes) -> impl Responder {
     let uuid = get_uuid();
@@ -95,12 +100,29 @@ async fn handler(req: HttpRequest, params: RequestParameters, body: web::Bytes) 
     let request = get_request_string(&xmlns, &order_hu_xml_string, &authcode);
     log_with_ip_uuid(&ip_address, &uuid, format!("Request: {}", request));
 
-    // 5. Gets the response string
-    let response = get_response(&url, request).await;
-    log_with_ip_uuid(&ip_address, &uuid, format!("Response: {}", response));
-    
-    // 6. Sends back response to client
-    send_xml(response)
+    // 5. Gets the response string from Octopus
+    let response_str = get_response(&url, request).await;
+    log_with_ip_uuid(&ip_address, &uuid, format!("Response: {}", response_str));
+
+    // 6. Deserialize SOAP response into Envelope
+    let envelope: Envelope = match quick_xml::de::from_str(&response_str) {
+        Ok(e) => e,
+        Err(e) => {
+            log_with_ip_uuid(&ip_address, &uuid, format!("{REQUEST_NAME}: response parse error: {e}"));
+            return HttpResponse::InternalServerError()
+                .content_type("application/xml")
+                .body(format!("<error><message>Failed to parse Octopus response: {e}</message></error>"));
+        }
+    };
+
+    // 7. Convert response to `p_Envelope` and then to raw XML string
+    let response_trans: p_Envelope = envelope.into();
+    let response_xml = to_xml_string(&response_trans);
+
+    log_with_ip_uuid(&ip_address, &uuid, format!("{REQUEST_NAME}: converted to English response: {}", to_single_line(&response_xml)));
+
+    // 8. Send back English XML response to client
+    send_xml(response_xml)
 }
 
 
