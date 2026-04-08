@@ -12,7 +12,7 @@ Returns products list for authentication.
 - [NodeJS](./request.js)
 - [PowerShell](./request.ps1)
 - [Python3](./request.py)
-* [.NET](./request.cs)
+- [.NET](./request.cs)
 
 ## Response
 
