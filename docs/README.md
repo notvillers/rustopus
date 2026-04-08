@@ -14,3 +14,4 @@ Provided example languages:
 - [Products](./get-products/)
 - [Stocks](./get-stocks/)
 - [Prices](./get-prices/)
+- [Images](./get-images/)
