@@ -7,7 +7,6 @@ test/
 *.csv
 *.env
 *.log
-*.txt
 CLAUDE.md
 rustopus
 soap.json

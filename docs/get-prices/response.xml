@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<Envelope>
+  <body>
+    <response>
+      <result>
+        <answer>
+          <version>1.0</version>
+          <prices>
+            <price>
+              <id>12345</id>
+              <no>PRODUCTNO1</no>
+              <list_price>1250</list_price>
+              <price>1100.06</price>
+              <sale_price>1050</sale_price>
+              <currency>HUF</currency>
+            </price>
+            <price>
+              <id>12346</id>
+              <no>PRODUCTNO2</no>
+              <list_price>1633.47</list_price>
+              <price>1453.13</price>
+              <sale_price>1111.11</sale_price>
+              <currency>HUF</currency>
+            </price>
+          </prices>
+        </answer>
+      </result>
+    </response>
+  </body>
+</Envelope>

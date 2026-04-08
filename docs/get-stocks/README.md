@@ -4,7 +4,7 @@ Returns stock list for authentication.
 
 ## Params
 
-- Authcode
+- [authcode](../parameters/authcode.txt)
 
 ## Request
 
