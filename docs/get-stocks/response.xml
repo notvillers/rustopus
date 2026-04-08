@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<Envelope>
+  <body>
+    <response>
+      <result>
+        <answer>
+          <version>1.0</version>
+          <products>
+            <product>
+              <id>12345</id>
+              <no>PRODUCTNO1</no>
+              <stock>47</stock>
+            </product>
+            <product>
+              <id>12346</id>
+              <no>PRODUCTNO2</no>
+              <stock>21</stock>
+            </product>
+          </products>
+        </answer>
+      </result>
+    </response>
+  </body>
+</Envelope>

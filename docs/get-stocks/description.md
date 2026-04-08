@@ -1,6 +1,6 @@
-# GET PRODUCTS
+# GET STOCKS
 
-Returns products list for authentication.
+Returns stock list for authentication.
 
 ## Params
 

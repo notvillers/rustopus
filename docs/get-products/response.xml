@@ -7,7 +7,7 @@
           <version>1.0</version>
           <products>
             <product>
-              <id>00001</id>
+              <id>12345</id>
               <no>PRODUCTNO1</no>
               <name>Product name 1</name>
               <unit>package</unit>
@@ -30,7 +30,7 @@
               <origin_country>Origin country 1</origin_country>
             </product>
             <product>
-              <id>00002</id>
+              <id>12346</id>
               <no>PRODUCTNO2</no>
               <name>Product name 2</name>
               <unit>pcs</unit>
