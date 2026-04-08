@@ -1,13 +1,13 @@
 .DS_Store
 .vscode/
-target/
+example/
 ping/
+target/
 test/
-*.xml
+*.csv
 *.env
 *.log
 *.txt
-*.csv
+CLAUDE.md
 rustopus
 soap.json
-CLAUDE.md

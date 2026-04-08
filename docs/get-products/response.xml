@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<Envelope>
+  <body>
+    <response>
+      <result>
+        <answer>
+          <version>1.0</version>
+          <products>
+            <product>
+              <id>00001</id>
+              <no>PRODUCTNO1</no>
+              <name>Product name 1</name>
+              <unit>package</unit>
+              <base_unit>pcs</base_unit>
+              <base_unit_qty>10</base_unit_qty>
+              <brand>Brand 1</brand>
+              <category_code>CATCODE</category_code>
+              <category_name>Category name</category_name>
+              <description>Description 1</description>
+              <weight>1.5</weight>
+              <size>
+                <x>5</x>
+                <y>15</y>
+                <z>10</z>
+              </size>
+              <oem_code>OEMCODE1</oem_code>
+              <main_category_code>CAT</main_category_code>
+              <main_category_name>Main category name</main_category_name>
+              <sell_unit />
+              <origin_country>Origin country 1</origin_country>
+            </product>
+            <product>
+              <id>00002</id>
+              <no>PRODUCTNO2</no>
+              <name>Product name 2</name>
+              <unit>pcs</unit>
+              <base_unit>pcs</base_unit>
+              <base_unit_qty>1</base_unit_qty>
+              <brand>Brand 2</brand>
+              <category_code>CATCODE</category_code>
+              <category_name>Category name</category_name>
+              <description>Description 2</description>
+              <weight>5</weight>
+              <size>
+                <x>5</x>
+                <y>5</y>
+                <z>5</z>
+              </size>
+              <oem_code>OEMCODE2</oem_code>
+              <main_category_code>CAT</main_category_code>
+              <main_category_name>Main category name</main_category_name>
+              <sell_unit>10</sell_unit>
+              <origin_country>Origin country 2</origin_country>
+            </product>
+          </products>
+        </answer>
+      </result>
+    </response>
+  </body>
+</Envelope>
