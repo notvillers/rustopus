@@ -1,0 +1,52 @@
+<Envelope>
+    <body>
+        <response>
+            <result>
+                <answer>
+                    <version>1.0</version>
+                    <invoices>
+                        <invoice>
+                            <head>
+                                <id>123456</id>
+                                <no>INVOICENO1</no>
+                                <date>2026-03-20</date>
+                                <completition_date>2026-03-20</completition_date>
+                                <payment_deadline>2026-04-07</payment_deadline>
+                                <net_price>1270</net_price>
+                                <price>0</price>
+                                <remaining>0</remaining>
+                                <cancellation_no />
+                                <currency>HUF</currency>
+                                <pid>1234</pid>
+                                <partner_name>Partner name</partner_name>
+                                <status>1</status>
+                                <foreign_order_no />
+                                <delivery_name />
+                                <delivery_country />
+                                <delivery_zip />
+                                <delivery_city />
+                                <delivery_street />
+                            </head>
+                            <products>
+                                <product>
+                                    <lot_no>1</lot_no>
+                                    <id>12345</id>
+                                    <no>PRODUCTNO1</no>
+                                    <name>Product name 1</name>
+                                    <qty>10</qty>
+                                    <unit>pcs</unit>
+                                    <net_unit_price>100</net_unit_price>
+                                    <unit_price>127</unit_price>
+                                    <net_price>1000</net_price>
+                                    <price>1270</price>
+                                    <order_no>ORDERNO1</order_no>
+                                    <order_foreign_no />
+                                </product>
+                            </products>
+                        </invoice>
+                    </invoices>
+                </answer>
+            </result>
+        </response>
+    </body>
+</Envelope>
