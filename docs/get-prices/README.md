@@ -1,6 +1,6 @@
 # GET PRODUCTS
 
-Returns products list for authentication.
+Returns prices list for authentication.
 
 ## Params
 
@@ -13,6 +13,7 @@ Returns products list for authentication.
 - [NodeJS](./request.js)
 - [PowerShell](./request.ps1)
 - [Python3](./request.py)
+- [.NET](./request.cs)
 
 ## Response
 
