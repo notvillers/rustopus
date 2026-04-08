@@ -1,5 +1,5 @@
 '''
-    Get-Products request for Rustopus
+    Get-Stocks RustOpus example
 '''
 from urllib import request
 

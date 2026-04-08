@@ -1,4 +1,5 @@
 #!/bin/bash
+# Get-Stocks RustOpus example
 
 AUTHCODE="AAAAAAAA-0000-0000-0000-BBBBBBBBBBBB"
 OUTFILE="get-stocks.xml"

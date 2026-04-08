@@ -1,3 +1,5 @@
+# Get-Products RustOpus example
+
 $authcode = "AAAAAAAA-0000-0000-0000-BBBBBBBBBBBB"
 $outfile = "get-products.xml"
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Get-Prices RustOpus example
 
 AUTHCODE="AAAAAAAA-0000-0000-0000-BBBBBBBBBBBB"
 PID=1234

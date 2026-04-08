@@ -1,3 +1,5 @@
+// Get-Products RustOpus example
+
 import { writeFile } from "fs/promises";
 
 const AUTHCODE = "AAAAAAAA-0000-0000-0000-BBBBBBBBBBBB";
