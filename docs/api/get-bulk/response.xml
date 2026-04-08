@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<Envelope>
+  <body>
+    <response>
+      <result>
+        <answer>
+          <version>1.0</version>
+          <products>
+            <product>
+              <id>12345</id>
+              <no>PRODUCTNO1</no>
+              <name>Product name 1</name>
+              <unit>package</unit>
+              <base_unit>pcs</base_unit>
+              <base_unit_qty>10</base_unit_qty>
+              <brand>Brand 1</brand>
+              <oem_code>OEMCODE1</oem_code>
+              <category_code>CATCODE</category_code>
+              <category_name>Category name</category_name>
+              <description>Description 1</description>
+              <weight>1.5</weight>
+              <size>
+                <x>5</x>
+                <y>15</y>
+                <z>10</z>
+              </size>
+              <main_category_code>CAT</main_category_code>
+              <main_category_name>Main category name</main_category_name>
+              <sell_unit />
+              <origin_country>Origin country 1</origin_country>
+              <price>1234.56</price>
+              <currency>HUF</currency>
+              <stock>54312</stock>
+              <ean>1111111111112</ean>
+              <images>
+                <image>
+                  <gallery>Gallery-1</gallery>
+                  <url>example.com/image_1_1.png</url>
+                </image>
+              </images>
+            </product>
+          </products>
+        </answer>
+      </result>
+    </response>
+  </body>
+</Envelope>
