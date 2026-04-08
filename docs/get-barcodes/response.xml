@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<Envelope>
+  <body>
+    <response>
+      <result>
+        <answer>
+          <version>1.0</version>
+          <barcodes>
+            <barcode>
+              <id>12345</id>
+              <no>PRODUCTNO1</no>
+              <ean>1111111111111</ean>
+              <unit>pcs</unit>
+              <main_ean>true</main_ean>
+            </barcode>
+            <barcode>
+              <id>12345</id>
+              <no>PRODUCTNO1</no>
+              <ean>1111111111112</ean>
+              <unit>package</unit>
+              <main_ean>false</main_ean>
+            </barcode>
+            <barcode>
+              <id>12346</id>
+              <no>PRODUCTNO2</no>
+              <ean>1111111111113</ean>
+              <unit>pcs</unit>
+              <main_ean>true</main_ean>
+            </barcode>
+          </barcodes>
+        </answer>
+      </result>
+    </response>
+  </body>
+</Envelope>
