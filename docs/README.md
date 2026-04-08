@@ -6,3 +6,4 @@ This part of the repository contains the description and examples to call variou
 
 - [Products](./get-products/)
 - [Stocks](./get-stocks/)
+- [Prices](./get-prices/)
