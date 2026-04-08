@@ -16,3 +16,4 @@ Provided example languages:
 - [Prices](./get-prices/)
 - [Images](./get-images/)
 - [Barcodes](./get-barcodes/)
+- [Bulk](./get-bulk/)
