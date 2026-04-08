@@ -2,7 +2,7 @@
 
 Returns products list for authentication
 
-## Params
+## Params
 
 - Authcode
 
@@ -10,7 +10,8 @@ Returns products list for authentication
 
 - [Bash](./request.sh)
 - [NodeJS](./request.js)
-- [Python](./request.py)
+- [PowerShell](./request.ps1)
+- [Python3](./request.py)
 
 ## Response
 
