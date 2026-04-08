@@ -2,7 +2,7 @@
 
 This part of the repository contains the description and examples to call various *GET* endpoints of rustopus
 
-## Endpoints
+## Endpoints
 
 - [Products](./get-products/)
 - [Stocks](./get-stocks/)
