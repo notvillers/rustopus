@@ -36,7 +36,7 @@ impl From<o8_products::Cikk> for Product {
             brand: c.gyarto,
             category_code: c.cikkcsoportkod,
             category_name: c.cikkcsoportnev,
-            description: c.leiras.replace(['\n', '\r'], ""),
+            description: c.leiras.replace(['\n', '\r'], " "),
             weight: c.tomeg,
             xsize: c.meret
                 .clone()

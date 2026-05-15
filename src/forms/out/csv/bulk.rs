@@ -40,7 +40,7 @@ impl From<p_bulk::Product> for Product {
             brand: c.brand,
             category_code: c.category_code,
             category_name: c.category_name,
-            description: c.description.replace(['\n', '\r'], ""),
+            description: c.description.replace(['\n', '\r'], " "),
             weight: c.weight,
             xsize: c.size
                 .as_ref()
