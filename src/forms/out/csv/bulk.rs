@@ -1,7 +1,5 @@
 use serde::Serialize;
 use crate::forms::out::xml::bulk as p_bulk;
-#[allow(unused_imports)]
-use crate::tools::trim;
 
 #[derive(Serialize)]
 pub struct Product {
@@ -14,8 +12,6 @@ pub struct Product {
     pub brand: String,
     pub category_code: String,
     pub category_name: String,
-
-    #[serde(deserialize_with = "trim")]
     pub description: String,
     pub weight: Option<f64>,
     pub xsize: Option<f64>,
@@ -44,7 +40,7 @@ impl From<p_bulk::Product> for Product {
             brand: c.brand,
             category_code: c.category_code,
             category_name: c.category_name,
-            description: c.description,
+            description: c.description.replace(['\n', '\r'], ""),
             weight: c.weight,
             xsize: c.size
                 .as_ref()
