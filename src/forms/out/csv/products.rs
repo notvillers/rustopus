@@ -1,5 +1,6 @@
 use serde::Serialize;
 use crate::forms::r#in::xml::products as o8_products;
+use crate::tools::str_remove_breaks;
 
 #[derive(Serialize)]
 pub struct Product {
@@ -36,7 +37,7 @@ impl From<o8_products::Cikk> for Product {
             brand: c.gyarto,
             category_code: c.cikkcsoportkod,
             category_name: c.cikkcsoportnev,
-            description: c.leiras.replace(['\n', '\r'], " "),
+            description: str_remove_breaks(&c.leiras),
             weight: c.tomeg,
             xsize: c.meret
                 .clone()

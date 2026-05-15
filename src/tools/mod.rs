@@ -1,0 +1,2 @@
+pub mod string_man;
+pub use string_man::remove_breaks as str_remove_breaks;
