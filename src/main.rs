@@ -7,6 +7,7 @@ mod service;
 mod forms;
 mod routes;
 mod global;
+mod tools;
 
 use crate::service::{
     log::{logger, elogger},

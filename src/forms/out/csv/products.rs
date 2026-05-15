@@ -1,5 +1,7 @@
 use serde::Serialize;
 use crate::forms::r#in::xml::products as o8_products;
+#[allow(unused_imports)]
+use crate::tools::trim;
 
 #[derive(Serialize)]
 pub struct Product {
@@ -12,6 +14,7 @@ pub struct Product {
     pub brand: String,
     pub category_code: String,
     pub category_name: String,
+    #[serde(deserialize_with = "trim")]
     pub description: String,
     pub weight: Option<f64>,
     pub xsize: Option<f64>,
@@ -54,7 +57,6 @@ impl From<o8_products::Cikk> for Product {
         }
     }
 }
-
 
 #[derive(Serialize)]
 pub struct Products {
