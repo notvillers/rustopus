@@ -137,7 +137,7 @@ impl eframe::App for RustopusApp {
         // ── Left panel: connection settings ──────────────────────────────
         egui::SidePanel::left("connection_panel")
             .resizable(false)
-            .min_width(260.0)
+            .min_width(310.0)
             .show(ctx, |ui| {
                 ui.heading(
                     egui::RichText::new("Connection")
