@@ -150,13 +150,9 @@ impl eframe::App for RustopusApp {
                     .spacing([8.0, 6.0])
                     .striped(true)
                     .show(ui, |ui| {
-                        let hint_color = egui::Color32::from_rgb(95, 80, 74);
-                        ui.visuals_mut().widgets.noninteractive.fg_stroke.color = hint_color;
-
                         ui.label("Server URL:");
                         ui.add(
                             egui::TextEdit::singleline(&mut self.config.server_url)
-                                .hint_text("http://localhost:1140")
                                 .desired_width(180.0),
                         );
                         ui.end_row();
@@ -164,7 +160,6 @@ impl eframe::App for RustopusApp {
                         ui.label("Octopus URL:");
                         ui.add(
                             egui::TextEdit::singleline(&mut self.config.octopus_url)
-                                .hint_text("https://…/services/…")
                                 .desired_width(180.0),
                         );
                         ui.end_row();
@@ -172,7 +167,6 @@ impl eframe::App for RustopusApp {
                         ui.label("Authcode:");
                         ui.add(
                             egui::TextEdit::singleline(&mut self.config.authcode)
-                                .hint_text("given auth. code")
                                 .desired_width(180.0),
                         );
                         ui.end_row();
@@ -180,7 +174,6 @@ impl eframe::App for RustopusApp {
                         ui.label("xmlns (optional):");
                         ui.add(
                             egui::TextEdit::singleline(&mut self.config.xmlns)
-                                .hint_text("auto-detected from URL")
                                 .desired_width(180.0),
                         );
                         ui.end_row();
@@ -188,7 +181,6 @@ impl eframe::App for RustopusApp {
                         ui.label("Partner ID (pid):");
                         ui.add(
                             egui::TextEdit::singleline(&mut self.config.pid)
-                                .hint_text("required for some endpoints")
                                 .desired_width(180.0),
                         );
                         ui.end_row();
