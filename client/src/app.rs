@@ -150,7 +150,7 @@ impl eframe::App for RustopusApp {
                         ui.label("Server URL:");
                         ui.add(
                             egui::TextEdit::singleline(&mut self.config.server_url)
-                                .hint_text("http://localhost:8080")
+                                .hint_text("http://localhost:1140")
                                 .desired_width(180.0),
                         );
                         ui.end_row();
@@ -166,7 +166,7 @@ impl eframe::App for RustopusApp {
                         ui.label("Authcode:");
                         ui.add(
                             egui::TextEdit::singleline(&mut self.config.authcode)
-                                .password(true)
+                                .hint_text("given auth. code")
                                 .desired_width(180.0),
                         );
                         ui.end_row();

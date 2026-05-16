@@ -16,7 +16,7 @@ pub struct ClientConfig {
 impl Default for ClientConfig {
     fn default() -> Self {
         Self {
-            server_url: "http://localhost:8080".to_string(),
+            server_url: "http://localhost:1140".to_string(),
             octopus_url: String::new(),
             authcode: String::new(),
             xmlns: String::new(),

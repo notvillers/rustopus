@@ -145,7 +145,7 @@ pub fn fetch(
 
     let client = reqwest::blocking::Client::builder()
         .danger_accept_invalid_certs(true)
-        .timeout(std::time::Duration::from_secs(120))
+        .timeout(std::time::Duration::from_secs(600))
         .build()
         .map_err(|e| format!("Failed to create HTTP client: {e}"))?;
 
