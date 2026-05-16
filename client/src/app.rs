@@ -543,7 +543,6 @@ impl RustopusApp {
                     ui.label("Filename:");
                     ui.add(
                         egui::TextEdit::singleline(&mut self.cron_draft.output_filename)
-                            .hint_text("{date}.xml  or  {datetime}.csv")
                             .desired_width(220.0),
                     );
                     ui.end_row();
