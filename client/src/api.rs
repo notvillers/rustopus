@@ -6,9 +6,9 @@ pub enum Endpoint {
     Prices,
     Stocks,
     Invoices,
-    Bulk,
     Images,
     Barcodes,
+    Bulk,
 }
 
 impl Endpoint {
@@ -18,9 +18,9 @@ impl Endpoint {
             Endpoint::Prices,
             Endpoint::Stocks,
             Endpoint::Invoices,
-            Endpoint::Bulk,
             Endpoint::Images,
             Endpoint::Barcodes,
+            Endpoint::Bulk,
         ]
     }
 
@@ -30,9 +30,9 @@ impl Endpoint {
             Endpoint::Prices => "Prices",
             Endpoint::Stocks => "Stocks",
             Endpoint::Invoices => "Invoices",
-            Endpoint::Bulk => "Bulk",
             Endpoint::Images => "Images",
             Endpoint::Barcodes => "Barcodes",
+            Endpoint::Bulk => "Bulk",
         }
     }
 
@@ -42,9 +42,9 @@ impl Endpoint {
             Endpoint::Prices => "/get-prices",
             Endpoint::Stocks => "/get-stocks",
             Endpoint::Invoices => "/get-invoices",
-            Endpoint::Bulk => "/get-bulk",
             Endpoint::Images => "/get-images",
             Endpoint::Barcodes => "/get-barcodes",
+            Endpoint::Bulk => "/get-bulk",
         }
     }
 
@@ -61,9 +61,9 @@ impl Endpoint {
             Endpoint::Products
                 | Endpoint::Stocks
                 | Endpoint::Invoices
-                | Endpoint::Bulk
                 | Endpoint::Images
                 | Endpoint::Barcodes
+                | Endpoint::Bulk
         )
     }
 
