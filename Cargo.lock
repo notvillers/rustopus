@@ -3878,6 +3878,7 @@ dependencies = [
  "eframe",
  "egui",
  "egui_extras",
+ "image",
  "reqwest",
  "rfd",
  "serde",

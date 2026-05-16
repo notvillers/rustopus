@@ -139,7 +139,10 @@ impl eframe::App for RustopusApp {
             .resizable(false)
             .min_width(260.0)
             .show(ctx, |ui| {
-                ui.heading("Connection");
+                ui.heading(
+                    egui::RichText::new("Connection")
+                        .color(egui::Color32::from_rgb(206, 66, 43)),
+                );
                 ui.separator();
 
                 egui::Grid::new("conn_grid")
@@ -372,7 +375,7 @@ impl eframe::App for RustopusApp {
                 ui.label(
                     egui::RichText::new("⚠ Showing first 100 lines. Save to file to see the full response.")
                         .small()
-                        .color(egui::Color32::from_rgb(200, 150, 50)),
+                        .color(egui::Color32::from_rgb(206, 66, 43)),
                 );
             }
 
