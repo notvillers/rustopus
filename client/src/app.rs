@@ -301,7 +301,7 @@ impl RustopusApp {
                                 let status_color =
                                     if status_text.starts_with("Error") || status_text.contains("failed") {
                                         egui::Color32::from_rgb(220, 80, 80)
-                                    } else if status_text.starts_with("OK") {
+                                    } else if status_text.starts_with("✔") {
                                         egui::Color32::from_rgb(100, 200, 100)
                                     } else {
                                         ui.visuals().text_color()

@@ -79,8 +79,7 @@ pub fn run_due_jobs(
                         let _ = std::fs::create_dir_all(parent);
                     }
                     match std::fs::write(&output_path, &body) {
-                        Ok(_) => format!("OK → {}", output_path.display()),
-                        Err(e) => format!("Fetch OK but save failed: {e}"),
+                        Ok(_) => format!("✔ {}", output_path.display()),                        Err(e) => format!("Fetch OK but save failed: {e}"),
                     }
                 }
                 Err(e) => format!("Error: {e}"),
@@ -145,7 +144,7 @@ pub fn run_job_now(
                     let _ = std::fs::create_dir_all(parent);
                 }
                 match std::fs::write(&output_path, &body) {
-                    Ok(_) => format!("OK → {}", output_path.display()),
+                    Ok(_) => format!("✔ {}", output_path.display()),
                     Err(e) => format!("Fetch OK but save failed: {e}"),
                 }
             }
