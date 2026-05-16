@@ -248,7 +248,7 @@ impl RustopusApp {
                             ui.label(RichText::new("Name").strong());
                             ui.label(RichText::new("Endpoint").strong());
                             ui.label(RichText::new("Interval").strong());
-                            ui.label(RichText::new("Output path").strong());
+                            //ui.label(RichText::new("Output path").strong());
                             ui.label(RichText::new("On").strong());
                             ui.label(RichText::new("Last run").strong());
                             ui.label(RichText::new("Next run").strong());
@@ -265,11 +265,11 @@ impl RustopusApp {
                                     job.interval_value,
                                     job.interval_unit.label()
                                 ));
-                                let path_str = std::path::PathBuf::from(&job.output_dir)
-                                    .join(&job.output_filename)
-                                    .display()
-                                    .to_string();
-                                ui.label(RichText::new(&path_str).small());
+                                // let path_str = std::path::PathBuf::from(&job.output_dir)
+                                //     .join(&job.output_filename)
+                                //     .display()
+                                //     .to_string();
+                                //ui.label(RichText::new(&path_str).small());
 
                                 let mut enabled = job.enabled;
                                 if ui.checkbox(&mut enabled, "").changed() {
@@ -279,9 +279,14 @@ impl RustopusApp {
                                 let last_run_text = job
                                     .last_run
                                     .as_deref()
-                                    .and_then(|s| s.get(..16))
-                                    .unwrap_or("never");
-                                ui.label(RichText::new(last_run_text).small());
+                                    .and_then(|s| s.parse::<chrono::DateTime<chrono::Utc>>().ok())
+                                    .map(|utc| {
+                                        chrono::DateTime::<chrono::Local>::from(utc)
+                                            .format("%Y-%m-%d %H:%M")
+                                            .to_string()
+                                    })
+                                    .unwrap_or_else(|| "never".to_string());
+                                ui.label(RichText::new(&last_run_text).small());
 
                                 // Next-run countdown
                                 let next_label = job.next_run_label();
