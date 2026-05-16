@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Endpoint {
@@ -22,6 +23,10 @@ impl Endpoint {
             Endpoint::Barcodes,
             Endpoint::Bulk,
         ]
+    }
+
+    pub fn from_label(label: &str) -> Option<Endpoint> {
+        Endpoint::all().into_iter().find(|e| e.label() == label)
     }
 
     pub fn label(&self) -> &str {
@@ -88,7 +93,7 @@ impl Endpoint {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct EndpointParams {
     pub from_date: String,
     pub to_date: String,
