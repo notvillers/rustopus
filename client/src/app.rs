@@ -231,13 +231,16 @@ impl RustopusApp {
         if job_count == 0 {
             ui.label(RichText::new("No cron jobs configured yet.").italics());
         } else {
+            // Tick the countdown every second while the Crons tab is open.
+            ctx.request_repaint_after(std::time::Duration::from_secs(1));
+
             let mut action: Option<CronAction> = None;
 
             egui::ScrollArea::vertical()
                 .max_height(300.0)
                 .show(ui, |ui| {
                     egui::Grid::new("cron_list")
-                        .num_columns(8)
+                        .num_columns(9)
                         .spacing([6.0, 4.0])
                         .striped(true)
                         .show(ui, |ui| {
@@ -248,6 +251,7 @@ impl RustopusApp {
                             ui.label(RichText::new("Output path").strong());
                             ui.label(RichText::new("On").strong());
                             ui.label(RichText::new("Last run").strong());
+                            ui.label(RichText::new("Next run").strong());
                             ui.label(RichText::new("Status").strong());
                             ui.label("");
                             ui.end_row();
@@ -279,6 +283,15 @@ impl RustopusApp {
                                     .unwrap_or("never");
                                 ui.label(RichText::new(last_run_text).small());
 
+                                // Next-run countdown
+                                let next_label = job.next_run_label();
+                                let next_color = if next_label == "now" {
+                                    egui::Color32::from_rgb(220, 140, 60)
+                                } else {
+                                    ui.visuals().text_color()
+                                };
+                                ui.label(RichText::new(&next_label).small().color(next_color));
+
                                 let status_text = job.last_status.as_deref().unwrap_or("—");
                                 let status_color =
                                     if status_text.starts_with("Error") || status_text.contains("failed") {
@@ -301,7 +314,12 @@ impl RustopusApp {
                                     if ui.small_button("✏").on_hover_text("Edit").clicked() {
                                         action = Some(CronAction::Edit(i));
                                     }
-                                    if ui.small_button("🗑").on_hover_text("Delete").clicked() {
+                                    let delete_btn = egui::Button::new(
+                                        RichText::new("🗑 Delete")
+                                            .small()
+                                            .color(egui::Color32::from_rgb(220, 80, 80)),
+                                    );
+                                    if ui.add(delete_btn).clicked() {
                                         action = Some(CronAction::Delete(i));
                                     }
                                 });

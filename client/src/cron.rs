@@ -66,6 +66,41 @@ impl CronJob {
         }
     }
 
+    /// Returns seconds remaining until the next scheduled run.
+    /// Negative means overdue.
+    pub fn seconds_until_next_run(&self) -> Option<i64> {
+        let ts = self.last_run.as_deref()?;
+        let last = ts.parse::<DateTime<Utc>>().ok()?;
+        let interval = self.interval_unit.to_duration(self.interval_value);
+        let next = last + interval;
+        Some((next - Utc::now()).num_seconds())
+    }
+
+    pub fn next_run_label(&self) -> String {
+        if !self.enabled {
+            return "disabled".to_string();
+        }
+        match self.seconds_until_next_run() {
+            None => "pending".to_string(),
+            Some(secs) if secs <= 0 => "now".to_string(),
+            Some(secs) => {
+                let d = secs / 86400;
+                let h = (secs % 86400) / 3600;
+                let m = (secs % 3600) / 60;
+                let s = secs % 60;
+                if d > 0 {
+                    format!("{d}d {h}h {m}m")
+                } else if h > 0 {
+                    format!("{h}h {m}m {s}s")
+                } else if m > 0 {
+                    format!("{m}m {s}s")
+                } else {
+                    format!("{s}s")
+                }
+            }
+        }
+    }
+
     pub fn is_due(&self) -> bool {
         match &self.last_run {
             None => true,
