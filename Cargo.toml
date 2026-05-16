@@ -3,7 +3,7 @@ members = ["client"]
 
 [package]
 name = "rustopus"
-version = "1.0.1"
+version = "1.1.0"
 edition = "2024"
 build = "build.rs"
 
