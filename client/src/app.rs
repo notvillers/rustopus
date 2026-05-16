@@ -150,6 +150,9 @@ impl eframe::App for RustopusApp {
                     .spacing([8.0, 6.0])
                     .striped(true)
                     .show(ui, |ui| {
+                        let hint_color = egui::Color32::from_rgb(95, 80, 74);
+                        ui.visuals_mut().widgets.noninteractive.fg_stroke.color = hint_color;
+
                         ui.label("Server URL:");
                         ui.add(
                             egui::TextEdit::singleline(&mut self.config.server_url)
