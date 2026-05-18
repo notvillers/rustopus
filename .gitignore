@@ -7,6 +7,9 @@ test/
 *.csv
 *.env
 *.log
+*.xml
 CLAUDE.md
 rustopus
 soap.json
+client_config.toml
+crons.toml
