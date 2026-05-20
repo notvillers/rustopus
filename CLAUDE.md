@@ -74,3 +74,7 @@ There are currently no `#[test]` / `#[tokio::test]` or `tests/` integration test
 - `client_config.toml`, `crons.toml` — desktop-client state; not used by the server.
 
 `*.xml`, `*.log`, `*.csv`, `example/`, and `test/` are gitignored — treat the `example/` and `test/` XML files as scratch fixtures, not source of truth.
+
+## Important
+
+At the end of every true code editing (so not markdowns, configs) should be followed with a `cargo check` to see if it compiles.
