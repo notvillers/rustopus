@@ -2,15 +2,22 @@
 use serde::Serialize;
 use quick_xml;
 
-use crate::forms::out::xml as p_xml;
+use crate::forms::out::xml::{
+    defaults,
+    products,
+    prices,
+    stocks,
+    images,
+    barcode
+};
 
 #[derive(Serialize)]
 pub struct Envelope {
     pub body: Body
 }
 
-impl From<(p_xml::products::Envelope, Option<p_xml::prices::Envelope>, Option<p_xml::stocks::Envelope>, Option<p_xml::images::Envelope>, Option<p_xml::barcode::Envelope>)> for Envelope {
-    fn from((c, p, s, i, b): (p_xml::products::Envelope, Option<p_xml::prices::Envelope>, Option<p_xml::stocks::Envelope>, Option<p_xml::images::Envelope>, Option<p_xml::barcode::Envelope>)) -> Self {
+impl From<(products::Envelope, Option<prices::Envelope>, Option<stocks::Envelope>, Option<images::Envelope>, Option<barcode::Envelope>)> for Envelope {
+    fn from((c, p, s, i, b): (products::Envelope, Option<prices::Envelope>, Option<stocks::Envelope>, Option<images::Envelope>, Option<barcode::Envelope>)) -> Self {
         Self {
             body: (
                 c.body,
@@ -29,8 +36,8 @@ pub struct Body {
     pub response: Response
 }
 
-impl From<(p_xml::products::Body, Option<p_xml::prices::Body>, Option<p_xml::stocks::Body>, Option<p_xml::images::Body>, Option<p_xml::barcode::Body>)> for Body {
-    fn from((c, p, s, i, b): (p_xml::products::Body, Option<p_xml::prices::Body>, Option<p_xml::stocks::Body>, Option<p_xml::images::Body>, Option<p_xml::barcode::Body>)) -> Self {
+impl From<(products::Body, Option<prices::Body>, Option<stocks::Body>, Option<images::Body>, Option<barcode::Body>)> for Body {
+    fn from((c, p, s, i, b): (products::Body, Option<prices::Body>, Option<stocks::Body>, Option<images::Body>, Option<barcode::Body>)) -> Self {
         Self {
             response: (
                 c.response,
@@ -49,8 +56,8 @@ pub struct Response {
     pub result: Result
 }
 
-impl From<(p_xml::products::GetProductsAuthResponse, Option<p_xml::prices::GetPriceAuthResponse>, Option<p_xml::stocks::GetStockChangeAuthResponse>, Option<p_xml::images::GetProductImagesAuthResponse>, Option<p_xml::barcode::GetProductBarcodesResponse>)> for Response {
-    fn from((c, p , s, i, b): (p_xml::products::GetProductsAuthResponse, Option<p_xml::prices::GetPriceAuthResponse>, Option<p_xml::stocks::GetStockChangeAuthResponse>, Option<p_xml::images::GetProductImagesAuthResponse>, Option<p_xml::barcode::GetProductBarcodesResponse>)) -> Self {
+impl From<(products::GetProductsAuthResponse, Option<prices::GetPriceAuthResponse>, Option<stocks::GetStockChangeAuthResponse>, Option<images::GetProductImagesAuthResponse>, Option<barcode::GetProductBarcodesResponse>)> for Response {
+    fn from((c, p , s, i, b): (products::GetProductsAuthResponse, Option<prices::GetPriceAuthResponse>, Option<stocks::GetStockChangeAuthResponse>, Option<images::GetProductImagesAuthResponse>, Option<barcode::GetProductBarcodesResponse>)) -> Self {
         Self {
             result: (
                 c.result,
@@ -69,8 +76,8 @@ pub struct Result {
     pub answer: Answer
 }
 
-impl From<(p_xml::products::GetProductsAuthResult, Option<p_xml::prices::GetPriceAuthResult>, Option<p_xml::stocks::GetStockChangeAuthResult>, Option<p_xml::images::GetProductImagesAuthResult>, Option<p_xml::barcode::GetProductBarcodesResult>)> for Result {
-    fn from((c, p, s, i, b): (p_xml::products::GetProductsAuthResult, Option<p_xml::prices::GetPriceAuthResult>, Option<p_xml::stocks::GetStockChangeAuthResult>, Option<p_xml::images::GetProductImagesAuthResult>, Option<p_xml::barcode::GetProductBarcodesResult>)) -> Self {
+impl From<(products::GetProductsAuthResult, Option<prices::GetPriceAuthResult>, Option<stocks::GetStockChangeAuthResult>, Option<images::GetProductImagesAuthResult>, Option<barcode::GetProductBarcodesResult>)> for Result {
+    fn from((c, p, s, i, b): (products::GetProductsAuthResult, Option<prices::GetPriceAuthResult>, Option<stocks::GetStockChangeAuthResult>, Option<images::GetProductImagesAuthResult>, Option<barcode::GetProductBarcodesResult>)) -> Self {
         Self {
             answer: (
                 c.answer,
@@ -88,12 +95,12 @@ impl From<(p_xml::products::GetProductsAuthResult, Option<p_xml::prices::GetPric
 pub struct Answer {
     pub version: String,
     pub products: Products,
-    pub error: Vec<p_xml::defaults::Error>
+    pub error: Vec<defaults::Error>
 }
 
-impl From<(p_xml::products::Answer, Option<p_xml::prices::Answer>, Option<p_xml::stocks::Answer>, Option<p_xml::images::Answer>, Option<p_xml::barcode::Answer>)> for Answer {
-    fn from((c, p, s, i, b): (p_xml::products::Answer, Option<p_xml::prices::Answer>, Option<p_xml::stocks::Answer>, Option<p_xml::images::Answer>, Option<p_xml::barcode::Answer>)) -> Self {
-        let mut errors: Vec<p_xml::defaults::Error> = vec![];
+impl From<(products::Answer, Option<prices::Answer>, Option<stocks::Answer>, Option<images::Answer>, Option<barcode::Answer>)> for Answer {
+    fn from((c, p, s, i, b): (products::Answer, Option<prices::Answer>, Option<stocks::Answer>, Option<images::Answer>, Option<barcode::Answer>)) -> Self {
+        let mut errors: Vec<defaults::Error> = vec![];
         [
             c.error.as_ref(),
             p.as_ref().and_then(|x| x.error.as_ref()),
@@ -125,11 +132,31 @@ pub struct Products {
     pub product: Vec<Product>
 }
 
-impl From<(Vec<p_xml::products::Product>, Vec<p_xml::prices::Price>, Vec<p_xml::stocks::Product>, Vec<p_xml::images::Product>, Vec<p_xml::barcode::Barcode>)> for Products {
-    fn from((c, p, s , i, b): (Vec<p_xml::products::Product>, Vec<p_xml::prices::Price>, Vec<p_xml::stocks::Product>, Vec<p_xml::images::Product>, Vec<p_xml::barcode::Barcode>)) -> Self {
+impl From<(Vec<products::Product>, Vec<prices::Price>, Vec<stocks::Product>, Vec<images::Product>, Vec<barcode::Barcode>)> for Products {
+    fn from((c, p, s, i, b): (Vec<products::Product>, Vec<prices::Price>, Vec<stocks::Product>, Vec<images::Product>, Vec<barcode::Barcode>)) -> Self {
+        use std::collections::HashMap;
+        let price_map: HashMap<u64, &prices::Price> = p.iter().map(|x| (x.id, x)).collect();
+        let stock_map: HashMap<u64, &stocks::Product> = s.iter().map(|x| (x.id, x)).collect();
+        let image_map: HashMap<u64, &images::Product> = i.iter().map(|x| (x.id, x)).collect();
+        let mut barcode_map: HashMap<u64, &barcode::Barcode> = HashMap::new();
+        for bc in b.iter() {
+            let entry = barcode_map.entry(bc.id).or_insert(bc);
+            if bc.main_ean && !entry.main_ean {
+                *entry = bc;
+            }
+        }
         Self {
             product: c.into_iter()
-                .map(|x| Product::from((x, &p, &s, &i, &b)))
+                .map(|x| {
+                    let id = x.id;
+                    Product::from((
+                        x,
+                        price_map.get(&id).copied(),
+                        stock_map.get(&id).copied(),
+                        image_map.get(&id).copied(),
+                        barcode_map.get(&id).copied(),
+                    ))
+                })
                 .collect()
         }
     }
@@ -150,7 +177,7 @@ pub struct Product {
     pub category_name: String,
     pub description: String,
     pub weight: Option<f64>,
-    pub size: Option<p_xml::products::Size>,
+    pub size: Option<products::Size>,
     pub main_category_code: String,
     pub main_category_name: String,
     pub sell_unit: Option<f64>,
@@ -162,21 +189,8 @@ pub struct Product {
     pub images: Images
 }
 
-impl From<(p_xml::products::Product, &Vec<p_xml::prices::Price>, &Vec<p_xml::stocks::Product>, &Vec<p_xml::images::Product>, &Vec<p_xml::barcode::Barcode>)> for Product {
-    fn from((c, p, s, i, b): (p_xml::products::Product, &Vec<p_xml::prices::Price>, &Vec<p_xml::stocks::Product>, &Vec<p_xml::images::Product>, &Vec<p_xml::barcode::Barcode>)) -> Self {
-        let price = p.iter().find(|x| x.id == c.id);
-        let stock = s.iter().find(|x| x.id == c.id);
-        let ean = match b.iter().find(|x| x.id == c.id && x.main_ean) {
-            Some(barcode) => Some(barcode),
-            _ => b.iter().find(|x| x.id == c.id)
-        };
-        let image = i.iter().find(|x| x.id == c.id);
-        (c, price, stock, image, ean).into()
-    }
-}
-
-impl From<(p_xml::products::Product, Option<&p_xml::prices::Price>, Option<&p_xml::stocks::Product>, Option<&p_xml::images::Product>, Option<&p_xml::barcode::Barcode>)> for Product {
-    fn from((c, a, k, i, b): (p_xml::products::Product, Option<&p_xml::prices::Price>, Option<&p_xml::stocks::Product>, Option<&p_xml::images::Product>, Option<&p_xml::barcode::Barcode>)) -> Self {
+impl From<(products::Product, Option<&prices::Price>, Option<&stocks::Product>, Option<&images::Product>, Option<&barcode::Barcode>)> for Product {
+    fn from((c, a, k, i, b): (products::Product, Option<&prices::Price>, Option<&stocks::Product>, Option<&images::Product>, Option<&barcode::Barcode>)) -> Self {
         Self {
             id: c.id,
             no: c.no.clone(),
@@ -211,8 +225,8 @@ pub struct Images {
 }
 
 
-impl From<Option<&p_xml::images::Product>> for Images {
-    fn from(i: Option<&p_xml::images::Product>) -> Self {
+impl From<Option<&images::Product>> for Images {
+    fn from(i: Option<&images::Product>) -> Self {
         Self {
             image: i
                 .map(|i_c| {
@@ -234,7 +248,7 @@ pub struct Image {
 }
 
 
-pub fn error_struct(errors: Vec<p_xml::defaults::Error>) -> Envelope {
+pub fn error_struct(errors: Vec<defaults::Error>) -> Envelope {
     Envelope {
         body: Body {
             response: Response {
@@ -254,7 +268,7 @@ pub fn error_struct(errors: Vec<p_xml::defaults::Error>) -> Envelope {
 
 
 pub fn error_struct_xml(code: u64, description: &str) -> String {
-    let error = p_xml::defaults::Error {
+    let error = defaults::Error {
         code: code,
         description: description.to_string()
     };

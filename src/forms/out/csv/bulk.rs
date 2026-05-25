@@ -26,7 +26,8 @@ pub struct Product {
     pub price: Option<f64>,
     pub currency: String,
     pub image: String,
-    pub stock: Option<f64>
+    pub stock: Option<f64>,
+    pub barcode: Option<String>
 }
 
 impl From<p_bulk::Product> for Product {
@@ -64,7 +65,8 @@ impl From<p_bulk::Product> for Product {
                 .first()
                 .map(|i| i.url.clone())
                 .unwrap_or_else(|| "".to_string()),
-            stock: c.stock
+            stock: c.stock,
+            barcode: c.ean
         }
     }
 }
