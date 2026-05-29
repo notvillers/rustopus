@@ -1,3 +1,4 @@
+use crate::global::errors::{GLOBAL_GET_DATA_ERROR, GLOBAL_PID_ERROR};
 use crate::forms::{
     r#in::xml::{
         prices as o8_prices,
@@ -8,7 +9,6 @@ use crate::forms::{
         csv::prices as csv_prices
     }
 };
-use crate::global::errors::{GLOBAL_GET_DATA_ERROR, GLOBAL_PID_ERROR};
 use crate::service::{
     soap::get_response,
     get_data::{

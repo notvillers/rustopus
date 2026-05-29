@@ -2,7 +2,8 @@ use crate::{
     forms::{
         r#in::xml::defaults::CallData,
         out::{
-            csv::bulk as csv_bulk, xml::{barcode, bulk, images, prices, stocks}
+            csv::bulk as csv_bulk,
+            xml::{barcode, bulk, images, prices, stocks}
         }
     },
     service::get_data::to_xml_string
@@ -69,22 +70,30 @@ pub async fn get_bulk(mut call_data: CallData) -> BulkData {
         return BulkData::XML(BulkXML::En(bulk::error_struct(vec![rustopus_error.into(), error])))
     };
 
-    let prices = match RequestGet::Prices(call_data.clone()).to_data().await {
+    // Products succeeded, so the remaining independent calls can run concurrently.
+    let (prices_response, stocks_response, images_response, barcodes_response) = futures::join!(
+        RequestGet::Prices(call_data.clone()).to_data(),
+        RequestGet::Stocks(call_data.clone()).to_data(),
+        RequestGet::Images(call_data.clone()).to_data(),
+        RequestGet::Barcodes(call_data).to_data()
+    );
+
+    let prices = match prices_response {
         ResponseGet::Prices(PricesData::XML(PricesXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(prices::error_struct(errors::BULK_GET_PRICES_ERROR.code, errors::BULK_GET_PRICES_ERROR.description))
     };
 
-    let stocks = match RequestGet::Stocks(call_data.clone()).to_data().await {
+    let stocks = match stocks_response {
         ResponseGet::Stocks(StocksData::XML(StocksXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(stocks::error_struct(errors::BULK_GET_STOCKS_ERROR.code, errors::BULK_GET_STOCKS_ERROR.description))
     };
 
-    let images = match RequestGet::Images(call_data.clone()).to_data().await {
+    let images = match images_response {
         ResponseGet::Images(ImagesData::XML(ImagesXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(images::error_struct(errors::BULK_GET_IMAGES_ERROR.code, errors::BULK_GET_IMAGES_ERROR.description))
     };
 
-    let barcodes = match RequestGet::Barcodes(call_data).to_data().await {
+    let barcodes = match barcodes_response {
         ResponseGet::Barcodes(BarcodesData::XML(BarcodesXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(barcode::error_struct(errors::BULK_GET_BARCODES_ERROR.code, errors::BULK_GET_BARCODES_ERROR.description))
     };

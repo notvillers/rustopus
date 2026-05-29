@@ -1,10 +1,11 @@
 use serde::Deserialize;
-use std::env;
-use std::fs::File;
-use std::io::BufReader;
+use std::{
+    env,
+    fs::File,
+    io::BufReader
+};
 
 use crate::service::log::elogger;
-
 use crate::global;
 
 /// `ErrorMessage` struct

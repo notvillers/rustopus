@@ -1,7 +1,6 @@
 /// Structs for GetCikkekKeszletValtozasAuth's XML
 use chrono::{DateTime, Utc};
-use serde::Serialize;
-use serde::{Deserialize, Deserializer};
+use serde::{Serialize, Deserialize, Deserializer};
 use std::str::FromStr;
 
 use crate::forms::r#in::xml::defaults as o8_defaults;

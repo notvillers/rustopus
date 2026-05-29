@@ -1,4 +1,5 @@
 use serde::Serialize;
+
 use crate::forms::r#in::xml::stocks as o8_stocks;
 
 #[derive(Serialize)]

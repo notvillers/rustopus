@@ -1,22 +1,27 @@
-use std::fmt;
+use std::{
+    fmt,
+    pin::Pin
+};
 use chrono::{DateTime, Utc};
 use quick_xml;
 use lazy_static::lazy_static;
-use std::pin::Pin;
 use futures::Future;
-use crate::global::errors::{self, RustopusError};
-use crate::forms::r#in::xml::defaults::CallData;
-use crate::service::{
-    log::elogger,
-    dates,
-    get::{
-        products::{ProductsData, get_products},
-        stocks::{StocksData, get_stocks},
-        prices::{PricesData, get_prices},
-        images::{ImagesData, get_images},
-        barcodes::{BarcodesData, get_barcode},
-        invoices::{InvoicesData, get_invoices},
-        bulk::{BulkData, get_bulk}
+
+use crate::{
+    global::errors::{self, RustopusError},
+    forms::r#in::xml::defaults::CallData,
+    service::{
+        log::elogger,
+        dates,
+        get::{
+            products::{ProductsData, get_products},
+            stocks::{StocksData, get_stocks},
+            prices::{PricesData, get_prices},
+            images::{ImagesData, get_images},
+            barcodes::{BarcodesData, get_barcode},
+            invoices::{InvoicesData, get_invoices},
+            bulk::{BulkData, get_bulk}
+        }
     }
 };
 

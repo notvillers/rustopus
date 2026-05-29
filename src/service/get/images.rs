@@ -1,6 +1,7 @@
 use crate::forms::{
     r#in::xml::{
-        defaults::CallData, images as o8_images
+        defaults::CallData,
+        images as o8_images
     },
     out::{
         xml::images as p_images,

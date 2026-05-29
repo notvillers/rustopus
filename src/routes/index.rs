@@ -1,4 +1,7 @@
-use actix_web::{get, HttpResponse, Responder, http::header};
+use actix_web::{
+    get, HttpResponse, Responder,
+    http::header
+};
 
 /// Handler
 async fn handler() -> impl Responder {

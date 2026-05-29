@@ -1,6 +1,9 @@
 use serde::Serialize;
-use crate::forms::out::xml::bulk as p_bulk;
-use crate::tools::str_remove_breaks;
+
+use crate::{
+    forms::out::xml::bulk as p_bulk,
+    tools::str_remove_breaks
+};
 
 #[derive(Serialize)]
 pub struct Product {

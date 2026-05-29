@@ -1,9 +1,11 @@
 /// Default english struct(s) for XML(s) got from the Octopus call
 use serde::Serialize;
 
-use crate::forms::r#in::xml::defaults::Hiba as o8_error;
-use crate::service::errors;
-use crate::global::errors::RustopusError;
+use crate::{
+    forms::r#in::xml::defaults::Hiba as o8_error,
+    service::errors,
+    global::errors::RustopusError
+};
 
 #[derive(Serialize, Clone)]
 pub struct Error {

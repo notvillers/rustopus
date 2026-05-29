@@ -1,5 +1,8 @@
-use std::env;
-use std::path::PathBuf;
+use std::{
+    env,
+    path::PathBuf
+};
+
 use crate::service::log::elogger;
 
 /// This function gets the root dir based on the current filesystem architect

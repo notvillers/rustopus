@@ -1,11 +1,14 @@
 use actix_web::{get, HttpRequest, Responder};
-use crate::routes::default::send_xml;
-use crate::forms::out::xml::test::create_xml;
-use crate::global::errors;
-use crate::service::{
-    slave::get_uuid,
-    ipv4::{RequestIP, log_ip},
-    log::{log_with_ip_uuid}
+
+use crate::{
+    routes::default::send_xml,
+    forms::out::xml::test::create_xml,
+    global::errors,
+    service::{
+        slave::get_uuid,
+        ipv4::{RequestIP, log_ip},
+        log::log_with_ip_uuid
+    }
 };
 
 /// Name of the current request

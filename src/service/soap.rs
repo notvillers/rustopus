@@ -1,8 +1,13 @@
 use std::time::Duration;
+use reqwest::{
+    Client,
+    header::CONTENT_TYPE
+};
 
-use reqwest::{Client, header::CONTENT_TYPE};
-
-use crate::service::{config, log::elogger};
+use crate::service::{
+    config,
+    log::elogger
+};
 
 /// This function handles the request to the given url with the given soap string, theoretically it can handle other requests too
 pub async fn get_response(url: &str, soap_request: String) -> String {

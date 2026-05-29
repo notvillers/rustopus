@@ -1,6 +1,6 @@
 use serde::Serialize;
-use crate::forms::r#in::xml::images as o8_images;
 
+use crate::forms::r#in::xml::images as o8_images;
 
 #[derive(Serialize)]
 pub struct Product {

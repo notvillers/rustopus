@@ -1,13 +1,16 @@
 use chrono::{DateTime, Utc};
 use actix_web::HttpResponse;
 use serde::Deserialize;
-use crate::global::errors::{
-    GLOBAL_AUTH_ERROR, GLOBAL_URL_ERROR,
-    GLOBAL_PID_ERROR, GLOBAL_MISSING_ERROR
-};
-use crate::service::{
-    log::{log_with_ip_uuid, elog_with_ip_uuid},
-    soap_config::get_default_url
+
+use crate::{
+    global::errors::{
+        GLOBAL_AUTH_ERROR, GLOBAL_URL_ERROR,
+        GLOBAL_PID_ERROR, GLOBAL_MISSING_ERROR
+    },
+    service::{
+        log::{log_with_ip_uuid, elog_with_ip_uuid},
+        soap_config::get_default_url
+    }
 };
 
 #[derive(Deserialize)]

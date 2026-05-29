@@ -1,12 +1,14 @@
+use crate::global::errors::GLOBAL_GET_DATA_ERROR;
 use crate::{forms::{
     r#in::xml::{
-        defaults::CallData, invoices as o8_invoices
+        defaults::CallData,
+        invoices as o8_invoices
     },
     out::{
-        csv::invoices as csv_invoices, xml::invoices as p_invoices
+        csv::invoices as csv_invoices,
+        xml::invoices as p_invoices
     }
 }, service::get_data::to_xml_string};
-use crate::global::errors::GLOBAL_GET_DATA_ERROR;
 use crate::service::{
     soap::get_response,
     get_data::{

@@ -2,11 +2,14 @@
 use chrono::{NaiveDate, DateTime, Utc};
 use serde::{Serialize, Deserialize, Deserializer};
 use std::str::FromStr;
-use crate::forms::{
-    r#in::xml::defaults as o8_defaults,
-    out::xml::invoices as p_invoices
+
+use crate::{
+    forms::{
+        r#in::xml::defaults as o8_defaults,
+        out::xml::invoices as p_invoices
+    },
+    service::dates::{get_first_date, get_datetime},
 };
-use crate::service::dates::{get_first_date, get_datetime};
 
 pub fn get_request_string_opt(xmlns: &str, pid: &Option<i64>, tipus: &Option<i64>, datumtol: &Option<DateTime<Utc>>, datumig: &Option<DateTime<Utc>>, osszes_fizetetlen: &Option<i64>, authcode: &str) -> String {
     get_request_string(

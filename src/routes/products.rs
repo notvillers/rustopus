@@ -1,20 +1,25 @@
-use actix_web::{get, web, HttpRequest, Responder};
+use actix_web::{
+    get, HttpRequest, Responder,
+    web::Query
+};
 
-use crate::routes::default::{
-    RequestParameters, GetStringResponse, GetDateResponse, 
-    send_xml, send_csv, return_internal_server_error,
-    get_auth, get_url, get_xmlns, get_date
-};
-use crate::forms::{
-    r#in::xml::defaults::CallData,
-    out::xml::products::error_struct_xml
-};
-use crate::service::{
-    slave::get_uuid,
-    log::log_with_ip_uuid,
-    ipv4::log_ip,
-    get_data::{RequestGet, ResponseGet},
-    get::products::{ProductsData, ProductsCSV}
+use crate::{
+    routes::default::{
+        RequestParameters, GetStringResponse, GetDateResponse, 
+        send_xml, send_csv, return_internal_server_error,
+        get_auth, get_url, get_xmlns, get_date
+    },
+    forms::{
+        r#in::xml::defaults::CallData,
+        out::xml::products::error_struct_xml
+    },
+    service::{
+        slave::get_uuid,
+        log::log_with_ip_uuid,
+        ipv4::log_ip,
+        get_data::{RequestGet, ResponseGet},
+        get::products::{ProductsData, ProductsCSV}
+    }
 };
 
 /// Name of the current request
@@ -81,6 +86,6 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
 /// GET handler
 #[get("/get-products")]
-pub async fn get_handler(req: HttpRequest, query: web::Query<RequestParameters>) -> impl Responder {
+pub async fn get_handler(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
     handler(req, query.into_inner()).await
 }

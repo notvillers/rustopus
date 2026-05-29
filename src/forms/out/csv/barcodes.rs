@@ -1,4 +1,5 @@
 use serde::Serialize;
+
 use crate::forms::r#in::xml::barcode as o8_barcode;
 
 #[derive(Serialize)]

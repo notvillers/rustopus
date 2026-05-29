@@ -1,8 +1,6 @@
 use chrono::NaiveDate;
 use serde::Deserialize;
 
-// ============= ORDER REQUEST =============
-
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Order {

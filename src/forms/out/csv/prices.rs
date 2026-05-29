@@ -1,4 +1,5 @@
 use serde::Serialize;
+
 use crate::forms::r#in::xml::prices as o8_prices;
 
 #[derive(Serialize)]

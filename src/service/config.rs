@@ -1,6 +1,7 @@
 use config::Config;
 use serde::Deserialize;
 use std::thread::available_parallelism;
+
 use crate::service::log::elogger;
 
 /// Settings struct

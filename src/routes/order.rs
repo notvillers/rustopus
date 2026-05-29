@@ -1,28 +1,34 @@
-use actix_web::{post, web, HttpRequest, HttpResponse, Responder};
-use crate::routes::default::{
-    RequestParameters, GetStringResponse,
-    get_url, get_xmlns, get_auth,
-    send_xml
+use actix_web::{
+    post, HttpRequest, HttpResponse, Responder,
+    web::{Query, Bytes}
 };
-use crate::forms::{
-    r#in::xml::{
-        orders::Order,
-        orders_response::Envelope
+
+use crate::{
+    routes::default::{
+        RequestParameters, GetStringResponse,
+        get_url, get_xmlns, get_auth,
+        send_xml
     },
-    out::xml::{
-        orders::{
-            Rendeles,
-            get_request_string, error_struct_xml
+    forms::{
+        r#in::xml::{
+            orders::Order,
+            orders_response::Envelope
         },
-        orders_response::Envelope as p_Envelope
+        out::xml::{
+            orders::{
+                Rendeles,
+                get_request_string, error_struct_xml
+            },
+            orders_response::Envelope as p_Envelope
+        }
+    },
+    service::{
+        slave::get_uuid,
+        log::log_with_ip_uuid,
+        ipv4::log_ip,
+        get_data::to_xml_string,
+        soap::get_response
     }
-};
-use crate::service::{
-    slave::get_uuid,
-    log::log_with_ip_uuid,
-    ipv4::log_ip,
-    get_data::to_xml_string,
-    soap::get_response
 };
 
 fn lowercase_xml_tags(xml: &str) -> String {
@@ -52,7 +58,7 @@ fn to_single_line(xml: &str) -> String {
 
 const REQUEST_NAME: &str = "ORDER SUBMISSION";
 
-async fn handler(req: HttpRequest, params: RequestParameters, body: web::Bytes) -> impl Responder {
+async fn handler(req: HttpRequest, params: RequestParameters, body: Bytes) -> impl Responder {
     let uuid = get_uuid();
     let ip_address = log_ip(req).await.to_string();
 
@@ -127,6 +133,6 @@ async fn handler(req: HttpRequest, params: RequestParameters, body: web::Bytes) 
 
 
 #[post("/post-order")]
-pub async fn post_handler(req: HttpRequest, query: web::Query<RequestParameters>, body: web::Bytes, ) -> impl Responder {
+pub async fn post_handler(req: HttpRequest, query: Query<RequestParameters>, body: Bytes, ) -> impl Responder {
     handler(req, query.into_inner(), body).await
 }

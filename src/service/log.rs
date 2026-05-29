@@ -1,7 +1,10 @@
+use std::{
+    ffi::{CString, CStr},
+    path::{Path, PathBuf},
+    os::raw::c_char
+};
+
 use crate::service::path::get_current_or_root_dir;
-use std::ffi::{CString, CStr};
-use std::path::{Path, PathBuf};
-use std::os::raw::c_char;
 
 #[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;

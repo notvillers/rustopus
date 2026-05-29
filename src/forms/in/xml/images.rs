@@ -1,7 +1,6 @@
 /// Structs for GetCikkKepekAuth's XML
 use chrono::{DateTime, Utc};
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::forms::r#in::xml::defaults as o8_defaults;
 

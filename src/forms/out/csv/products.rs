@@ -1,6 +1,9 @@
 use serde::Serialize;
-use crate::forms::r#in::xml::products as o8_products;
-use crate::tools::str_remove_breaks;
+
+use crate::{
+    forms::r#in::xml::products as o8_products,
+    tools::str_remove_breaks
+};
 
 #[derive(Serialize)]
 pub struct Product {

@@ -1,3 +1,4 @@
+use crate::global::errors::GLOBAL_GET_DATA_ERROR;
 use crate::forms::{
     r#in::xml::{
         stocks as o8_stocks,
@@ -8,7 +9,6 @@ use crate::forms::{
         csv::stocks as csv_stocks
     }
 };
-use crate::global::errors::GLOBAL_GET_DATA_ERROR;
 use crate::service::{
     soap::get_response,
     get_data::{

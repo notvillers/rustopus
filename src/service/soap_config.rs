@@ -1,8 +1,13 @@
-use std::{fs, path::PathBuf};
-
+use std::{
+    fs,
+    path::PathBuf
+};
 use serde::{Serialize, Deserialize};
 
-use crate::service::{path::get_current_or_root_dir, log::elogger};
+use crate::service::{
+    path::get_current_or_root_dir,
+    log::elogger
+};
 
 /// This function get paths to `soap.json`
 pub fn get_soap_path() -> PathBuf {
