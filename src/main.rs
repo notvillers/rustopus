@@ -10,7 +10,10 @@ mod tools;
 
 use crate::service::{
     log::{logger, elogger},
-    soap_config::{get_soap_path, check_soap_config, SoapConfig, SOAP_URL}
+    soap_config::{
+        get_soap_path, check_soap_config,
+        SoapConfig, SOAP_URL
+    }
 };
 
 async fn not_found() -> impl Responder {
