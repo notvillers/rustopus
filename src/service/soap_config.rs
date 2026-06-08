@@ -1,6 +1,7 @@
 use std::{
     fs,
-    path::PathBuf
+    path::PathBuf,
+    sync::OnceLock
 };
 use serde::{Serialize, Deserialize};
 
@@ -8,6 +9,9 @@ use crate::service::{
     path::get_current_or_root_dir,
     log::elogger
 };
+
+/// Cached default SOAP url, loaded once at startup from `soap.json`.
+pub static SOAP_URL: OnceLock<Option<String>> = OnceLock::new();
 
 /// This function get paths to `soap.json`
 pub fn get_soap_path() -> PathBuf {
@@ -60,7 +64,7 @@ impl SoapConfig {
 }
 
 
-/// This function return default url if found
+/// This function return default url if found (reads from cached `SOAP_URL`)
 pub fn get_default_url() -> Option<String> {
-    SoapConfig::load().url
+    SOAP_URL.get().and_then(|v| v.clone())
 }

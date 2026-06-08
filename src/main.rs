@@ -10,7 +10,7 @@ mod tools;
 
 use crate::service::{
     log::{logger, elogger},
-    soap_config::{get_soap_path, check_soap_config}
+    soap_config::{get_soap_path, check_soap_config, SoapConfig, SOAP_URL}
 };
 
 async fn not_found() -> impl Responder {
@@ -28,9 +28,14 @@ async fn main() -> std::io::Result<()> {
 
     let config = service::config::get_settings();
 
-    if !check_soap_config() {
-        elogger(format!("'{:#?}' not found. (Do not bother this message if you are not willing to work with static 'url'.)", get_soap_path()));
-    }
+    let soap_url: Option<String> = if check_soap_config() {
+        Some(SoapConfig::load().url.unwrap_or_default())
+            .filter(|s| !s.is_empty())
+    } else {
+        elogger(format!("'{:#?}' not found. (Do not bother this message, if you are not willing to work with static 'url'.)", get_soap_path()));
+        None
+    };
+    let _ = SOAP_URL.set(soap_url);
 
     logger(format!("Running on '{}:{}', with {} worker{}", config.server.host, config.server.port, config.server.workers, if config.server.workers > 1 { "s" } else { "" }));
     
