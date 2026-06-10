@@ -443,6 +443,7 @@ impl RustopusApp {
                     }
                     if ep.has_data_type() {
                         ui.label("Format:");
+                        let mut fmt_changed = false;
                         egui::ComboBox::from_id_salt("cron_fmt_combo")
                             .selected_text(if self.cron_draft.params.data_type.is_empty() {
                                 "XML"
@@ -450,17 +451,24 @@ impl RustopusApp {
                                 "CSV"
                             })
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(
-                                    &mut self.cron_draft.params.data_type,
-                                    String::new(),
-                                    "XML",
-                                );
-                                ui.selectable_value(
-                                    &mut self.cron_draft.params.data_type,
-                                    "csv".to_string(),
-                                    "CSV",
-                                );
+                                fmt_changed |= ui
+                                    .selectable_value(
+                                        &mut self.cron_draft.params.data_type,
+                                        String::new(),
+                                        "XML",
+                                    )
+                                    .changed();
+                                fmt_changed |= ui
+                                    .selectable_value(
+                                        &mut self.cron_draft.params.data_type,
+                                        "csv".to_string(),
+                                        "CSV",
+                                    )
+                                    .changed();
                             });
+                        if fmt_changed {
+                            self.cron_draft.sync_filename_extension();
+                        }
                         ui.end_row();
                     }
                     if ep.has_type_mod() {

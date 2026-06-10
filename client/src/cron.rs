@@ -114,6 +114,19 @@ impl CronJob {
         }
     }
 
+    /// Keep the filename extension in sync with the selected output format.
+    pub fn sync_filename_extension(&mut self) {
+        let ext = if self.params.data_type.eq_ignore_ascii_case("csv") {
+            "csv"
+        } else {
+            "xml"
+        };
+        let name = &self.output_filename;
+        if let Some(stem) = name.strip_suffix(".xml").or_else(|| name.strip_suffix(".csv")) {
+            self.output_filename = format!("{stem}.{ext}");
+        }
+    }
+
     /// Resolve filename placeholders at the current time.
     pub fn resolved_filename(&self) -> String {
         let now = Utc::now();
@@ -136,7 +149,7 @@ pub struct CronConfig {
 
 impl CronConfig {
     fn config_path() -> PathBuf {
-        PathBuf::from(CRONS_FILE)
+        crate::config::data_path(CRONS_FILE)
     }
 
     pub fn load() -> Self {

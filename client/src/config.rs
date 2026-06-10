@@ -4,6 +4,20 @@ use std::path::PathBuf;
 
 const CONFIG_FILE: &str = "client_config.toml";
 
+/// Resolves a data file next to the working directory if it exists there
+/// (dev runs from the repo root), otherwise next to the executable —
+/// Finder-launched .app bundles get `/` as their working directory.
+pub fn data_path(file_name: &str) -> PathBuf {
+    let local = PathBuf::from(file_name);
+    if local.exists() {
+        return local;
+    }
+    std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(|dir| dir.join(file_name)))
+        .unwrap_or(local)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClientConfig {
     pub server_url: String,
@@ -27,7 +41,7 @@ impl Default for ClientConfig {
 
 impl ClientConfig {
     fn config_path() -> PathBuf {
-        PathBuf::from(CONFIG_FILE)
+        data_path(CONFIG_FILE)
     }
 
     pub fn load() -> Self {

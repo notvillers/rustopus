@@ -5,6 +5,7 @@ example/
 ping/
 target/
 test/
+out/
 *.csv
 *.env
 *.log
