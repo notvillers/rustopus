@@ -11,7 +11,7 @@ Rustopus is a web service that bridges the **Octopus 8 ERP** and clients. Octopu
 This is a Cargo workspace with two crates:
 
 - Root crate `rustopus` (binary) — the Actix-web HTTP service (`src/`). Edition 2024, requires `rustc >= 1.88` (transitively via `time 0.3.47`). Has a `build.rs` that compiles C helpers from `src/C/*.c` via the `cc` crate.
-- `client/` crate `rustopus-client` — a desktop GUI (`eframe`/`egui`) used to exercise the server and manage cron-like scheduled requests (`client/src/cron.rs`, `scheduler.rs`).
+- `client/` crate `rustopus-client` — a desktop GUI (`eframe`/`egui`) used to exercise the server and manage cron-like scheduled requests (`client/src/cron.rs`, `scheduler.rs`). Its `client/build.rs` embeds the app icon (`winresource`) into Windows builds.
 
 ## Build, run, test, lint
 
@@ -21,17 +21,30 @@ cargo build
 cargo run                           # reads Config.toml + soap.json from repo root
 cargo clippy --all-targets --all-features
 
-# Tests (none checked in yet — use this pattern when adding)
-cargo test
-cargo test <test_name> -- --exact
+# Tests
+cargo test                          # runs tests/get_test.rs (integration)
+cargo test get_test_returns_envelope -- --exact
 
-# Desktop client
-cargo run -p rustopus-client        # also: ./client.sh
+# Desktop client (native, dev)
+cargo run -p rustopus-client        # also: ./client.sh / client.bat
 ```
+
+`tests/get_test.rs` builds and **spawns the real server binary** on the port from `Config.toml` (fallback 1140) and polls `/get-test` — it fails if something else is already bound to that port, so stop a running dev server first.
 
 `start.sh` / `start` run the prebuilt `./rustopus` binary; they are deploy scripts, not dev scripts.
 
-There are currently no `#[test]` / `#[tokio::test]` or `tests/` integration tests in the repo.
+## Client packaging (release builds)
+
+```bash
+./build_client_win.sh   # Windows x64 exe → target/x86_64-pc-windows-gnu/release/rustopus-client.exe
+./build_client_mac.sh   # macOS bundle  → target/release/Rustopus Client.app
+./zip_mac_app.sh        # zips the .app for distribution (ditto)
+```
+
+- **Windows cross-compile prerequisites** (one-time): `brew install mingw-w64` and `rustup target add x86_64-pc-windows-gnu`. The linker is configured in the checked-in `.cargo/config.toml`. The GNU-target exe is self-contained (rustls, no extra DLLs).
+- **No console/terminal windows**: the Windows exe uses `windows_subsystem = "windows"` (release builds only — debug builds keep the console for `println!`); on macOS the windowless launch comes from packaging as a `.app` bundle, so distribute the bundle, not the bare binary.
+- **Icons** all derive from `client/src/assets/images/octopus.png` (64×64): `client/build.rs` embeds `octopus.ico` into the exe, `build_client_mac.sh` generates the `.icns` via `sips`/`iconutil`, and `main.rs::app_icon()` sets the runtime window icon.
+- **Client config resolution** (`client/src/config.rs::data_path`): `client_config.toml` / `crons.toml` are read from the working directory if present (dev runs from repo root), otherwise from the executable's directory — inside `Rustopus Client.app/Contents/MacOS/` for the mac bundle, next to the exe on Windows. A freshly built bundle does not carry over config from an old one.
 
 ## High-level architecture
 
@@ -53,7 +66,7 @@ There are currently no `#[test]` / `#[tokio::test]` or `tests/` integration test
 ## Repository conventions
 
 - **Reuse route helpers.** Route handlers should use `src/routes/default.rs` helpers (`get_auth`, `get_url`, `get_xmlns`, `get_pid`, `get_date`, `get_i64`, `send_xml`, `send_csv`) instead of reimplementing parameter/error plumbing.
-- **Errors.** Numeric `RustopusError` codes live in `src/global/errors.rs`; endpoint-specific XML error constructors (`error_struct_xml`) live in `forms/out/xml/*`. The catalog of human-readable messages is in `errors.json` (loaded by the error service).
+- **Errors.** Numeric `RustopusError` codes live in `src/global/errors.rs`; endpoint-specific XML error constructors (`error_struct_xml`) live in `forms/out/xml/*`. The catalog of human-readable messages is `src/errors/errors.json`, loaded at runtime relative to the working directory — another reason the server must run from the repo root.
 - **No `.unwrap()` on real paths.** This service must never crash — prefer `match` / `if let` / `?` and surface a `RustopusError`. The panic hook in `main.rs` is a safety net, not the policy.
 - **Request identity / logging pattern** (consistent across routes):
   1. `let uuid = get_uuid();`
@@ -67,14 +80,14 @@ There are currently no `#[test]` / `#[tokio::test]` or `tests/` integration test
   - `data_type=csv` → semicolon-delimited CSV output on endpoints that support it.
 - **Conversion style.** Prefer `impl From<...>` mappings between `forms::in` and `forms::out` models over ad-hoc field transforms in route handlers.
 
-## Configuration files (gitignored at runtime — see `.gitignore`)
+## Configuration files
 
-- `Config.toml` — server bind config: `[server] host, port, timeout, workers`. Defaults: `0.0.0.0`, `8080`, `1200`s, `available_parallelism()`.
-- `soap.json` — `{ "url": "<default wsdl url>" }`. Used as fallback for `url`/`xmlns` when a request doesn't supply them.
-- `client_config.toml`, `crons.toml` — desktop-client state; not used by the server.
+- `Config.toml` (checked in) — server bind config: `[server] host, port, timeout, workers`. The committed config uses port `1140` (the code defaults to `8080` when absent); the desktop client and the integration test both assume `1140`.
+- `soap.json` (gitignored) — `{ "url": "<default wsdl url>" }`. Used as fallback for `url`/`xmlns` when a request doesn't supply them.
+- `client_config.toml`, `crons.toml` (gitignored) — desktop-client state; not used by the server. See "Client config resolution" above for where the client looks for them.
 
-`*.xml`, `*.log`, `*.csv`, `example/`, and `test/` are gitignored — treat the `example/` and `test/` XML files as scratch fixtures, not source of truth.
+`*.xml`, `*.log`, `*.csv`, `example/`, and `test/` are gitignored — treat the `example/` and `test/` XML files as scratch fixtures, not source of truth. (`tests/` — with an "s" — is the real integration-test directory and is tracked.)
 
-## Important
+## Important
 
 At the end of every true code editing (so not markdowns, configs) should be followed with a `cargo check` to see if it compiles.
