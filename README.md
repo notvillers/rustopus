@@ -32,6 +32,6 @@ If the file exists in the repository [root](/) directory, it searches for an "ur
 - [Docs](./docs/)
 
 
-## Rustopus-client
+## Rustopus-client
 
 Client side application to cron the calls, documented [here](./client/README.md).
