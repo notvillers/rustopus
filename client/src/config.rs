@@ -4,18 +4,56 @@ use std::path::PathBuf;
 
 const CONFIG_FILE: &str = "client_config.toml";
 
-/// Resolves a data file next to the working directory if it exists there
-/// (dev runs from the repo root), otherwise next to the executable —
-/// Finder-launched .app bundles get `/` as their working directory.
+/// Folder name inside the user's platform config directory.
+#[cfg(target_os = "linux")]
+const CONFIG_DIR_NAME: &str = "rustopus-client";
+#[cfg(not(target_os = "linux"))]
+const CONFIG_DIR_NAME: &str = "Rustopus Client";
+
+/// `%APPDATA%\Rustopus Client` (Windows),
+/// `~/Library/Application Support/Rustopus Client` (macOS),
+/// `~/.config/rustopus-client` (Linux).
+fn config_dir() -> Option<PathBuf> {
+    dirs::config_dir().map(|dir| dir.join(CONFIG_DIR_NAME))
+}
+
+/// Resolves a data file in the working directory if it exists there (dev
+/// runs from the repo root), otherwise in the platform config directory.
+/// Legacy files next to the executable (the old location — inside the .app
+/// bundle on macOS, next to the exe on Windows) are copied into the config
+/// directory the first time they are looked up.
 pub fn data_path(file_name: &str) -> PathBuf {
     let local = PathBuf::from(file_name);
     if local.exists() {
         return local;
     }
-    std::env::current_exe()
+
+    let legacy = std::env::current_exe()
         .ok()
-        .and_then(|exe| exe.parent().map(|dir| dir.join(file_name)))
-        .unwrap_or(local)
+        .and_then(|exe| exe.parent().map(|dir| dir.join(file_name)));
+
+    let Some(dir) = config_dir() else {
+        // No resolvable home directory; stay next to the executable.
+        return legacy.unwrap_or(local);
+    };
+
+    let standard = dir.join(file_name);
+    if !standard.exists()
+        && let Some(legacy) = legacy.filter(|path| path.exists())
+    {
+        let _ = fs::create_dir_all(&dir);
+        let _ = fs::copy(&legacy, &standard);
+    }
+    standard
+}
+
+/// Creates the parent directory of `path` so a following write succeeds.
+pub fn ensure_parent_dir(path: &std::path::Path) {
+    if let Some(parent) = path.parent()
+        && !parent.as_os_str().is_empty()
+    {
+        let _ = fs::create_dir_all(parent);
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,7 +98,9 @@ impl ClientConfig {
 
     pub fn save(&self) {
         if let Ok(content) = toml::to_string_pretty(self) {
-            let _ = fs::write(Self::config_path(), content);
+            let path = Self::config_path();
+            ensure_parent_dir(&path);
+            let _ = fs::write(path, content);
         }
     }
 }

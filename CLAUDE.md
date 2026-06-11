@@ -44,7 +44,7 @@ cargo run -p rustopus-client        # also: ./client.sh / client.bat
 - **Windows cross-compile prerequisites** (one-time): `brew install mingw-w64` and `rustup target add x86_64-pc-windows-gnu`. The linker is configured in the checked-in `.cargo/config.toml`. The GNU-target exe is self-contained (rustls, no extra DLLs).
 - **No console/terminal windows**: the Windows exe uses `windows_subsystem = "windows"` (release builds only — debug builds keep the console for `println!`); on macOS the windowless launch comes from packaging as a `.app` bundle, so distribute the bundle, not the bare binary.
 - **Icons** all derive from `client/src/assets/images/octopus.png` (64×64): `client/build.rs` embeds `octopus.ico` into the exe, `build_client_mac.sh` generates the `.icns` via `sips`/`iconutil`, and `main.rs::app_icon()` sets the runtime window icon.
-- **Client config resolution** (`client/src/config.rs::data_path`): `client_config.toml` / `crons.toml` are read from the working directory if present (dev runs from repo root), otherwise from the executable's directory — inside `Rustopus Client.app/Contents/MacOS/` for the mac bundle, next to the exe on Windows. A freshly built bundle does not carry over config from an old one.
+- **Client config resolution** (`client/src/config.rs::data_path`): `client_config.toml` / `crons.toml` are read from the working directory if present (dev runs from repo root), otherwise from the platform config directory — `~/Library/Application Support/Rustopus Client` (macOS), `%APPDATA%\Rustopus Client` (Windows), `~/.config/rustopus-client` (Linux) — so settings survive app updates. Legacy files next to the executable (the pre-config-dir location) are copied into the config directory on first lookup.
 
 ## High-level architecture
 
