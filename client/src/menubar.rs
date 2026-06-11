@@ -36,10 +36,24 @@ mod imp {
         show_id: Option<MenuId>,
         quit_id: Option<MenuId>,
         quitting: bool,
+        // Hidden windows get no paint messages on Windows, so egui frames
+        // stall and `poll` never runs; tray handlers must first re-show the
+        // window natively via this handle (see `force_show`).
+        #[cfg(target_os = "windows")]
+        hwnd: Option<isize>,
     }
 
     impl MenuBar {
-        pub fn new() -> Self {
+        pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+            #[cfg(target_os = "windows")]
+            let hwnd = {
+                use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+                _cc.window_handle().ok().and_then(|handle| match handle.as_raw() {
+                    RawWindowHandle::Win32(win32) => Some(win32.hwnd.get()),
+                    _ => None,
+                })
+            };
+
             let (tx, rx) = mpsc::channel();
             Self {
                 tray: None,
@@ -48,6 +62,8 @@ mod imp {
                 show_id: None,
                 quit_id: None,
                 quitting: false,
+                #[cfg(target_os = "windows")]
+                hwnd,
             }
         }
 
@@ -92,10 +108,21 @@ mod imp {
             // hidden. Installed once for the app's lifetime (see `tx`).
             if let Some(tx) = self.tx.take() {
                 #[cfg(target_os = "windows")]
+                let hwnd = self.hwnd;
+
+                #[cfg(target_os = "windows")]
                 {
                     let tray_tx = tx.clone();
                     let tray_ctx = ctx.clone();
                     TrayIconEvent::set_event_handler(Some(move |event: TrayIconEvent| {
+                        if let TrayIconEvent::Click {
+                            button: tray_icon::MouseButton::Left,
+                            button_state: tray_icon::MouseButtonState::Up,
+                            ..
+                        } = &event
+                        {
+                            force_show(hwnd);
+                        }
                         let _ = tray_tx.send(Event::Tray(event));
                         tray_ctx.request_repaint();
                     }));
@@ -103,6 +130,10 @@ mod imp {
 
                 let menu_ctx = ctx.clone();
                 MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
+                    // Both menu actions need a running frame loop to be
+                    // processed, so un-stall it first.
+                    #[cfg(target_os = "windows")]
+                    force_show(hwnd);
                     let _ = tx.send(Event::Menu(event));
                     menu_ctx.request_repaint();
                 }));
@@ -161,6 +192,26 @@ mod imp {
         }
     }
 
+    /// Show the window with raw Win32 calls. Safe to call from tray event
+    /// handlers (they run on the main thread); once visible, paint messages
+    /// flow again and egui resumes running frames.
+    #[cfg(target_os = "windows")]
+    fn force_show(hwnd: Option<isize>) {
+        use windows_sys::Win32::UI::WindowsAndMessaging::{
+            SW_SHOW, SetForegroundWindow, ShowWindow,
+        };
+
+        if let Some(hwnd) = hwnd {
+            let hwnd = hwnd as windows_sys::Win32::Foundation::HWND;
+            // SAFETY: the HWND comes from eframe's CreationContext and lives
+            // as long as the app's single window.
+            unsafe {
+                ShowWindow(hwnd, SW_SHOW);
+                SetForegroundWindow(hwnd);
+            }
+        }
+    }
+
     #[cfg(target_os = "macos")]
     fn set_dock_visible(visible: bool) {
         use objc2::AnyThread;
@@ -200,7 +251,7 @@ mod imp {
     pub struct MenuBar;
 
     impl MenuBar {
-        pub fn new() -> Self {
+        pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
             Self
         }
 

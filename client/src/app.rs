@@ -95,7 +95,7 @@ impl RustopusApp {
             cron_form: CronFormState::Hidden,
             cron_draft: draft,
             cron_status_msg: String::new(),
-            menubar: MenuBar::new(),
+            menubar: MenuBar::new(cc),
             pending_start_minimize,
         }
     }
