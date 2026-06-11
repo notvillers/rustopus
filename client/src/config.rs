@@ -25,7 +25,8 @@ pub struct ClientConfig {
     pub authcode: String,
     pub xmlns: String,
     pub pid: String,
-    /// Start hidden (on macOS: only a menu-bar icon; elsewhere: minimized window).
+    /// Start hidden with only a menu-bar icon (macOS) / tray icon (Windows);
+    /// also makes the close button hide instead of quit on those platforms.
     #[serde(default)]
     pub start_minimized: bool,
 }

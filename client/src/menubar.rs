@@ -1,11 +1,13 @@
-//! "Minimize to menu bar" support.
+//! "Minimize to menu bar / tray" support.
 //!
 //! On macOS, hiding puts an octopus status-bar icon in the menu bar with a
 //! Show/Quit menu, hides the window, and removes the Dock icon (activation
-//! policy Accessory) until shown again. On other platforms it falls back to
-//! a plain window minimize.
+//! policy Accessory) until shown again. On Windows the icon goes to the
+//! system tray (right-click for the menu, left-click to show the window)
+//! and the window disappears from the taskbar while hidden. Elsewhere it
+//! falls back to a plain window minimize.
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 mod imp {
     use std::sync::mpsc;
 
@@ -13,14 +15,24 @@ mod imp {
         TrayIcon, TrayIconBuilder,
         menu::{Menu, MenuEvent, MenuId, MenuItem},
     };
+    #[cfg(target_os = "windows")]
+    use tray_icon::TrayIconEvent;
+
+    enum Event {
+        Menu(MenuEvent),
+        // Tray-icon clicks only matter on Windows; on macOS clicking the
+        // status item opens the menu instead.
+        #[cfg(target_os = "windows")]
+        Tray(TrayIconEvent),
+    }
 
     pub struct MenuBar {
         tray: Option<TrayIcon>,
-        rx: mpsc::Receiver<MenuEvent>,
+        rx: mpsc::Receiver<Event>,
         // muda's set_event_handler is backed by a OnceCell and only takes
         // effect on the first call, so the channel must live for the whole
-        // app; `tx` is taken when the handler is installed.
-        tx: Option<mpsc::Sender<MenuEvent>>,
+        // app; `tx` is taken when the handlers are installed.
+        tx: Option<mpsc::Sender<Event>>,
         show_id: Option<MenuId>,
         quit_id: Option<MenuId>,
         quitting: bool,
@@ -40,7 +52,7 @@ mod imp {
         }
 
         /// While menu-bar mode is on, the window's close button hides to the
-        /// menu bar instead of quitting; only the tray's Quit really exits.
+        /// menu bar / tray instead of quitting; only the tray's Quit exits.
         pub fn intercept_close(&mut self, ctx: &egui::Context) {
             if self.quitting {
                 return;
@@ -51,8 +63,7 @@ mod imp {
             }
         }
 
-        /// Hide the window into the menu bar: status-bar icon appears,
-        /// the Dock icon disappears.
+        /// Hide the window into the menu bar / system tray.
         pub fn hide(&mut self, ctx: &egui::Context) {
             if self.tray.is_some() {
                 return;
@@ -76,14 +87,24 @@ mod imp {
                 Err(_) => return,
             };
 
-            // Menu events arrive outside the frame loop; forward them into
-            // the channel and wake egui so `poll` runs even while hidden.
-            // Installed once for the app's lifetime (see `tx`).
+            // Menu/tray events arrive outside the frame loop; forward them
+            // into the channel and wake egui so `poll` runs even while
+            // hidden. Installed once for the app's lifetime (see `tx`).
             if let Some(tx) = self.tx.take() {
-                let repaint_ctx = ctx.clone();
+                #[cfg(target_os = "windows")]
+                {
+                    let tray_tx = tx.clone();
+                    let tray_ctx = ctx.clone();
+                    TrayIconEvent::set_event_handler(Some(move |event: TrayIconEvent| {
+                        let _ = tray_tx.send(Event::Tray(event));
+                        tray_ctx.request_repaint();
+                    }));
+                }
+
+                let menu_ctx = ctx.clone();
                 MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
-                    let _ = tx.send(event);
-                    repaint_ctx.request_repaint();
+                    let _ = tx.send(Event::Menu(event));
+                    menu_ctx.request_repaint();
                 }));
             }
 
@@ -91,19 +112,34 @@ mod imp {
             self.quit_id = Some(quit_item.id().clone());
             self.tray = Some(tray);
 
+            #[cfg(target_os = "macos")]
             set_dock_visible(false);
             ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
         }
 
-        /// Handle status-bar menu clicks; call once per frame.
+        /// Handle menu-bar / tray events; call once per frame.
         pub fn poll(&mut self, ctx: &egui::Context) {
             let mut show = false;
             let mut quit = false;
             while let Ok(event) = self.rx.try_recv() {
-                if Some(event.id()) == self.show_id.as_ref() {
-                    show = true;
-                } else if Some(event.id()) == self.quit_id.as_ref() {
-                    quit = true;
+                match event {
+                    Event::Menu(event) => {
+                        if Some(event.id()) == self.show_id.as_ref() {
+                            show = true;
+                        } else if Some(event.id()) == self.quit_id.as_ref() {
+                            quit = true;
+                        }
+                    }
+                    // A left-click on the tray icon shows the window
+                    // (the menu is on right-click).
+                    #[cfg(target_os = "windows")]
+                    Event::Tray(TrayIconEvent::Click {
+                        button: tray_icon::MouseButton::Left,
+                        button_state: tray_icon::MouseButtonState::Up,
+                        ..
+                    }) => show = true,
+                    #[cfg(target_os = "windows")]
+                    Event::Tray(_) => {}
                 }
             }
 
@@ -116,14 +152,16 @@ mod imp {
         }
 
         fn show(&mut self, ctx: &egui::Context) {
-            self.tray = None; // dropping the TrayIcon removes it from the menu bar
+            self.tray = None; // dropping the TrayIcon removes it from the menu bar / tray
 
+            #[cfg(target_os = "macos")]
             set_dock_visible(true);
             ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
             ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
         }
     }
 
+    #[cfg(target_os = "macos")]
     fn set_dock_visible(visible: bool) {
         use objc2::AnyThread;
         use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy, NSImage};
@@ -157,7 +195,7 @@ mod imp {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 mod imp {
     pub struct MenuBar;
 

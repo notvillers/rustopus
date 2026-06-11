@@ -683,7 +683,7 @@ impl eframe::App for RustopusApp {
 
                         ui.label("Menu bar mode:");
                         ui.checkbox(&mut self.config.start_minimized, "")
-                            .on_hover_text("Start hidden in the menu bar, and the close button hides instead of quitting so crons keep running. Quit via the menu bar icon.");
+                            .on_hover_text("Start hidden in the menu bar (macOS) or system tray (Windows), and the close button hides instead of quitting so crons keep running. Quit via the tray icon.");
                         ui.end_row();
                     });
 
@@ -693,10 +693,15 @@ impl eframe::App for RustopusApp {
                     self.status_msg = "Settings saved.".to_string();
                 }
 
-                #[cfg(target_os = "macos")]
+                #[cfg(any(target_os = "macos", target_os = "windows"))]
                 {
+                    #[cfg(target_os = "macos")]
+                    let label = "⏏  Hide to menu bar";
+                    #[cfg(target_os = "windows")]
+                    let label = "⏏  Hide to tray";
+
                     ui.add_space(8.0);
-                    if ui.button("⏏  Hide to menu bar").clicked() {
+                    if ui.button(label).clicked() {
                         self.menubar.hide(ctx);
                     }
                 }
