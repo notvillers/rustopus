@@ -25,6 +25,9 @@ pub struct ClientConfig {
     pub authcode: String,
     pub xmlns: String,
     pub pid: String,
+    /// Start hidden (on macOS: only a menu-bar icon; elsewhere: minimized window).
+    #[serde(default)]
+    pub start_minimized: bool,
 }
 
 impl Default for ClientConfig {
@@ -35,6 +38,7 @@ impl Default for ClientConfig {
             authcode: String::new(),
             xmlns: String::new(),
             pid: String::new(),
+            start_minimized: false,
         }
     }
 }

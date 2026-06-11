@@ -4,6 +4,7 @@ use egui::RichText;
 use crate::api::{self, Endpoint, EndpointParams};
 use crate::config::ClientConfig;
 use crate::cron::{CronConfig, CronJob, IntervalUnit};
+use crate::menubar::MenuBar;
 use crate::scheduler::{self, SchedulerResult};
 
 enum FetchResult {
@@ -47,6 +48,10 @@ pub struct RustopusApp {
     cron_form: CronFormState,
     cron_draft: CronJob,
     cron_status_msg: String,
+
+    // ── Menu bar ───────────────────────────────────────────────────────────
+    menubar: MenuBar,
+    pending_start_minimize: bool,
 }
 
 impl RustopusApp {
@@ -72,6 +77,8 @@ impl RustopusApp {
 
         let draft = CronJob::new(String::new(), Endpoint::Products.label().to_string());
 
+        let pending_start_minimize = config.start_minimized;
+
         Self {
             config,
             config_arc,
@@ -88,6 +95,8 @@ impl RustopusApp {
             cron_form: CronFormState::Hidden,
             cron_draft: draft,
             cron_status_msg: String::new(),
+            menubar: MenuBar::new(),
+            pending_start_minimize,
         }
     }
 
@@ -601,6 +610,17 @@ enum CronAction {
 
 impl eframe::App for RustopusApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // The window can't be created hidden, so retreat into the menu bar
+        // on the first frame instead.
+        if self.pending_start_minimize {
+            self.pending_start_minimize = false;
+            self.menubar.hide(ctx);
+        }
+        self.menubar.poll(ctx);
+        if self.config.start_minimized {
+            self.menubar.intercept_close(ctx);
+        }
+
         self.poll_result();
         self.poll_scheduler();
 
@@ -660,12 +680,25 @@ impl eframe::App for RustopusApp {
                                 .desired_width(180.0),
                         );
                         ui.end_row();
+
+                        ui.label("Menu bar mode:");
+                        ui.checkbox(&mut self.config.start_minimized, "")
+                            .on_hover_text("Start hidden in the menu bar, and the close button hides instead of quitting so crons keep running. Quit via the menu bar icon.");
+                        ui.end_row();
                     });
 
                 ui.add_space(8.0);
                 if ui.button("💾  Save settings").clicked() {
                     self.config.save();
                     self.status_msg = "Settings saved.".to_string();
+                }
+
+                #[cfg(target_os = "macos")]
+                {
+                    ui.add_space(8.0);
+                    if ui.button("⏏  Hide to menu bar").clicked() {
+                        self.menubar.hide(ctx);
+                    }
                 }
             });
 

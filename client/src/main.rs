@@ -5,6 +5,7 @@ mod config;
 mod api;
 mod cron;
 mod scheduler;
+mod menubar;
 
 fn rust_theme() -> egui::Visuals {
     // Rust brand orange: #CE422B
