@@ -2,4 +2,6 @@
 
 # Rustopus-client
 
-![demo](./src/assets/images/demo.png)
+![Mac OS demo](./src/assets/images/demo_mac.png)
+
+![Windows demo](./src/assets/images/demo_win.png)
