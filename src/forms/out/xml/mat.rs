@@ -15,22 +15,17 @@ OutModelDeriveOnly! {
         pub body: Body
     }
 
-
     pub struct Body {
         pub response: GetMatAuthResponse
-    }
-
-    
+    }    
 
     pub struct GetMatAuthResponse {
         pub result: GetMatAuthResult
     }
 
-
     pub struct GetMatAuthResult {
         pub answer: Answer
     }
-
 
     pub struct Answer {
         pub version: String,
@@ -39,11 +34,9 @@ OutModelDeriveOnly! {
         pub error: Option<p_defaults::Error>
     }
 
-
     pub struct Attributes {
         pub attribute: Vec<Attribute>
     }
-
 
     #[derive(Clone)]
     pub struct Attribute {
@@ -71,6 +64,7 @@ impl From<o8_mat::Envelope> for Envelope {
     }
 }
 
+
 impl From<o8_mat::Body> for Body {
     fn from(b: o8_mat::Body) -> Self {
         Self {
@@ -78,6 +72,7 @@ impl From<o8_mat::Body> for Body {
         }
     }
 }
+
 
 impl From<o8_mat::GetMatmodellAuthResponse> for GetMatAuthResponse {
     fn from(r: o8_mat::GetMatmodellAuthResponse) -> Self {
@@ -87,6 +82,7 @@ impl From<o8_mat::GetMatmodellAuthResponse> for GetMatAuthResponse {
     }
 }
 
+
 impl From<o8_mat::GetMatmodellAuthResult> for GetMatAuthResult {
     fn from(r: o8_mat::GetMatmodellAuthResult) -> Self {
         Self {
@@ -94,6 +90,7 @@ impl From<o8_mat::GetMatmodellAuthResult> for GetMatAuthResult {
         }
     }
 }
+
 
 impl From<o8_mat::Valasz> for Answer {
     fn from(v: o8_mat::Valasz) -> Self {
@@ -105,6 +102,7 @@ impl From<o8_mat::Valasz> for Answer {
     }
 }
 
+
 impl FromIterator<o8_mat::Tulajdonsag> for Attributes {
     fn from_iter<I: IntoIterator<Item = o8_mat::Tulajdonsag>>(iter: I) -> Self {
         Self {
@@ -112,6 +110,7 @@ impl FromIterator<o8_mat::Tulajdonsag> for Attributes {
         }
     }
 }
+
 
 impl From<o8_mat::Tulajdonsag> for Attribute {
     fn from(f: o8_mat::Tulajdonsag) -> Self {
