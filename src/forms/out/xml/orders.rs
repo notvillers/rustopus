@@ -1,8 +1,10 @@
 use chrono::NaiveDate;
-use serde::Serialize;
 use quick_xml::escape::escape;
 
-use crate::forms::r#in::xml::orders as p_orders;
+use crate::{
+    macros::out::OutModelDeriveOnly,
+    forms::r#in::xml::orders as p_orders
+};
 
 pub fn get_request_string(xmlns: &str, rendelesxml: &str, authcode: &str) -> String {
     format!(
@@ -22,15 +24,86 @@ pub fn get_request_string(xmlns: &str, rendelesxml: &str, authcode: &str) -> Str
     )
 }
 
+OutModelDeriveOnly! {
+    #[serde(rename = "rendeles")]
+    pub struct Rendeles {
+        #[serde(rename = "@verzio")]
+        pub verzio: Option<String>,
+        pub fej: Fej,
+        pub tetelek: Tetelek
+    }
 
-#[derive(Debug, Serialize)]
-#[serde(rename = "rendeles")]
-pub struct Rendeles {
-    #[serde(rename = "@verzio")]
-    pub verzio: Option<String>,
-    pub fej: Fej,
-    pub tetelek: Tetelek
+    #[serde(rename = "fej")]
+    pub struct Fej {
+        pub partnerid: u64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub idegen_megrendelesszam: Option<String>,
+        pub szallitasi_mod: u8,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub szallitasi_megj: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub vegfelhasznaloazon: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub vegfelhasznalonev: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub vegfelh_ugyintezoid: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub vegfelh_ugyintezo: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub ugyintezo_telszam: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub ugyintezo_email: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub megj: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub megjraktar: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub belsomegj: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub szamlazasi_cim: Option<Cim>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub szallitasi_cim: Option<Cim>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub vegfelhasznalo_szallitasi_mod: Option<u8>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub vegfelh_dnem: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub vegfelhfizmod: Option<u8>,
+        #[serde(skip_serializing_if = "Option::is_none", with = "hungarian_date_format_opt")]
+        pub vegfelhfizhat: Option<NaiveDate>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub vegfelhadoszam: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub vegfelhtipus: Option<u8>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub masnevszaml: Option<u8>
+    }
+    
+    pub struct Cim {
+        pub cimnev: Option<String>,
+        pub orszag: Option<String>,
+        pub irsz: Option<String>,
+        pub varos: Option<String>,
+        pub utca: Option<String>
+    }
+    
+    #[serde(rename = "tetelek")]
+    pub struct Tetelek {
+        pub tetel: Vec<Tetel>
+    }
+
+    #[serde(rename = "tetel")]
+    pub struct Tetel {
+        pub tetelszam: u64,
+        pub cikkszam: String,
+        pub mennyiseg: f64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub vegfegysar: Option<f64>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub megj: Option<String>
+    }
 }
+
 
 impl From<p_orders::Order> for Rendeles {
     fn from(o: p_orders::Order) -> Self {
@@ -42,53 +115,6 @@ impl From<p_orders::Order> for Rendeles {
     }
 }
 
-
-#[derive(Debug, Serialize)]
-#[serde(rename = "fej")]
-pub struct Fej {
-    pub partnerid: u64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub idegen_megrendelesszam: Option<String>,
-    pub szallitasi_mod: u8,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub szallitasi_megj: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vegfelhasznaloazon: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vegfelhasznalonev: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vegfelh_ugyintezoid: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vegfelh_ugyintezo: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ugyintezo_telszam: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ugyintezo_email: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub megj: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub megjraktar: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub belsomegj: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub szamlazasi_cim: Option<Cim>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub szallitasi_cim: Option<Cim>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vegfelhasznalo_szallitasi_mod: Option<u8>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vegfelh_dnem: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vegfelhfizmod: Option<u8>,
-    #[serde(skip_serializing_if = "Option::is_none", with = "hungarian_date_format_opt")]
-    pub vegfelhfizhat: Option<NaiveDate>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vegfelhadoszam: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vegfelhtipus: Option<u8>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub masnevszaml: Option<u8>
-}
 
 impl From<p_orders::Header> for Fej {
     fn from(h: p_orders::Header) -> Self {
@@ -120,15 +146,6 @@ impl From<p_orders::Header> for Fej {
 }
 
 
-#[derive(Debug, Serialize)]
-pub struct Cim {
-    pub cimnev: Option<String>,
-    pub orszag: Option<String>,
-    pub irsz: Option<String>,
-    pub varos: Option<String>,
-    pub utca: Option<String>
-}
-
 impl From<p_orders::Address> for Cim {
     fn from(a: p_orders::Address) -> Self {
         Self {
@@ -158,12 +175,6 @@ mod hungarian_date_format_opt {
 }
 
 
-#[derive(Debug, Serialize)]
-#[serde(rename = "tetelek")]
-pub struct Tetelek {
-    pub tetel: Vec<Tetel>
-}
-
 impl From<p_orders::Items> for Tetelek {
     fn from(is: p_orders::Items) -> Self {
         let items = is.items;
@@ -173,18 +184,6 @@ impl From<p_orders::Items> for Tetelek {
     }
 }
 
-
-#[derive(Debug, Serialize)]
-#[serde(rename = "tetel")]
-pub struct Tetel {
-    pub tetelszam: u64,
-    pub cikkszam: String,
-    pub mennyiseg: f64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vegfegysar: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub megj: Option<String>
-}
 
 impl From<p_orders::Item> for Tetel {
     fn from(i: p_orders::Item) -> Self {
@@ -197,6 +196,7 @@ impl From<p_orders::Item> for Tetel {
         }
     }
 }
+
 
 pub fn error_struct_xml(_: u64, _: &str) -> String {
     "<Envelope></Envelope>".to_string()
