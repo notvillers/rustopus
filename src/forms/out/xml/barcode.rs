@@ -1,16 +1,52 @@
 // Barcodes english struct(s) for XML(s) got from the Octopus call
-use serde::Serialize;
 use quick_xml;
 
-use crate::forms::{
-    r#in::xml::barcode as o8_barcode,
-    out::xml::defaults as p_defaults
+use crate::{
+    macros::out::OutModelDeriveOnly,
+    forms::{
+        r#in::xml::barcode as o8_barcode,
+        out::xml::defaults as p_defaults
+    }
 };
 
-#[derive(Serialize)]
-pub struct Envelope {
-    pub body: Body
+
+OutModelDeriveOnly! {
+    pub struct Envelope {
+        pub body: Body
+    }
+    
+    pub struct Body {
+        pub response: GetProductBarcodesResponse
+    }
+
+    pub struct GetProductBarcodesResponse {
+        pub result: GetProductBarcodesResult
+    }
+    
+    pub struct GetProductBarcodesResult {
+        pub answer: Answer
+    }
+
+    pub struct Answer {
+        pub version: String,
+        pub barcodes: Barcodes,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub error: Option<p_defaults::Error>
+    }
+
+    pub struct Barcodes {
+        pub barcode: Vec<Barcode>
+    }
+
+    pub struct Barcode {
+        pub id: u64,
+        pub no: String,
+        pub ean: String,
+        pub unit: String,
+        pub main_ean: bool
+    }
 }
+
 
 impl From<o8_barcode::Envelope> for Envelope {
     fn from(v: o8_barcode::Envelope) -> Self {
@@ -21,11 +57,6 @@ impl From<o8_barcode::Envelope> for Envelope {
 }
 
 
-#[derive(Serialize)]
-pub struct Body {
-    pub response: GetProductBarcodesResponse
-}
-
 impl From<o8_barcode::Body> for Body {
     fn from(v: o8_barcode::Body) -> Self {
         Self {
@@ -34,11 +65,6 @@ impl From<o8_barcode::Body> for Body {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct GetProductBarcodesResponse {
-    pub result: GetProductBarcodesResult
-}
 
 impl From<o8_barcode::GetVonalkodokAuthResponse> for GetProductBarcodesResponse {
     fn from(v: o8_barcode::GetVonalkodokAuthResponse) -> Self {
@@ -49,11 +75,6 @@ impl From<o8_barcode::GetVonalkodokAuthResponse> for GetProductBarcodesResponse 
 }
 
 
-#[derive(Serialize)]
-pub struct GetProductBarcodesResult {
-    pub answer: Answer
-}
-
 impl From<o8_barcode::GetVonalkodokAuthResult> for GetProductBarcodesResult {
     fn from(v: o8_barcode::GetVonalkodokAuthResult) -> Self {
         Self {
@@ -62,14 +83,6 @@ impl From<o8_barcode::GetVonalkodokAuthResult> for GetProductBarcodesResult {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Answer {
-    pub version: String,
-    pub barcodes: Barcodes,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<p_defaults::Error>
-}
 
 impl From<o8_barcode::Valasz> for Answer {
     fn from(v: o8_barcode::Valasz) -> Self {
@@ -82,11 +95,6 @@ impl From<o8_barcode::Valasz> for Answer {
 }
 
 
-#[derive(Serialize)]
-pub struct Barcodes {
-    pub barcode: Vec<Barcode>
-}
-
 impl From<o8_barcode::Vonalkodok> for Barcodes {
     fn from(v: o8_barcode::Vonalkodok) -> Self {
         Self {
@@ -98,15 +106,6 @@ impl From<o8_barcode::Vonalkodok> for Barcodes {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Barcode {
-    pub id: u64,
-    pub no: String,
-    pub ean: String,
-    pub unit: String,
-    pub main_ean: bool
-}
 
 impl From<o8_barcode::Vonalkod> for Barcode {
     fn from(v: o8_barcode::Vonalkod) -> Self {

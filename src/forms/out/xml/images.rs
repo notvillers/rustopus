@@ -1,16 +1,57 @@
 /// Images english struct(s) for XML(s) got from the Octopus call
-use serde::Serialize;
 use quick_xml;
 
-use crate::forms::{
-    r#in::xml::images as o8_images,
-    out::xml::defaults as p_defaults
+use crate::{
+    macros::out::OutModelDeriveOnly,
+    forms::{
+        r#in::xml::images as o8_images,
+        out::xml::defaults as p_defaults
+    }
 };
 
-#[derive(Serialize)]
-pub struct Envelope {
-    pub body: Body
+OutModelDeriveOnly! {
+    pub struct Envelope {
+        pub body: Body
+    }
+
+    pub struct Body {
+        pub response: GetProductImagesAuthResponse
+    }
+
+    pub struct GetProductImagesAuthResponse {
+        pub result: GetProductImagesAuthResult
+    }
+
+    pub struct GetProductImagesAuthResult {
+        pub answer: Answer
+    }
+    
+    pub struct Answer {
+        pub version: String,
+        pub products: Products,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub error: Option<p_defaults::Error>
+    }
+    
+    pub struct Product {
+        pub id: u64,
+        pub no: String,
+        pub images: Images
+    }
+
+    pub struct Products {
+        pub product: Vec<Product>
+    }
+    pub struct Images {
+        pub image: Vec<Image>
+    }
+    
+    pub struct Image {
+        pub gallery: String,
+        pub url: String
+    }
 }
+
 
 impl From<o8_images::Envelope> for Envelope {
     fn from(e: o8_images::Envelope) -> Self {
@@ -21,11 +62,6 @@ impl From<o8_images::Envelope> for Envelope {
 }
 
 
-#[derive(Serialize)]
-pub struct Body {
-    pub response: GetProductImagesAuthResponse
-}
-
 impl From<o8_images::Body> for Body {
     fn from(b: o8_images::Body) -> Self {
         Body {
@@ -34,11 +70,6 @@ impl From<o8_images::Body> for Body {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct GetProductImagesAuthResponse {
-    pub result: GetProductImagesAuthResult
-}
 
 impl From<o8_images::GetCikkKepekAuthResponse> for GetProductImagesAuthResponse {
     fn from(r: o8_images::GetCikkKepekAuthResponse) -> Self {
@@ -49,11 +80,6 @@ impl From<o8_images::GetCikkKepekAuthResponse> for GetProductImagesAuthResponse 
 }
 
 
-#[derive(Serialize)]
-pub struct GetProductImagesAuthResult {
-    pub answer: Answer
-}
-
 impl From<o8_images::GetCikkKepekAuthResult> for GetProductImagesAuthResult{
     fn from(r: o8_images::GetCikkKepekAuthResult) -> Self {
         Self {
@@ -62,14 +88,6 @@ impl From<o8_images::GetCikkKepekAuthResult> for GetProductImagesAuthResult{
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Answer {
-    pub version: String,
-    pub products: Products,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<p_defaults::Error>
-}
 
 impl From<o8_images::Valasz> for Answer {
     fn from(v: o8_images::Valasz) -> Self {
@@ -84,11 +102,6 @@ impl From<o8_images::Valasz> for Answer {
 }
 
 
-#[derive(Serialize)]
-pub struct Products {
-    pub product: Vec<Product>
-}
-
 impl FromIterator<o8_images::Cikk> for Products {
     fn from_iter<T: IntoIterator<Item = o8_images::Cikk>>(iter: T) -> Self {
         Self {
@@ -101,13 +114,6 @@ impl FromIterator<o8_images::Cikk> for Products {
 }
 
 
-#[derive(Serialize)]
-pub struct Product {
-    pub id: u64,
-    pub no: String,
-    pub images: Images
-}
-
 impl From<o8_images::Cikk> for Product {
     fn from(c: o8_images::Cikk) -> Self {
         Self {
@@ -118,11 +124,6 @@ impl From<o8_images::Cikk> for Product {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Images {
-    pub image: Vec<Image>
-}
 
 impl From<o8_images::Kepek> for Images {
     fn from(kk: o8_images::Kepek) -> Self {
@@ -135,12 +136,6 @@ impl From<o8_images::Kepek> for Images {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Image {
-    pub gallery: String,
-    pub url: String
-}
 
 impl From<o8_images::Kep> for Image {
     fn from(k: o8_images::Kep) -> Self {

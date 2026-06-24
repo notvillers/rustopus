@@ -1,5 +1,5 @@
 // Out macro(s)
-macro_rules! out_models {
+macro_rules! OutModelDeriveOnly {
     ($(
         $(#[$extra:meta])*
         $vis:vis struct $name:ident { $($body:tt)* }
@@ -11,5 +11,4 @@ macro_rules! out_models {
         )*
     };
 }
-
-pub(crate) use out_models;
+pub(crate) use OutModelDeriveOnly;

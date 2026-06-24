@@ -1,11 +1,11 @@
 use std::num::NonZeroU8;
 
 use crate::{
-    macros::out::out_models,
+    macros::out::OutModelDeriveOnly,
     forms::r#in::xml::mat as o8_mat
 };
 
-out_models! {
+OutModelDeriveOnly! {
     pub struct Concepts {
         pub concepts: Vec<Concept>
     }

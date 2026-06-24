@@ -1,20 +1,80 @@
-/// Bulk english struct(s) fro XML(s) got from the Octopus call
-use serde::Serialize;
+// Bulk english struct(s) fro XML(s) got from the Octopus call
 use quick_xml;
 
-use crate::forms::out::xml::{
-    defaults,
-    products,
-    prices,
-    stocks,
-    images,
-    barcode
+use crate::{
+    macros::out::OutModelDeriveOnly,
+    forms::out::xml::{
+        defaults,
+        products,
+        prices,
+        stocks,
+        images,
+        barcode
+    }
 };
 
-#[derive(Serialize)]
-pub struct Envelope {
-    pub body: Body
+OutModelDeriveOnly! {
+    pub struct Envelope {
+        pub body: Body
+    }
+    
+    pub struct Body {
+        pub response: Response
+    }
+
+    pub struct Response {
+        pub result: Result
+    }
+
+    pub struct Result {
+        pub answer: Answer
+    }
+
+    pub struct Answer {
+        pub version: String,
+        pub products: Products,
+        pub error: Vec<defaults::Error>
+    }
+
+    pub struct Products {
+        pub product: Vec<Product>
+    }
+
+    pub struct Product {
+        pub id: u64,
+        pub no: String,
+        pub name: String,
+        pub unit: String,
+        pub base_unit: String,
+        pub base_unit_qty: Option<f64>,
+        pub brand: String,
+        pub oem_code: String,
+        pub category_code: String,
+        pub category_name: String,
+        pub description: String,
+        pub weight: Option<f64>,
+        pub size: Option<products::Size>,
+        pub main_category_code: String,
+        pub main_category_name: String,
+        pub sell_unit: Option<f64>,
+        pub origin_country: String,
+        pub price: Option<f64>,
+        pub currency: Option<String>,
+        pub stock: Option<f64>,
+        pub ean: Option<String>,
+        pub images: Images
+    }
+
+    pub struct Images {
+        pub image: Vec<Image>
+    }
+
+    pub struct Image {
+        pub gallery: String,
+        pub url: String
+    }
 }
+
 
 impl From<(products::Envelope, Option<prices::Envelope>, Option<stocks::Envelope>, Option<images::Envelope>, Option<barcode::Envelope>)> for Envelope {
     fn from((c, p, s, i, b): (products::Envelope, Option<prices::Envelope>, Option<stocks::Envelope>, Option<images::Envelope>, Option<barcode::Envelope>)) -> Self {
@@ -31,11 +91,6 @@ impl From<(products::Envelope, Option<prices::Envelope>, Option<stocks::Envelope
 }
 
 
-#[derive(Serialize)]
-pub struct Body {
-    pub response: Response
-}
-
 impl From<(products::Body, Option<prices::Body>, Option<stocks::Body>, Option<images::Body>, Option<barcode::Body>)> for Body {
     fn from((c, p, s, i, b): (products::Body, Option<prices::Body>, Option<stocks::Body>, Option<images::Body>, Option<barcode::Body>)) -> Self {
         Self {
@@ -50,11 +105,6 @@ impl From<(products::Body, Option<prices::Body>, Option<stocks::Body>, Option<im
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Response {
-    pub result: Result
-}
 
 impl From<(products::GetProductsAuthResponse, Option<prices::GetPriceAuthResponse>, Option<stocks::GetStockChangeAuthResponse>, Option<images::GetProductImagesAuthResponse>, Option<barcode::GetProductBarcodesResponse>)> for Response {
     fn from((c, p , s, i, b): (products::GetProductsAuthResponse, Option<prices::GetPriceAuthResponse>, Option<stocks::GetStockChangeAuthResponse>, Option<images::GetProductImagesAuthResponse>, Option<barcode::GetProductBarcodesResponse>)) -> Self {
@@ -71,11 +121,6 @@ impl From<(products::GetProductsAuthResponse, Option<prices::GetPriceAuthRespons
 }
 
 
-#[derive(Serialize)]
-pub struct Result {
-    pub answer: Answer
-}
-
 impl From<(products::GetProductsAuthResult, Option<prices::GetPriceAuthResult>, Option<stocks::GetStockChangeAuthResult>, Option<images::GetProductImagesAuthResult>, Option<barcode::GetProductBarcodesResult>)> for Result {
     fn from((c, p, s, i, b): (products::GetProductsAuthResult, Option<prices::GetPriceAuthResult>, Option<stocks::GetStockChangeAuthResult>, Option<images::GetProductImagesAuthResult>, Option<barcode::GetProductBarcodesResult>)) -> Self {
         Self {
@@ -90,13 +135,6 @@ impl From<(products::GetProductsAuthResult, Option<prices::GetPriceAuthResult>, 
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Answer {
-    pub version: String,
-    pub products: Products,
-    pub error: Vec<defaults::Error>
-}
 
 impl From<(products::Answer, Option<prices::Answer>, Option<stocks::Answer>, Option<images::Answer>, Option<barcode::Answer>)> for Answer {
     fn from((c, p, s, i, b): (products::Answer, Option<prices::Answer>, Option<stocks::Answer>, Option<images::Answer>, Option<barcode::Answer>)) -> Self {
@@ -126,11 +164,6 @@ impl From<(products::Answer, Option<prices::Answer>, Option<stocks::Answer>, Opt
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Products {
-    pub product: Vec<Product>
-}
 
 impl From<(Vec<products::Product>, Vec<prices::Price>, Vec<stocks::Product>, Vec<images::Product>, Vec<barcode::Barcode>)> for Products {
     fn from((c, p, s, i, b): (Vec<products::Product>, Vec<prices::Price>, Vec<stocks::Product>, Vec<images::Product>, Vec<barcode::Barcode>)) -> Self {
@@ -163,32 +196,6 @@ impl From<(Vec<products::Product>, Vec<prices::Price>, Vec<stocks::Product>, Vec
 }
 
 
-#[derive(Serialize)]
-pub struct Product {
-    pub id: u64,
-    pub no: String,
-    pub name: String,
-    pub unit: String,
-    pub base_unit: String,
-    pub base_unit_qty: Option<f64>,
-    pub brand: String,
-    pub oem_code: String,
-    pub category_code: String,
-    pub category_name: String,
-    pub description: String,
-    pub weight: Option<f64>,
-    pub size: Option<products::Size>,
-    pub main_category_code: String,
-    pub main_category_name: String,
-    pub sell_unit: Option<f64>,
-    pub origin_country: String,
-    pub price: Option<f64>,
-    pub currency: Option<String>,
-    pub stock: Option<f64>,
-    pub ean: Option<String>,
-    pub images: Images
-}
-
 impl From<(products::Product, Option<&prices::Price>, Option<&stocks::Product>, Option<&images::Product>, Option<&barcode::Barcode>)> for Product {
     fn from((c, a, k, i, b): (products::Product, Option<&prices::Price>, Option<&stocks::Product>, Option<&images::Product>, Option<&barcode::Barcode>)) -> Self {
         Self {
@@ -219,12 +226,6 @@ impl From<(products::Product, Option<&prices::Price>, Option<&stocks::Product>, 
 }
 
 
-#[derive(Serialize)]
-pub struct Images {
-    pub image: Vec<Image>
-}
-
-
 impl From<Option<&images::Product>> for Images {
     fn from(i: Option<&images::Product>) -> Self {
         Self {
@@ -238,13 +239,6 @@ impl From<Option<&images::Product>> for Images {
                 .unwrap_or_else(Vec::new)
         }
     }
-}
-
-
-#[derive(Serialize)]
-pub struct Image {
-    pub gallery: String,
-    pub url: String
 }
 
 
