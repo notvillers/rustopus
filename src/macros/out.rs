@@ -12,3 +12,18 @@ macro_rules! OutModelDeriveOnly {
     };
 }
 pub(crate) use OutModelDeriveOnly;
+
+
+macro_rules! OutModelDeriveSerializeOnly {
+    ($(
+        $(#[$extra:meta])*
+        $vis:vis struct $name:ident { $($body:tt)* }
+    )*) => {
+        $(
+            #[derive(::serde::Serialize)]
+            $(#[$extra])*
+            $vis struct $name { $($body)* }
+        )*
+    };
+}
+pub(crate) use OutModelDeriveSerializeOnly;

@@ -2,15 +2,48 @@
 use serde::Serialize;
 use quick_xml;
 
-use crate::forms::{
-    r#in::xml::prices as o8_prices,
-    out::xml::defaults as p_defaults
+use crate::{
+    macros::out::OutModelDeriveSerializeOnly,
+    forms::{
+        r#in::xml::prices as o8_prices,
+        out::xml::defaults as p_defaults
+    }
 };
 
-#[derive(Serialize)]
-pub struct Envelope {
-    pub body: Body
+OutModelDeriveSerializeOnly! {
+    pub struct Envelope {
+        pub body: Body
+    }
+    
+    pub struct Body {
+        pub response: GetPriceAuthResponse
+    }
+    
+    pub struct GetPriceAuthResponse {
+        pub result: GetPriceAuthResult
+    }
+    
+    pub struct Answer {
+        pub version: String,
+        pub prices: Prices,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub error: Option<p_defaults::Error>
+    }
+    
+    pub struct Prices {
+        pub price: Vec<Price>
+    }
+    
+    pub struct Price {
+        pub id: u64,
+        pub no: String,
+        pub list_price: Option<f64>,
+        pub price: Option<f64>,
+        pub sale_price: Option<f64>,
+        pub currency: String
+    }
 }
+
 
 impl From<o8_prices::Envelope> for Envelope {
     fn from(envelope: o8_prices::Envelope) -> Self {
@@ -21,11 +54,6 @@ impl From<o8_prices::Envelope> for Envelope {
 }
 
 
-#[derive(Serialize)]
-pub struct Body {
-    pub response: GetPriceAuthResponse
-}
-
 impl From<o8_prices::Body> for Body {
     fn from(body: o8_prices::Body) -> Self {
         Self {
@@ -34,11 +62,6 @@ impl From<o8_prices::Body> for Body {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct GetPriceAuthResponse {
-    pub result: GetPriceAuthResult
-}
 
 impl From<o8_prices::GetArlistaAuthResponse> for GetPriceAuthResponse {
     fn from(response: o8_prices::GetArlistaAuthResponse) -> Self {
@@ -54,6 +77,7 @@ pub struct GetPriceAuthResult {
     pub answer: Answer
 }
 
+
 impl From<o8_prices::GetArlistaAuthResult> for GetPriceAuthResult {
     fn from(result: o8_prices::GetArlistaAuthResult) -> Self {
         Self {
@@ -62,14 +86,6 @@ impl From<o8_prices::GetArlistaAuthResult> for GetPriceAuthResult {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Answer {
-    pub version: String,
-    pub prices: Prices,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<p_defaults::Error>
-}
 
 impl From<o8_prices::Valasz> for Answer {
     fn from(valasz: o8_prices::Valasz) -> Self {
@@ -82,11 +98,6 @@ impl From<o8_prices::Valasz> for Answer {
 }
 
 
-#[derive(Serialize)]
-pub struct Prices {
-    pub price: Vec<Price>
-}
-
 impl From<o8_prices::Arak> for Prices {
     fn from(arak: o8_prices::Arak) -> Self {
         Self {
@@ -98,16 +109,6 @@ impl From<o8_prices::Arak> for Prices {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Price {
-    pub id: u64,
-    pub no: String,
-    pub list_price: Option<f64>,
-    pub price: Option<f64>,
-    pub sale_price: Option<f64>,
-    pub currency: String
-}
 
 impl From<o8_prices::Ar> for Price {
     fn from(ar: o8_prices::Ar) -> Self {
