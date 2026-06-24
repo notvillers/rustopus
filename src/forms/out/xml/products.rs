@@ -142,7 +142,7 @@ impl From<o8_products::Cikk> for Product {
 }
 
 
-#[derive(Serialize, Clone, Copy)]
+#[derive(Debug, Serialize, Clone, Copy)]
 pub struct Size {
     pub x: Option<f64>,
     pub y: Option<f64>,

@@ -1,11 +1,80 @@
-use serde::Serialize;
+use crate::{
+    macros::out::OutModelDeriveOnly,
+    forms::r#in::xml::orders_response as p_orders_response
+};
 
-use crate::forms::r#in::xml::orders_response as p_orders_response;
+OutModelDeriveOnly! {
+    pub struct Envelope {
+        pub body: Body
+    }
+    
+    pub struct Body {
+        pub response: OrderResponse
+    }
 
-#[derive(Debug, Serialize)]
-pub struct Envelope {
-    pub body: Body
+    pub struct OrderResponse {
+        pub result: OrderResult
+    }
+    
+    pub struct OrderResult {
+        pub answer: Answer
+    }
+
+    pub struct Answer {
+        #[serde(rename = "@version")]
+        pub version: Option<String>,
+        pub header: OrderResponseHeader,
+        #[serde(default)]
+        pub items: OrderResponseItems,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub extra_items: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub shipping_cost: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub cash_on_delivery: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub extra_services: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub return_fee: Option<String>,
+    }
+    
+    pub struct OrderResponseHeader {
+        pub identifier: String,
+        pub web_identifier: String,
+        pub document_number: String,
+        pub delivery_date: String,
+    }
+
+    pub struct OrderResponseItems {
+        #[serde(rename = "item", default)]
+        pub item: Vec<OrderResponseItem>,
+    }
+
+    pub struct OrderResponseItem {
+        pub item_number: String,
+        pub recorded_item_number: String,
+        pub product_number: String,
+        pub quantity: OrderResponseQuantity,
+        pub unit_price_net: String,
+        pub unit_price_gross: String,
+        pub value_net: String,
+        pub value_gross: String,
+        pub currency: String,
+    }
+
+    #[derive(Clone)]
+    pub struct OrderResponseQuantity {
+        #[serde(rename = "$value")]
+        pub value: String,
+        #[serde(rename = "@type")]
+        pub type_indicator: String,
+        #[serde(rename = "@coverage")]
+        pub coverage: String,
+        #[serde(rename = "@date")]
+        pub date: String,
+    }
 }
+
 
 impl From<p_orders_response::Envelope> for Envelope {
     fn from(e: p_orders_response::Envelope) -> Self {
@@ -16,11 +85,6 @@ impl From<p_orders_response::Envelope> for Envelope {
 }
 
 
-#[derive(Debug, Serialize)]
-pub struct Body {
-    pub response: OrderResponse
-}
-
 impl From<p_orders_response::Body> for Body {
     fn from(b: p_orders_response::Body) -> Self {
         Self {
@@ -29,11 +93,6 @@ impl From<p_orders_response::Body> for Body {
     }
 }
 
-
-#[derive(Debug, Serialize)]
-pub struct OrderResponse {
-    pub result: OrderResult
-}
 
 impl From<p_orders_response::RendelesFeladasAuthResponse> for OrderResponse {
     fn from(r: p_orders_response::RendelesFeladasAuthResponse) -> Self {
@@ -44,11 +103,6 @@ impl From<p_orders_response::RendelesFeladasAuthResponse> for OrderResponse {
 }
 
 
-#[derive(Debug, Serialize)]
-pub struct OrderResult {
-    pub answer: Answer
-}
-
 impl From<p_orders_response::RendelesFeladasAuthResult> for OrderResult {
     fn from(r: p_orders_response::RendelesFeladasAuthResult) -> Self {
         Self {
@@ -57,25 +111,6 @@ impl From<p_orders_response::RendelesFeladasAuthResult> for OrderResult {
     }
 }
 
-
-#[derive(Debug, Serialize)]
-pub struct Answer {
-    #[serde(rename = "@version")]
-    pub version: Option<String>,
-    pub header: OrderResponseHeader,
-    #[serde(default)]
-    pub items: OrderResponseItems,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub extra_items: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub shipping_cost: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cash_on_delivery: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub extra_services: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub return_fee: Option<String>,
-}
 
 impl From<p_orders_response::Valasz> for Answer {
     fn from(v: p_orders_response::Valasz) -> Self {
@@ -92,14 +127,6 @@ impl From<p_orders_response::Valasz> for Answer {
     }
 }
 
-/// Response header (English)
-#[derive(Debug, Serialize)]
-pub struct OrderResponseHeader {
-    pub identifier: String,
-    pub web_identifier: String,
-    pub document_number: String,
-    pub delivery_date: String,
-}
 
 impl From<p_orders_response::ValaszFej> for OrderResponseHeader {
     fn from(fej: p_orders_response::ValaszFej) -> Self {
@@ -113,12 +140,6 @@ impl From<p_orders_response::ValaszFej> for OrderResponseHeader {
 }
 
 
-#[derive(Debug, Clone, Default, Serialize)]
-pub struct OrderResponseItems {
-    #[serde(rename = "item", default)]
-    pub item: Vec<OrderResponseItem>,
-}
-
 impl From<p_orders_response::ValaszTetelek> for OrderResponseItems {
     fn from(tetelek: p_orders_response::ValaszTetelek) -> Self {
         Self {
@@ -127,19 +148,6 @@ impl From<p_orders_response::ValaszTetelek> for OrderResponseItems {
     }
 }
 
-
-#[derive(Debug, Clone, Serialize)]
-pub struct OrderResponseItem {
-    pub item_number: String,
-    pub recorded_item_number: String,
-    pub product_number: String,
-    pub quantity: OrderResponseQuantity,
-    pub unit_price_net: String,
-    pub unit_price_gross: String,
-    pub value_net: String,
-    pub value_gross: String,
-    pub currency: String,
-}
 
 impl From<p_orders_response::ValaszTetel> for OrderResponseItem {
     fn from(tetel: p_orders_response::ValaszTetel) -> Self {
@@ -157,18 +165,6 @@ impl From<p_orders_response::ValaszTetel> for OrderResponseItem {
     }
 }
 
-
-#[derive(Debug, Clone, Serialize)]
-pub struct OrderResponseQuantity {
-    #[serde(rename = "$value")]
-    pub value: String,
-    #[serde(rename = "@type")]
-    pub type_indicator: String,
-    #[serde(rename = "@coverage")]
-    pub coverage: String,
-    #[serde(rename = "@date")]
-    pub date: String,
-}
 
 impl From<p_orders_response::ValaszMennyiseg> for OrderResponseQuantity {
     fn from(mennyiseg: p_orders_response::ValaszMennyiseg) -> Self {

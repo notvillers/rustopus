@@ -5,7 +5,7 @@ macro_rules! OutModelDeriveOnly {
         $vis:vis struct $name:ident { $($body:tt)* }
     )*) => {
         $(
-            #[derive(::serde::Serialize)]
+            #[derive(Debug, ::serde::Serialize)]
             $(#[$extra])*
             $vis struct $name { $($body)* }
         )*
