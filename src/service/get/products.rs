@@ -58,7 +58,7 @@ pub async fn get_products(call_data: CallData) -> ProductsData {
                 true => ProductsData::XML(ProductsXML::Hu(envelope)),
                 _ => ProductsData::XML(ProductsXML::En(envelope.into()))
             }
-        }
+        },
         Err(error) => {
             let rustopus_error = GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(error), &rustopus_error);

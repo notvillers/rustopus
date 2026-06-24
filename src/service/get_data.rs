@@ -20,7 +20,8 @@ use crate::{
             images::{ImagesData, get_images},
             barcodes::{BarcodesData, get_barcode},
             invoices::{InvoicesData, get_invoices},
-            bulk::{BulkData, get_bulk}
+            bulk::{BulkData, get_bulk},
+            mat::{MatData, get_mat}
         }
     }
 };
@@ -62,7 +63,8 @@ pub enum ResponseGet {
     Images(ImagesData),
     Barcodes(BarcodesData),
     Invoices(InvoicesData),
-    Bulk(BulkData)
+    Bulk(BulkData),
+    Mat(MatData)
 }
 
 
@@ -74,7 +76,8 @@ pub enum RequestGet {
     Images(CallData),
     Barcodes(CallData),
     Invoices(CallData),
-    Bulk(CallData)
+    Bulk(CallData),
+    Mat(CallData)
 }
 
 impl RequestGet {
@@ -88,7 +91,8 @@ impl RequestGet {
                 RequestGet::Images(call_data) => ResponseGet::Images(get_images(call_data).await),
                 RequestGet::Barcodes(call_data) => ResponseGet::Barcodes(get_barcode(call_data).await),
                 RequestGet::Invoices(call_data) => ResponseGet::Invoices(get_invoices(call_data).await),
-                RequestGet::Bulk(call_data) => ResponseGet::Bulk(get_bulk(call_data).await)
+                RequestGet::Bulk(call_data) => ResponseGet::Bulk(get_bulk(call_data).await),
+                RequestGet::Mat(call_data) => ResponseGet::Mat(get_mat(call_data).await)
             }
         })
     }

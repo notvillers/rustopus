@@ -9,3 +9,4 @@ pub mod test;
 pub mod barcode;
 pub mod invoices;
 pub mod order;
+pub mod mat;

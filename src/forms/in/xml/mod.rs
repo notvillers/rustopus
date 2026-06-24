@@ -7,3 +7,4 @@ pub mod barcode;
 pub mod invoices;
 pub mod orders;
 pub mod orders_response;
+pub mod mat;

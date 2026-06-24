@@ -2,6 +2,7 @@ use std::{env, panic};
 use actix_web::{App, HttpResponse, HttpServer, Responder, web};
 use actix_files::Files;
 
+mod macros;
 mod service;
 mod forms;
 mod routes;
@@ -66,6 +67,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::invoices::get_handler)
             .service(routes::test::get_handler)
             .service(routes::order::post_handler)
+            .service(routes::mat::get_handler)
     })
         .client_request_timeout(std::time::Duration::from_secs(1200))
         .keep_alive(std::time::Duration::from_secs(1200))
