@@ -1,8 +1,11 @@
 // Structs for GetVonalkodokAuth's XML
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use macro_rules_attribute::apply;
 
-use crate::forms::r#in::xml::defaults as o8_defaults;
+use crate::{
+    macros::r#in::{O8ModelLowercase, O8ModelPascalcase},
+    forms::r#in::xml::defaults as o8_defaults
+};
 
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
     format!(
@@ -23,55 +26,39 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Envelope {
-    pub body: Body
+O8ModelPascalcase! {
+    pub struct Envelope {
+        pub body: Body
+    }
+    
+    pub struct Body {
+        pub get_vonalkodok_auth_response: GetVonalkodokAuthResponse
+    }
+    
+    pub struct GetVonalkodokAuthResponse {
+        pub get_vonalkodok_auth_result: GetVonalkodokAuthResult
+    }
+    
+    pub struct GetVonalkodokAuthResult {
+        pub valasz: Valasz
+    }
+    
+    pub struct Valasz {
+        #[serde(rename = "@verzio")]
+        pub verzio: String,
+        #[serde(rename = "vonalkodok")]
+        pub vonalkodok: Vonalkodok,
+        pub hiba: Option<o8_defaults::Hiba>
+    }
+    
+    pub struct Vonalkodok {
+        #[serde(rename = "vonalkod")]
+        pub vonalkod: Vec<Vonalkod>
+    }
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Body {
-    pub get_vonalkodok_auth_response: GetVonalkodokAuthResponse
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct GetVonalkodokAuthResponse {
-    pub get_vonalkodok_auth_result: GetVonalkodokAuthResult
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct GetVonalkodokAuthResult {
-    pub valasz: Valasz
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Valasz {
-    #[serde(rename = "@verzio")]
-    pub verzio: String,
-    #[serde(rename = "vonalkodok")]
-    pub vonalkodok: Vonalkodok,
-    pub hiba: Option<o8_defaults::Hiba>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Vonalkodok {
-    #[serde(rename = "vonalkod")]
-    pub vonalkod: Vec<Vonalkod>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
+#[apply(O8ModelLowercase)]
 pub struct Vonalkod {
     pub cikkid: u64,
     pub cikkszam: String,

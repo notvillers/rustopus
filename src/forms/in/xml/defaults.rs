@@ -1,10 +1,11 @@
 /// Default struct(s) for XML(s) got from the Octopus call
 use chrono::{DateTime, Utc};
 
-use serde::{Deserialize, Serialize};
+use crate::macros::r#in::O8ModelLowercase;
+use macro_rules_attribute::apply;
 
-#[derive(Debug, Deserialize, Clone, Serialize)]
-#[serde(rename_all = "lowercase")]
+#[apply(O8ModelLowercase)]
+#[derive(Clone)]
 pub struct Hiba {
     pub kod: u64,
     pub leiras: String

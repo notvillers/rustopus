@@ -1,4 +1,4 @@
-/// Out macro(s)
+// Out macro(s)
 macro_rules! out_models {
     ($(
         $(#[$extra:meta])*

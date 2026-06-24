@@ -1,8 +1,11 @@
 /// Structs for GetCikkKepekAuth's XML
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use macro_rules_attribute::apply;
 
-use crate::forms::r#in::xml::defaults as o8_defaults;
+use crate::{
+    macros::r#in::{O8ModelDeriveOnly, O8ModelLowercase, O8ModelPascalcase},
+    forms::r#in::xml::defaults as o8_defaults
+};
 
 /// Get the string for the request
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
@@ -23,35 +26,50 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
     ) 
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Envelope {
-    pub body: Body,
+
+O8ModelPascalcase! {
+    pub struct Envelope {
+        pub body: Body,
+    }
+
+    pub struct Body {
+        pub get_cikk_kepek_auth_response: GetCikkKepekAuthResponse
+    }
+    
+    pub struct GetCikkKepekAuthResponse {
+        pub get_cikk_kepek_auth_result: GetCikkKepekAuthResult,
+    }
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Body {
-    pub get_cikk_kepek_auth_response: GetCikkKepekAuthResponse
+O8ModelLowercase! {
+    pub struct GetCikkKepekAuthResult {
+        pub valasz: Valasz,
+    }
+    
+    pub struct Cikk {
+        #[serde(rename = "@cikkid")]
+        pub cikkid: u64,
+        #[serde(rename = "@cikkszam")]
+        pub cikkszam: String,
+        pub kepek: Kepek
+    }
+    
+    pub struct Kepek {
+        #[serde(default)]
+        pub kep: Vec<Kep>
+    }
+
+    pub struct Kep {
+        #[serde(rename = "@galeria")]
+        pub galeria: String,
+        #[serde(rename = "$value")]
+        pub url: String
+    }
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct GetCikkKepekAuthResponse {
-    pub get_cikk_kepek_auth_result: GetCikkKepekAuthResult,
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct GetCikkKepekAuthResult {
-    pub valasz: Valasz,
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
+#[apply(O8ModelDeriveOnly)]
 pub struct Valasz {
     #[serde(rename = "@verzio")]
     pub verzio: String,
@@ -62,33 +80,4 @@ pub struct Valasz {
 
     #[serde(rename = "hiba")]
     pub hiba: Option<o8_defaults::Hiba>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Cikk {
-    #[serde(rename = "@cikkid")]
-    pub cikkid: u64,
-    #[serde(rename = "@cikkszam")]
-    pub cikkszam: String,
-    pub kepek: Kepek
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Kepek {
-    #[serde(default)]
-    pub kep: Vec<Kep>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Kep {
-    #[serde(rename = "@galeria")]
-    pub galeria: String,
-    #[serde(rename = "$value")]
-    pub url: String
 }

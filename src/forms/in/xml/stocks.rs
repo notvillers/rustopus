@@ -1,9 +1,12 @@
 /// Structs for GetCikkekKeszletValtozasAuth's XML
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
-use crate::forms::r#in::xml::defaults as o8_defaults;
+use crate::{
+    macros::r#in::{O8ModelDeriveOnly, O8ModelLowercase, O8ModelPascalcase},
+    forms::r#in::xml::defaults as o8_defaults
+};
 
 /// Get the string for the request
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
@@ -25,57 +28,46 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Envelope {
-    pub body: Body,
+O8ModelPascalcase! {
+    pub struct Envelope {
+        pub body: Body,
+    }
+    pub struct Body {
+        pub get_cikkek_keszlet_valtozas_auth_response: GetCikkekKeszletValtozasAuthResponse,
+    }
+    
+    pub struct GetCikkekKeszletValtozasAuthResponse {
+        pub get_cikkek_keszlet_valtozas_auth_result: GetCikkekKeszletValtozasAuthResult,
+    }
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Body {
-    pub get_cikkek_keszlet_valtozas_auth_response: GetCikkekKeszletValtozasAuthResponse,
+O8ModelLowercase! {
+    pub struct GetCikkekKeszletValtozasAuthResult {
+        pub valasz: Valasz,
+    }
+
+    pub struct Cikk {
+        pub cikkid: u64,
+        pub cikkszam: String,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub szabad: Option<f64>
+    }
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct GetCikkekKeszletValtozasAuthResponse {
-    pub get_cikkek_keszlet_valtozas_auth_result: GetCikkekKeszletValtozasAuthResult,
-}
+O8ModelDeriveOnly! {
+    pub struct Valasz {
+        #[serde(rename = "@verzio")]
+        pub verzio: String,
+        pub cikkek: Cikkek,
+        #[serde(rename = "hiba")]
+        pub hiba: Option<o8_defaults::Hiba>
+    }
 
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct GetCikkekKeszletValtozasAuthResult {
-    pub valasz: Valasz,
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Valasz {
-    #[serde(rename = "@verzio")]
-    pub verzio: String,
-    pub cikkek: Cikkek,
-    #[serde(rename = "hiba")]
-    pub hiba: Option<o8_defaults::Hiba>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Cikkek {
-    pub cikk: Vec<Cikk>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Cikk {
-    pub cikkid: u64,
-    pub cikkszam: String,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub szabad: Option<f64>
+    pub struct Cikkek {
+        pub cikk: Vec<Cikk>
+    }
 }
 
 

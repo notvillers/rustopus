@@ -1,9 +1,13 @@
 /// Structs for GetCikkekAuth's XML
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
+use macro_rules_attribute::apply;
 
-use crate::forms::r#in::xml::defaults as o8_defaults;
+use crate::{
+    macros::r#in::{O8ModelDeriveOnly, O8ModelLowercase, O8ModelPascalcase},
+    forms::r#in::xml::defaults as o8_defaults
+};
 
 /// Get the string for the request
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
@@ -25,35 +29,63 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Envelope {
-    pub body: Body,
+O8ModelPascalcase! {
+    pub struct Envelope {
+        pub body: Body,
+    }
+    
+    pub struct Body {
+        pub get_cikkek_auth_response: GetCikkekAuthResponse
+    }
+    
+    pub struct GetCikkekAuthResponse {
+        pub get_cikkek_auth_result: GetCikkekAuthResult,
+    }
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Body {
-    pub get_cikkek_auth_response: GetCikkekAuthResponse
+O8ModelLowercase! {
+    pub struct GetCikkekAuthResult {
+        pub valasz: Valasz,
+    }
+
+    pub struct Cikk {
+        #[serde(rename = "@cikkid")]
+        pub cikkid: u64,
+        pub cikkszam: String,
+        pub cikknev: String,
+        pub me: String,
+        pub alapme: String,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub alapmenny: Option<f64>,
+        pub gyarto: String,
+        pub cikkcsoportkod: String,
+        pub cikkcsoportnev: String,
+        pub leiras: String,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub tomeg: Option<f64>,
+        pub meret: Option<Meret>,
+        pub gycikkszam: String,
+        pub focsoportkod: String,
+        pub focsoportnev: String,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub ertmenny: Option<f64>,
+        pub szarmorszag: String
+    }
+
+    #[derive(Clone)]
+    pub struct Meret {
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub xmeret: Option<f64>,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub ymeret: Option<f64>,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub zmeret: Option<f64>,
+    }
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct GetCikkekAuthResponse {
-    pub get_cikkek_auth_result: GetCikkekAuthResult,
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct GetCikkekAuthResult {
-    pub valasz: Valasz,
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
+#[apply(O8ModelDeriveOnly)]
 pub struct Valasz {
     #[serde(rename = "@verzio")]
     pub verzio: String,
@@ -64,45 +96,6 @@ pub struct Valasz {
 
     #[serde(rename = "hiba")]
     pub hiba: Option<o8_defaults::Hiba>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Cikk {
-    #[serde(rename = "@cikkid")]
-    pub cikkid: u64,
-    pub cikkszam: String,
-    pub cikknev: String,
-    pub me: String,
-    pub alapme: String,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub alapmenny: Option<f64>,
-    pub gyarto: String,
-    pub cikkcsoportkod: String,
-    pub cikkcsoportnev: String,
-    pub leiras: String,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub tomeg: Option<f64>,
-    pub meret: Option<Meret>,
-    pub gycikkszam: String,
-    pub focsoportkod: String,
-    pub focsoportnev: String,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub ertmenny: Option<f64>,
-    pub szarmorszag: String
-}
-
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Meret {
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub xmeret: Option<f64>,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub ymeret: Option<f64>,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub zmeret: Option<f64>,
 }
 
 

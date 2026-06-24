@@ -1,11 +1,14 @@
 /// Structs fro GetMatmodellFogalomAuth's XML
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer};
 use std::num::NonZeroU8;
 use std::str::FromStr;
-use macro_rules_attribute::{attribute_alias, apply};
+use macro_rules_attribute::apply;
 
-use crate::forms::r#in::xml::defaults as o8_defaults;
+use crate::{
+    macros::r#in::{O8ModelDeriveOnly, O8ModelLowercase, O8ModelPascalcase},
+    forms::r#in::xml::defaults as o8_defaults
+};
 
 
 /// Get the string for the request
@@ -28,39 +31,60 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
 }
 
 
-attribute_alias! {
-    #[apply(O8ModelDeriveOnly)] =
-        #[derive(Debug, Deserialize, Serialize)];
-    #[apply(O8ModelPascalcase)] =
-        #[derive(Debug, Deserialize, Serialize)]
-        #[serde(rename_all = "PascalCase")];
-    #[apply(O8ModelLowercase)] =
-        #[derive(Debug, Deserialize, Serialize)]
-        #[serde(rename_all = "lowercase")];
+O8ModelPascalcase! {
+    pub struct Envelope {
+        pub body: Body
+    }
+
+    pub struct Body {
+        pub get_matmodell_auth_response: GetMatmodellAuthResponse
+    }
+
+    pub struct GetMatmodellAuthResponse {
+        pub get_matmodell_auth_result: GetMatmodellAuthResult
+    }
 }
 
 
-#[apply(O8ModelPascalcase)]
-pub struct Envelope {
-    pub body: Body
-}
+O8ModelLowercase! {
+    pub struct GetMatmodellAuthResult {
+        pub valasz: Valasz
+    }
 
+    #[derive(Default)]
+    pub struct Tulajdonsagok {
+        #[serde(rename = "tulajdonsag", default)]
+        pub tulajdonsag: Vec<Tulajdonsag>
+    }
 
-#[apply(O8ModelPascalcase)]
-pub struct Body {
-    pub get_matmodell_auth_response: GetMatmodellAuthResponse
-}
+    pub struct Tulajdonsag {
+        pub azonosito: u64,
+        pub tulajdonsagkod: Option<String>,
+        pub tulajdonsagnev: Option<String>,
 
+        #[serde(deserialize_with = "empty_as_none", default)]
+        pub cikkid: Option<u64>,
+        pub cikkszam: Option<String>,
+        pub szovegertek: Option<String>,
 
-#[apply(O8ModelPascalcase)]
-pub struct GetMatmodellAuthResponse {
-    pub get_matmodell_auth_result: GetMatmodellAuthResult
-}
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub szamertek: Option<f64>,
 
+        #[serde(deserialize_with = "empty_as_none", default)]
+        pub sorrend: Option<i64>,
 
-#[apply(O8ModelLowercase)]
-pub struct GetMatmodellAuthResult {
-    pub valasz: Valasz
+        #[serde(deserialize_with = "empty_as_none", default)]
+        pub delstatus: Option<NonZeroU8>,
+
+        #[serde(deserialize_with = "empty_as_none", default)]
+        pub szures: Option<NonZeroU8>,
+
+        #[serde(deserialize_with = "empty_as_none", default)]
+        pub adattipus: Option<NonZeroU8>,
+
+        #[serde(deserialize_with = "empty_as_none", default)]
+        pub ertekkeszlet_id: Option<i64>
+    }
 }
 
 
@@ -74,45 +98,6 @@ pub struct Valasz {
 
     #[serde(rename = "hiba")]
     pub hiba: Option<o8_defaults::Hiba>
-}
-
-
-#[apply(O8ModelLowercase)]
-#[derive(Default)]
-pub struct Tulajdonsagok {
-    #[serde(rename = "tulajdonsag", default)]
-    pub tulajdonsag: Vec<Tulajdonsag>
-}
-
-
-#[apply(O8ModelLowercase)]
-pub struct Tulajdonsag {
-    pub azonosito: u64,
-    pub tulajdonsagkod: Option<String>,
-    pub tulajdonsagnev: Option<String>,
-
-    #[serde(deserialize_with = "empty_as_none", default)]
-    pub cikkid: Option<u64>,
-    pub cikkszam: Option<String>,
-    pub szovegertek: Option<String>,
-
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub szamertek: Option<f64>,
-
-    #[serde(deserialize_with = "empty_as_none", default)]
-    pub sorrend: Option<i64>,
-
-    #[serde(deserialize_with = "empty_as_none", default)]
-    pub delstatus: Option<NonZeroU8>,
-
-    #[serde(deserialize_with = "empty_as_none", default)]
-    pub szures: Option<NonZeroU8>,
-
-    #[serde(deserialize_with = "empty_as_none", default)]
-    pub adattipus: Option<NonZeroU8>,
-    
-    #[serde(deserialize_with = "empty_as_none", default)]
-    pub ertekkeszlet_id: Option<i64>
 }
 
 

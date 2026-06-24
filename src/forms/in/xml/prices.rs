@@ -1,7 +1,11 @@
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
+use macro_rules_attribute::apply;
 
-use crate::forms::r#in::xml::defaults as o8_defaults;
+use crate::{
+    macros::r#in::{O8ModelDeriveOnly, O8ModelLowercase, O8ModelPascalcase},
+    forms::r#in::xml::defaults as o8_defaults
+};
 
 /// Get the string for the request
 pub fn get_request_string(xmlns: &str, authcode: &str, pid: &i64) -> String {
@@ -25,61 +29,51 @@ pub fn get_request_string(xmlns: &str, authcode: &str, pid: &i64) -> String {
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Envelope {
-    pub body: Body,
+O8ModelPascalcase! {
+    pub struct Envelope {
+        pub body: Body,
+    }
+    
+    pub struct Body {
+        pub get_arlista_auth_response: GetArlistaAuthResponse 
+    }
+    
+    pub struct GetArlistaAuthResponse {
+        pub get_arlista_auth_result: GetArlistaAuthResult
+    }
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Body {
-    pub get_arlista_auth_response: GetArlistaAuthResponse 
+O8ModelDeriveOnly! {
+    pub struct Valasz {
+        #[serde(rename = "@verzio")]
+        pub verzio: String,
+        pub arak: Arak,
+        #[serde(rename = "hiba")]
+        pub hiba: Option<o8_defaults::Hiba>
+    }
+    
+    pub struct Arak {
+        pub ar: Vec<Ar>
+    }
+    
+    pub struct Ar {
+        pub cikkid: u64,
+        pub cikkszam: String,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub listaar: Option<f64>,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub ar: Option<f64>,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub akcios_ar: Option<f64>,
+        pub devizanem: String
+    }
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct GetArlistaAuthResponse {
-    pub get_arlista_auth_result: GetArlistaAuthResult
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
+#[apply(O8ModelLowercase)]
 pub struct GetArlistaAuthResult {
     pub valasz: Valasz
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Valasz {
-    #[serde(rename = "@verzio")]
-    pub verzio: String,
-    pub arak: Arak,
-    #[serde(rename = "hiba")]
-    pub hiba: Option<o8_defaults::Hiba>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Arak {
-    pub ar: Vec<Ar>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Ar {
-    pub cikkid: u64,
-    pub cikkszam: String,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub listaar: Option<f64>,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub ar: Option<f64>,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub akcios_ar: Option<f64>,
-    pub devizanem: String
 }
 
 

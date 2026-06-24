@@ -1,9 +1,10 @@
 // Structs for GetSzamlakAuth's XML
 use chrono::{NaiveDate, DateTime, Utc};
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
 use crate::{
+    macros::r#in::{O8ModelLowercase, O8ModelPascalcase},
     forms::{
         r#in::xml::defaults as o8_defaults,
         out::xml::invoices as p_invoices
@@ -51,124 +52,102 @@ pub fn get_request_string(xmlns: &str, pid: &i64, tipus: &i64, datumtol: &DateTi
 }
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Envelope {
-    pub body: Body
+O8ModelPascalcase! {
+    pub struct Envelope {
+        pub body: Body
+    }
+    
+    pub struct Body {
+        pub get_szamlak_auth_response: GetSzamlakAuthResponse
+    }
+    
+    pub struct GetSzamlakAuthResponse {
+        pub get_szamlak_auth_result: GetSzamlakAuthResult
+    }
 }
+
+
+O8ModelLowercase! {
+    pub struct GetSzamlakAuthResult {
+        pub valasz: Valasz
+    }
+    
+    pub struct Valasz {
+        #[serde(rename = "@verzio")]
+        pub verzio: String,
+        pub szamlak: Szamlak,
+        #[serde(rename = "hiba")]
+        pub hiba: Option<o8_defaults::Hiba>
+    }
+    
+    pub struct Szamlak {
+        pub szamla: Vec<Szamla>
+    }
+    
+    pub struct Szamla {
+        pub fej: Fej,
+        pub tetelek: Tetelek
+    }
+    
+    #[derive(Clone)]
+    pub struct Fej {
+        pub kiszamlakod: i64,
+        pub bizonylatszam: Option<String>,
+        #[serde(with = "hungarian_date_format_opt")]
+        pub bizdatum: Option<NaiveDate>,
+        #[serde(with = "hungarian_date_format_opt")]
+        pub teljdatum: Option<NaiveDate>,
+        #[serde(with = "hungarian_date_format_opt")]
+        pub fizhat: Option<NaiveDate>,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub devnetto: Option<f64>,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub devbrutto: Option<f64>,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub devtartozas: Option<f64>,
+        pub stornobizszam: Option<String>,
+        pub dnem: String,
+        pub pid: i64,
+        pub partnernev: String,
+        pub bizstatus: i64,
+        pub idegenmegrszam: Option<String>,
+        pub szallcimnev: Option<String>,
+        pub szallorszag: Option<String>,
+        pub szallirsz: Option<String>,
+        pub szallvaros: Option<String>,
+        pub szallutca: Option<String>
+    }
+    
+    pub struct Tetelek {
+        pub tetel: Vec<Tetel>
+    }
+    
+    pub struct Tetel {
+        pub tetelszam: u64,
+        pub cikkid: u64,
+        pub cikkszam: String,
+        pub cikknev: String,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub menny: Option<f64>,
+        pub me: String,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub egysegar: Option<f64>,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub bregysegar: Option<f64>,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub ertek: Option<f64>,
+        #[serde(deserialize_with = "parse_comma_f64", default)]
+        pub brertek: Option<f64>,
+        pub rbizonylatszam: Option<String>,
+        pub ridegenmegrszam: Option<String>
+    }
+}
+
 
 impl Envelope {
     pub fn to_en(self) -> p_invoices::Envelope {
         self.into()
     }
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Body {
-    pub get_szamlak_auth_response: GetSzamlakAuthResponse
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct GetSzamlakAuthResponse {
-    pub get_szamlak_auth_result: GetSzamlakAuthResult
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct GetSzamlakAuthResult {
-    pub valasz: Valasz
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Valasz {
-    #[serde(rename = "@verzio")]
-    pub verzio: String,
-    pub szamlak: Szamlak,
-    #[serde(rename = "hiba")]
-    pub hiba: Option<o8_defaults::Hiba>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Szamlak {
-    pub szamla: Vec<Szamla>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Szamla {
-    pub fej: Fej,
-    pub tetelek: Tetelek
-}
-
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Fej {
-    pub kiszamlakod: i64,
-    pub bizonylatszam: Option<String>,
-    #[serde(with = "hungarian_date_format_opt")]
-    pub bizdatum: Option<NaiveDate>,
-    #[serde(with = "hungarian_date_format_opt")]
-    pub teljdatum: Option<NaiveDate>,
-    #[serde(with = "hungarian_date_format_opt")]
-    pub fizhat: Option<NaiveDate>,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub devnetto: Option<f64>,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub devbrutto: Option<f64>,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub devtartozas: Option<f64>,
-    pub stornobizszam: Option<String>,
-    pub dnem: String,
-    pub pid: i64,
-    pub partnernev: String,
-    pub bizstatus: i64,
-    pub idegenmegrszam: Option<String>,
-    pub szallcimnev: Option<String>,
-    pub szallorszag: Option<String>,
-    pub szallirsz: Option<String>,
-    pub szallvaros: Option<String>,
-    pub szallutca: Option<String>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Tetelek {
-    pub tetel: Vec<Tetel>
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub struct Tetel {
-    pub tetelszam: u64,
-    pub cikkid: u64,
-    pub cikkszam: String,
-    pub cikknev: String,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub menny: Option<f64>,
-    pub me: String,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub egysegar: Option<f64>,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub bregysegar: Option<f64>,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub ertek: Option<f64>,
-    #[serde(deserialize_with = "parse_comma_f64", default)]
-    pub brertek: Option<f64>,
-    pub rbizonylatszam: Option<String>,
-    pub ridegenmegrszam: Option<String>
 }
 
 
