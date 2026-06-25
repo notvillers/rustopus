@@ -1,29 +1,42 @@
-use crate::forms::{
-    r#in::xml::{
-        defaults::CallData,
-        images as o8_images
+// Images GET
+use crate::{
+    macros::get::get_models,
+    global::errors::GLOBAL_GET_DATA_ERROR,
+    forms::{
+        r#in::xml::{
+            defaults::CallData,
+            images as o8_images
+        },
+        out::{
+            xml::images as p_images,
+            csv::images as csv_images
+        }
     },
-    out::{
-        xml::images as p_images,
-        csv::images as csv_images
-    }
-};
-use crate::global::errors::GLOBAL_GET_DATA_ERROR;
-use crate::service::{
-    soap::get_response,
-    get_data::{
-        FIRST_DATE, ErrorType,
-        error_logger, to_xml_string
+    service::{
+        soap::get_response,
+        get_data::{
+            FIRST_DATE, ErrorType,
+            error_logger, to_xml_string
+        }
     }
 };
 
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum ImagesXML {
-    Hu(o8_images::Envelope),
-    En(p_images::Envelope)
+get_models! {
+    pub enum ImagesXML {
+        Hu(o8_images::Envelope),
+        En(p_images::Envelope)
+    }
+    
+    pub enum ImagesCSV {
+        En(csv_images::Products)
+    }
+    
+    pub enum ImagesData {
+        XML(ImagesXML),
+        CSV(ImagesCSV)
+    }
 }
+
 
 impl ImagesXML {
     pub fn to_xml(&self) -> String {
@@ -32,19 +45,6 @@ impl ImagesXML {
 }
 
 
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum ImagesCSV {
-    En(csv_images::Products)
-}
-
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum ImagesData {
-    XML(ImagesXML),
-    CSV(ImagesCSV)
-}
 
 
 /// This function gets english images envelope from the given `CallData`

@@ -1,4 +1,6 @@
+// Mat GET
 use crate::{
+    macros::get::get_models,
     global::errors::GLOBAL_GET_DATA_ERROR,
     forms::{
         r#in::xml::{
@@ -16,8 +18,7 @@ use crate::{
             FIRST_DATE, ErrorType,
             error_logger, to_xml_string
         }
-    },
-    macros::get::get_models
+    }
 };
 
 get_models! {
@@ -36,6 +37,7 @@ get_models! {
     }
 }
 
+
 impl MatXML {
     pub fn to_xml(&self) -> String {
         to_xml_string(self)
@@ -44,13 +46,8 @@ impl MatXML {
 
 
 pub async fn get_mat(call_data: CallData) -> MatData {
-    // Octopus's `nyelvkod` is a name-localization filter; only an empty value matches the
-    // concept records ("hu"/"en"/etc. return zero rows). Output translation is handled
-    // downstream via CallData::is_hu, so always request the default (empty) language here.
     let request = o8_mat::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = get_response(&call_data.url, request.clone()).await;
-    println!("{}", request);
-    println!("{}", response);
     return match quick_xml::de::from_str::<o8_mat::Envelope>(&response) {
         Ok(envelope) => {
             if call_data.is_csv() {

@@ -1,48 +1,47 @@
-use crate::global::errors::GLOBAL_GET_DATA_ERROR;
-use crate::forms::{
-    r#in::xml::{
-        products as o8_products,
-        defaults::CallData
+// Products GET
+use crate::{
+    macros::get::get_models,
+    global::errors::GLOBAL_GET_DATA_ERROR,
+    forms::{
+        r#in::xml::{
+            products as o8_products,
+            defaults::CallData
+        },
+        out::{
+            xml::products as p_products,
+            csv::products as csv_products
+        }
     },
-    out::{
-        xml::products as p_products,
-        csv::products as csv_products
-    }
-};
-use crate::service::{
-    soap::get_response,
-    get_data::{
-        FIRST_DATE, ErrorType,
-        error_logger, to_xml_string
+    service::{
+        soap::get_response,
+        get_data::{
+            FIRST_DATE, ErrorType,
+            error_logger, to_xml_string
+        }
     }
 };
 
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum ProductsXML {
-    Hu(o8_products::Envelope),
-    En(p_products::Envelope)
+get_models! {
+    pub enum ProductsXML {
+        Hu(o8_products::Envelope),
+        En(p_products::Envelope)
+    }
+    
+    pub enum ProductsCSV {
+        En(csv_products::Products)
+    }
+    
+    pub enum ProductsData {
+        XML(ProductsXML),
+        CSV(ProductsCSV)
+    }
 }
+
 
 impl ProductsXML {
     pub fn to_xml(&self) -> String {
         to_xml_string(self)
     }
-}
-
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum ProductsCSV {
-    En(csv_products::Products)
-}
-
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum ProductsData {
-    XML(ProductsXML),
-    CSV(ProductsCSV)
 }
 
 

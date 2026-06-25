@@ -1,4 +1,7 @@
+// Bulk GET
 use crate::{
+    macros::get::get_models,
+    global::errors,
     forms::{
         r#in::xml::defaults::CallData,
         out::{
@@ -6,48 +9,41 @@ use crate::{
             xml::{barcode, bulk, images, prices, stocks}
         }
     },
-    service::get_data::to_xml_string
-};
-use crate::global::errors;
-use crate::service::{
-    get_data::{
-        RequestGet, ResponseGet, ErrorType,
-        error_logger
-    },
-    get::{
-        products::{ProductsData, ProductsXML},
-        prices::{PricesData, PricesXML},
-        stocks::{StocksData, StocksXML},
-        images::{ImagesData, ImagesXML},
-        barcodes::{BarcodesData, BarcodesXML}
+    service::{
+        get_data::{
+            RequestGet, ResponseGet, ErrorType,
+            error_logger, to_xml_string
+        },
+        get::{
+            products::{ProductsData, ProductsXML},
+            prices::{PricesData, PricesXML},
+            stocks::{StocksData, StocksXML},
+            images::{ImagesData, ImagesXML},
+            barcodes::{BarcodesData, BarcodesXML}
+        }
     }
 };
 
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum BulkXML {
-    En(bulk::Envelope)
+get_models! {
+    pub enum BulkXML {
+        En(bulk::Envelope)
+    }
+    
+    pub enum BulkCSV {
+        En(csv_bulk::Products)
+    }
+    
+    pub enum BulkData {
+        XML(BulkXML),
+        CSV(BulkCSV)
+    }
 }
+
 
 impl BulkXML {
     pub fn to_xml(&self) -> String {
         to_xml_string(self)
     }
-}
-
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum BulkCSV {
-    En(csv_bulk::Products)
-}
-
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum BulkData {
-    XML(BulkXML),
-    CSV(BulkCSV)
 }
 
 

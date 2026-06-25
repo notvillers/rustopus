@@ -1,48 +1,47 @@
-use crate::global::errors::GLOBAL_GET_DATA_ERROR;
-use crate::forms::{
-    r#in::xml::{
-        stocks as o8_stocks,
-        defaults::CallData
+// Stocks GET
+use crate::{
+    macros::get::get_models,
+    global::errors::GLOBAL_GET_DATA_ERROR,
+    forms::{
+        r#in::xml::{
+            stocks as o8_stocks,
+            defaults::CallData
+        },
+        out::{
+            xml::stocks as p_stocks,
+            csv::stocks as csv_stocks
+        }
     },
-    out::{
-        xml::stocks as p_stocks,
-        csv::stocks as csv_stocks
-    }
-};
-use crate::service::{
-    soap::get_response,
-    get_data::{
-        FIRST_DATE, ErrorType,
-        error_logger, to_xml_string
+    service::{
+        soap::get_response,
+        get_data::{
+            FIRST_DATE, ErrorType,
+            error_logger, to_xml_string
+        }
     }
 };
 
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum StocksXML {
-    Hu(o8_stocks::Envelope),
-    En(p_stocks::Envelope)
+get_models! {
+    pub enum StocksXML {
+        Hu(o8_stocks::Envelope),
+        En(p_stocks::Envelope)
+    }
+    
+    pub enum StocksCSV {
+        En(csv_stocks::Products)
+    }
+
+    pub enum StocksData {
+        XML(StocksXML),
+        CSV(StocksCSV)
+    }
 }
+
 
 impl StocksXML {
     pub fn to_xml(&self) -> String {
         to_xml_string(self)
     }
-}
-
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum StocksCSV {
-    En(csv_stocks::Products)
-}
-
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum StocksData {
-    XML(StocksXML),
-    CSV(StocksCSV)
 }
 
 

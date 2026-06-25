@@ -1,48 +1,47 @@
-use crate::global::errors::{GLOBAL_GET_DATA_ERROR, GLOBAL_PID_ERROR};
-use crate::forms::{
-    r#in::xml::{
-        prices as o8_prices,
-        defaults::CallData
+// Prices GET
+use crate::{
+    macros::get::get_models,
+    global::errors::{GLOBAL_GET_DATA_ERROR, GLOBAL_PID_ERROR},
+    forms::{
+        r#in::xml::{
+            prices as o8_prices,
+            defaults::CallData
+        },
+        out::{
+            xml::prices as p_prices,
+            csv::prices as csv_prices
+        }
     },
-    out::{
-        xml::prices as p_prices,
-        csv::prices as csv_prices
-    }
-};
-use crate::service::{
-    soap::get_response,
-    get_data::{
-        ErrorType,
-        error_logger, to_xml_string
+    service::{
+        soap::get_response,
+        get_data::{
+            ErrorType,
+            error_logger, to_xml_string
+        }
     }
 };
 
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum PricesXML {
-    Hu(o8_prices::Envelope),
-    En(p_prices::Envelope)
+get_models! {
+    pub enum PricesXML {
+        Hu(o8_prices::Envelope),
+        En(p_prices::Envelope)
+    }
+
+    pub enum PricesCSV {
+        En(csv_prices::Prices)
+    }
+
+    pub enum PricesData {
+        XML(PricesXML),
+        CSV(PricesCSV)
+    }
 }
+
 
 impl PricesXML {
     pub fn to_xml(&self) -> String {
         to_xml_string(self)
     }
-}
-
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum PricesCSV {
-    En(csv_prices::Prices)
-}
-
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum PricesData {
-    XML(PricesXML),
-    CSV(PricesCSV)
 }
 
 

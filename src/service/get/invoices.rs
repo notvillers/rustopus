@@ -1,48 +1,47 @@
-use crate::global::errors::GLOBAL_GET_DATA_ERROR;
-use crate::{forms::{
-    r#in::xml::{
-        defaults::CallData,
-        invoices as o8_invoices
+// Invoices GET
+use crate::{
+    macros::get::get_models,
+    global::errors::GLOBAL_GET_DATA_ERROR,
+    forms::{
+        r#in::xml::{
+            defaults::CallData,
+            invoices as o8_invoices
+        },
+        out::{
+            csv::invoices as csv_invoices,
+            xml::invoices as p_invoices
+        }
     },
-    out::{
-        csv::invoices as csv_invoices,
-        xml::invoices as p_invoices
-    }
-}, service::get_data::to_xml_string};
-use crate::service::{
-    soap::get_response,
-    get_data::{
-        ErrorType,
-        error_logger
+    service::{
+        soap::get_response,
+        get_data::{
+            ErrorType,
+            error_logger, to_xml_string
+        }
     }
 };
 
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum InvoicesXML {
-    Hu(o8_invoices::Envelope),
-    En(p_invoices::Envelope)
+get_models! {
+    pub enum InvoicesXML {
+        Hu(o8_invoices::Envelope),
+        En(p_invoices::Envelope)
+    }
+    
+    pub enum InvoicesCSV {
+        En(csv_invoices::Products)
+    }
+    
+    pub enum InvoicesData {
+        XML(InvoicesXML),
+        CSV(InvoicesCSV)
+    }
 }
+
 
 impl InvoicesXML {
     pub fn to_xml(&self) -> String {
         to_xml_string(self)
     }
-}
-
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum InvoicesCSV {
-    En(csv_invoices::Products)
-}
-
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum InvoicesData {
-    XML(InvoicesXML),
-    CSV(InvoicesCSV)
 }
 
 

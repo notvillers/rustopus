@@ -1,48 +1,47 @@
-use crate::global::errors::GLOBAL_GET_DATA_ERROR;
-use crate::forms::{
-    r#in::xml::{
-        barcode as o8_barcode,
-        defaults::CallData
+// Barcodes GET
+use crate::{
+    macros::get::get_models,
+    global::errors::GLOBAL_GET_DATA_ERROR,
+    forms::{
+        r#in::xml::{
+            barcode as o8_barcode,
+            defaults::CallData
+        },
+        out::{
+            xml::barcode as p_barcode,
+            csv::barcodes as csv_barcodes
+        }
     },
-    out::{
-        xml::barcode as p_barcode,
-        csv::barcodes as csv_barcodes
-    }
-};
-use crate::service::{
-    soap::get_response,
-    get_data::{
-        FIRST_DATE, ErrorType,
-        error_logger, to_xml_string
+    service::{
+        soap::get_response,
+        get_data::{
+            FIRST_DATE, ErrorType,
+            error_logger, to_xml_string
+        }
     }
 };
 
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum BarcodesXML {
-    Hu(o8_barcode::Envelope),
-    En(p_barcode::Envelope)
+get_models! {
+    pub enum BarcodesXML {
+        Hu(o8_barcode::Envelope),
+        En(p_barcode::Envelope)
+    }
+
+    pub enum BarcodesCSV {
+        En(csv_barcodes::Barcodes)
+    }
+
+    pub enum BarcodesData {
+        XML(BarcodesXML),
+        CSV(BarcodesCSV)
+    }
 }
+
 
 impl BarcodesXML {
     pub fn to_xml(&self) -> String {
         to_xml_string(self)
     }
-}
-
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum BarcodesCSV {
-    En(csv_barcodes::Barcodes)
-}
-
-
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum BarcodesData {
-    XML(BarcodesXML),
-    CSV(BarcodesCSV)
 }
 
 
