@@ -49,7 +49,7 @@ impl BulkXML {
 
 /// This function gets english bulk envelope from the given `CallData`. It combines a lot of other requests.
 pub async fn get_bulk(mut call_data: CallData) -> BulkData {
-    let is_csv = call_data.clone().is_csv();
+    let is_csv = call_data.is_csv();
     call_data.language = None;
     call_data.data_type = None;
 

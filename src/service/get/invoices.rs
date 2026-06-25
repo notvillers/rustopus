@@ -51,7 +51,7 @@ pub async fn get_invoices(call_data: CallData) -> InvoicesData {
     let response = get_response(&call_data.url, request).await;
     return match quick_xml::de::from_str::<o8_invoices::Envelope>(&response) {
         Ok(envelope) => {
-            if call_data.clone().is_csv() {
+            if call_data.is_csv() {
                 return InvoicesData::CSV(InvoicesCSV::En(envelope.into()))
             }
             match call_data.is_hu() {

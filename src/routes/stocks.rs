@@ -65,11 +65,11 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
     // Before log
     log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}", REQUEST_NAME, call_data.url, call_data.authcode));
-    if call_data.clone().is_hu() {
-        log_with_ip_uuid(&ip_address, &uuid, format!("Request is hungarian ('{}')", call_data.clone().language.unwrap_or("Err.".to_string())));
+    if call_data.is_hu() {
+        log_with_ip_uuid(&ip_address, &uuid, format!("Request is hungarian ('{}')", call_data.language.as_deref().unwrap_or("Err.")));
     }
-    if call_data.clone().is_csv() {
-        log_with_ip_uuid(&ip_address, &uuid, format!("Request is csv ('{}')", call_data.clone().data_type.unwrap_or("Err.".to_string())));
+    if call_data.is_csv() {
+        log_with_ip_uuid(&ip_address, &uuid, format!("Request is csv ('{}')", call_data.data_type.as_deref().unwrap_or("Err.")));
     }
 
     // Getting data

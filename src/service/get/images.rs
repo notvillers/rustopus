@@ -53,7 +53,7 @@ pub async fn get_images(call_data: CallData) -> ImagesData {
     let response = get_response(&call_data.url, request).await;
     return match quick_xml::de::from_str::<o8_images::Envelope>(&response) {
         Ok(envelope) => {
-            if call_data.clone().is_csv() {
+            if call_data.is_csv() {
                 return ImagesData::CSV(ImagesCSV::En(envelope.into()))
             }
             match call_data.is_hu() {
