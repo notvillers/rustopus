@@ -1,23 +1,23 @@
 use config::Config;
-use serde::Deserialize;
 use std::thread::available_parallelism;
 
-use crate::service::log::elogger;
+use crate::{
+    macros::service::ConfigModelDerive,
+    service::log::elogger
+};
 
-/// Settings struct
-#[derive(Debug, Deserialize)]
-pub struct Settings {
-    pub server: ServerConfig
-}
+ConfigModelDerive! {
+    pub struct Settings {
+        pub server: ServerConfig
+    }
 
+    pub struct ServerConfig {
+        pub host: String,
+        pub port: u16,
+        pub timeout: u64,
+        pub workers: usize
+    }
 
-/// Server config struct
-#[derive(Debug, Deserialize)]
-pub struct ServerConfig {
-    pub host: String,
-    pub port: u16,
-    pub timeout: u64,
-    pub workers: usize
 }
 
 

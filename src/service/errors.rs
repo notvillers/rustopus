@@ -1,15 +1,19 @@
-use serde::Deserialize;
 use std::{
     env,
     fs::File,
     io::BufReader
 };
+use macro_rules_attribute::apply;
 
-use crate::service::log::elogger;
-use crate::global;
+use crate::{
+    macros::service::ConfigModelDerive,
+    service::log::elogger,
+    global::errors::ERRORS
+};
 
-/// `ErrorMessage` struct
-#[derive(Debug, Deserialize)]
+
+
+#[apply(ConfigModelDerive)]
 pub struct ErrorMessage {
     pub hu: String,
     pub en: String
@@ -38,7 +42,7 @@ pub fn read_errors() -> Vec<ErrorMessage> {
 
 /// This function translates `HU` errors to `EN`
 pub fn translate_error(hungarian_error: &str) -> String {
-    if let Some(error_message) = &global::errors::ERRORS.iter().find(|x| hungarian_error.starts_with(&x.hu)) {
+    if let Some(error_message) = &ERRORS.iter().find(|x| hungarian_error.starts_with(&x.hu)) {
         return error_message.en.clone()
     }
     format!("{} (Can not translate error)", hungarian_error)

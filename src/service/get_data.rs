@@ -6,8 +6,10 @@ use chrono::{DateTime, Utc};
 use quick_xml;
 use lazy_static::lazy_static;
 use futures::Future;
+use macro_rules_attribute::apply;
 
 use crate::{
+    macros::get::get_models,
     global::errors::{self, RustopusError},
     forms::r#in::xml::defaults::CallData,
     service::{
@@ -54,8 +56,7 @@ pub fn error_logger(in_error: ErrorType, error: &RustopusError) {
 
 
 /// `ResponseGet` enum for easier response handle
-#[derive(serde::Serialize)]
-#[serde(untagged)]
+#[apply(get_models)]
 pub enum ResponseGet {
     Products(ProductsData),
     Stocks(StocksData),
