@@ -1,37 +1,46 @@
+// Invoices CSV
 use chrono::NaiveDate;
-use serde::Serialize;
 
-use crate::forms::r#in::xml::invoices as o8_invoices;
+use crate::{
+    macros::out::OutModelDeriveSerializeOnly,
+    forms::r#in::xml::invoices as o8_invoices
+};
 
-#[derive(Serialize)]
-pub struct Product {
-    pub id: i64,
-    pub no: Option<String>,
-    pub date: Option<NaiveDate>,
-    pub completition_date: Option<NaiveDate>,
-    pub payment_deadline: Option<NaiveDate>,
-    pub currency: String,
-    pub pid: i64,
-    pub partner_name: String,
-    pub foreign_order_no: Option<String>,
-    pub delivery_name: Option<String>,
-    pub delivery_country: Option<String>,
-    pub delivery_zip: Option<String>,
-    pub delivery_city: Option<String>,
-    pub delivery_street: Option<String>,
-    pub lot_no: u64,
-    pub item_id: u64,
-    pub item_no: String,
-    pub item_name: String,
-    pub qty: Option<f64>,
-    pub unit: String,
-    pub net_unit_price: Option<f64>,
-    pub unit_price: Option<f64>,
-    pub net_price: Option<f64>,
-    pub price: Option<f64>,
-    pub order_no: Option<String>,
-    pub order_foreign_no: Option<String>
+OutModelDeriveSerializeOnly! {
+    pub struct Product {
+        pub id: i64,
+        pub no: Option<String>,
+        pub date: Option<NaiveDate>,
+        pub completition_date: Option<NaiveDate>,
+        pub payment_deadline: Option<NaiveDate>,
+        pub currency: String,
+        pub pid: i64,
+        pub partner_name: String,
+        pub foreign_order_no: Option<String>,
+        pub delivery_name: Option<String>,
+        pub delivery_country: Option<String>,
+        pub delivery_zip: Option<String>,
+        pub delivery_city: Option<String>,
+        pub delivery_street: Option<String>,
+        pub lot_no: u64,
+        pub item_id: u64,
+        pub item_no: String,
+        pub item_name: String,
+        pub qty: Option<f64>,
+        pub unit: String,
+        pub net_unit_price: Option<f64>,
+        pub unit_price: Option<f64>,
+        pub net_price: Option<f64>,
+        pub price: Option<f64>,
+        pub order_no: Option<String>,
+        pub order_foreign_no: Option<String>
+    }
+
+    pub struct Products {
+        pub products: Vec<Product>
+    }
 }
+
 
 impl From<(o8_invoices::Fej, o8_invoices::Tetel)> for Product {
     fn from((f, c): (o8_invoices::Fej, o8_invoices::Tetel)) -> Self {
@@ -66,11 +75,6 @@ impl From<(o8_invoices::Fej, o8_invoices::Tetel)> for Product {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Products {
-    pub products: Vec<Product>
-}
 
 impl From<o8_invoices::Envelope> for Products {
     fn from(e: o8_invoices::Envelope) -> Self {

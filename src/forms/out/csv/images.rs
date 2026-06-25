@@ -1,12 +1,19 @@
-use serde::Serialize;
+// Images CSV
+use crate::{
+    macros::out::OutModelDeriveSerializeOnly,
+    forms::r#in::xml::images as o8_images
+};
 
-use crate::forms::r#in::xml::images as o8_images;
+OutModelDeriveSerializeOnly! {
+    pub struct Product {
+        pub id: u64,
+        pub no: String,
+        pub url: String
+    }
 
-#[derive(Serialize)]
-pub struct Product {
-    pub id: u64,
-    pub no: String,
-    pub url: String
+    pub struct Products {
+        pub products: Vec<Product>
+    }
 }
 
 impl From<o8_images::Cikk> for Product {
@@ -20,12 +27,6 @@ impl From<o8_images::Cikk> for Product {
                 .unwrap_or_else(|| "".to_string())
         }
     }
-}
-
-
-#[derive(Serialize)]
-pub struct Products {
-    pub products: Vec<Product>
 }
 
 impl From<o8_images::Envelope> for Products {

@@ -1,13 +1,21 @@
-use serde::Serialize;
+// Stocks CSV
+use crate::{
+    macros::out::OutModelDeriveSerializeOnly,
+    forms::r#in::xml::stocks as o8_stocks
+};
 
-use crate::forms::r#in::xml::stocks as o8_stocks;
+OutModelDeriveSerializeOnly! {
+    pub struct Product {
+        pub id: u64,
+        pub no: String,
+        pub stock: Option<f64>
+    }
 
-#[derive(Serialize)]
-pub struct Product {
-    pub id: u64,
-    pub no: String,
-    pub stock: Option<f64>
+    pub struct Products {
+        pub products: Vec<Product>
+    }
 }
+
 
 impl From<o8_stocks::Cikk> for Product {
     fn from(c: o8_stocks::Cikk) -> Self {
@@ -19,11 +27,6 @@ impl From<o8_stocks::Cikk> for Product {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Products {
-    pub products: Vec<Product>
-}
 
 impl From<o8_stocks::Envelope> for Products {
     fn from(e: o8_stocks::Envelope) -> Self {

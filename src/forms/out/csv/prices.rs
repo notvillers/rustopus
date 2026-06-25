@@ -1,16 +1,24 @@
-use serde::Serialize;
+// Prices CSV
+use crate::{
+    macros::out::OutModelDeriveSerializeOnly,
+    forms::r#in::xml::prices as o8_prices
+};
 
-use crate::forms::r#in::xml::prices as o8_prices;
+OutModelDeriveSerializeOnly! {
+    pub struct Price {
+        pub id: u64,
+        pub no: String,
+        pub list_price: Option<f64>,
+        pub price: Option<f64>,
+        pub sale_price: Option<f64>,
+        pub currencry: String
+    }
 
-#[derive(Serialize)]
-pub struct Price {
-    pub id: u64,
-    pub no: String,
-    pub list_price: Option<f64>,
-    pub price: Option<f64>,
-    pub sale_price: Option<f64>,
-    pub currencry: String
+    pub struct Prices {
+        pub prices: Vec<Price>
+    }
 }
+
 
 impl From<o8_prices::Ar> for Price {
     fn from(a: o8_prices::Ar) -> Self {
@@ -25,11 +33,6 @@ impl From<o8_prices::Ar> for Price {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Prices {
-    pub prices: Vec<Price>
-}
 
 impl From<o8_prices::Envelope> for Prices {
     fn from(e: o8_prices::Envelope) -> Self {

@@ -1,11 +1,12 @@
+// Mat CSV
 use std::num::NonZeroU8;
 
 use crate::{
-    macros::out::OutModelDeriveOnly,
+    macros::out::OutModelDeriveSerializeOnly,
     forms::r#in::xml::mat as o8_mat
 };
 
-OutModelDeriveOnly! {
+OutModelDeriveSerializeOnly! {
     pub struct Concepts {
         pub concepts: Vec<Concept>
     }
@@ -38,6 +39,7 @@ impl From<o8_mat::Envelope> for Concepts {
         }
     }
 }
+
 
 impl From<o8_mat::Tulajdonsag> for Concept {
     fn from(f: o8_mat::Tulajdonsag) -> Self {

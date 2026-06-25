@@ -1,16 +1,49 @@
 /// Stocks english struct(s) for XML(s) got from the Octopus call
-use serde::Serialize;
 use quick_xml;
 
-use crate::forms::{
-    r#in::xml::stocks as o8_stocks,
-    out::xml::defaults as p_defaults
+use crate::{
+    macros::out::OutModelDeriveSerializeOnly,
+    forms::{
+        r#in::xml::stocks as o8_stocks,
+        out::xml::defaults as p_defaults
+    }
 };
 
-#[derive(Serialize)]
-pub struct Envelope {
-    pub body: Body
+OutModelDeriveSerializeOnly! {
+    pub struct Envelope {
+        pub body: Body
+    }
+
+    pub struct Body {
+        pub response: GetStockChangeAuthResponse
+    }
+
+    pub struct GetStockChangeAuthResponse {
+        pub result: GetStockChangeAuthResult
+    }
+
+    pub struct GetStockChangeAuthResult {
+        pub answer: Answer
+    }
+
+    pub struct Answer {
+        pub version: String,
+        pub products: Products,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub error: Option<p_defaults::Error>
+    }
+
+    pub struct Products {
+        pub product: Vec<Product>
+    }
+
+    pub struct Product {
+        pub id: u64,
+        pub no: String,
+        pub stock: Option<f64>
+    }
 }
+
 
 impl From<o8_stocks::Envelope> for Envelope {
     fn from(e: o8_stocks::Envelope) -> Self {
@@ -21,11 +54,6 @@ impl From<o8_stocks::Envelope> for Envelope {
 }
 
 
-#[derive(Serialize)]
-pub struct Body {
-    pub response: GetStockChangeAuthResponse
-}
-
 impl From<o8_stocks::Body> for Body {
     fn from(b: o8_stocks::Body) -> Self {
         Self {
@@ -34,12 +62,6 @@ impl From<o8_stocks::Body> for Body {
     }
 }
 
-
-
-#[derive(Serialize)]
-pub struct GetStockChangeAuthResponse {
-    pub result: GetStockChangeAuthResult
-}
 
 impl From<o8_stocks::GetCikkekKeszletValtozasAuthResponse> for GetStockChangeAuthResponse {
     fn from(r: o8_stocks::GetCikkekKeszletValtozasAuthResponse) -> Self {
@@ -50,11 +72,6 @@ impl From<o8_stocks::GetCikkekKeszletValtozasAuthResponse> for GetStockChangeAut
 }
 
 
-#[derive(Serialize)]
-pub struct GetStockChangeAuthResult {
-    pub answer: Answer
-}
-
 impl From<o8_stocks::GetCikkekKeszletValtozasAuthResult> for GetStockChangeAuthResult {
     fn from(r: o8_stocks::GetCikkekKeszletValtozasAuthResult) -> Self {
         Self {
@@ -63,14 +80,6 @@ impl From<o8_stocks::GetCikkekKeszletValtozasAuthResult> for GetStockChangeAuthR
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Answer {
-    pub version: String,
-    pub products: Products,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<p_defaults::Error>
-}
 
 impl From<o8_stocks::Valasz> for Answer {
     fn from(v: o8_stocks::Valasz) -> Self {
@@ -83,11 +92,6 @@ impl From<o8_stocks::Valasz> for Answer {
 }
 
 
-#[derive(Serialize)]
-pub struct Products {
-    pub product: Vec<Product>
-}
-
 impl From<o8_stocks::Cikkek> for Products {
     fn from(c: o8_stocks::Cikkek) -> Self {
         Self {
@@ -99,13 +103,6 @@ impl From<o8_stocks::Cikkek> for Products {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Product {
-    pub id: u64,
-    pub no: String,
-    pub stock: Option<f64>
-}
 
 impl From<o8_stocks::Cikk> for Product {
     fn from(c: o8_stocks::Cikk) -> Self {

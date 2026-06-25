@@ -1,13 +1,41 @@
 // Test struct
-use serde::Serialize;
-use quick_xml;
 use chrono::{DateTime, Local};
+use quick_xml;
 
-use crate::forms::out::xml::defaults as p_defaults;
+use crate::{
+    macros::out::OutModelDeriveSerializeOnly,
+    forms::out::xml::defaults as p_defaults
+};
 
-#[derive(Serialize)]
-pub struct Envelope {
-    pub body: Body
+OutModelDeriveSerializeOnly! {
+    pub struct Envelope {
+        pub body: Body
+    }
+
+    pub struct Body {
+        pub response: Response
+    }
+
+    pub struct Response {
+        pub result: Result
+    }
+
+    pub struct Result {
+        pub answer: Answer
+    }
+
+    pub struct Answer {
+        pub version: String,
+        pub data: Option<Data>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub error: Option<p_defaults::Error>
+    }
+
+    pub struct Data {
+        pub ip: Option<String>,
+        pub uuid: Option<String>,
+        pub time: DateTime<Local>
+    }
 }
 
 impl From<(Option<String>, Option<String>, Option<String>, Option<p_defaults::Error>)> for Envelope {
@@ -19,11 +47,6 @@ impl From<(Option<String>, Option<String>, Option<String>, Option<p_defaults::Er
 }
 
 
-#[derive(Serialize)]
-pub struct Body {
-    pub response: Response
-}
-
 impl From<(Option<String>, Option<String>, Option<String>, Option<p_defaults::Error>)> for Body {
     fn from((version, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<p_defaults::Error>)) -> Self {
         Self {
@@ -32,11 +55,6 @@ impl From<(Option<String>, Option<String>, Option<String>, Option<p_defaults::Er
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Response {
-    pub result: Result
-}
 
 impl From<(Option<String>, Option<String>, Option<String>, Option<p_defaults::Error>)> for Response {
     fn from((version, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<p_defaults::Error>)) -> Self {
@@ -47,11 +65,6 @@ impl From<(Option<String>, Option<String>, Option<String>, Option<p_defaults::Er
 }
 
 
-#[derive(Serialize)]
-pub struct Result {
-    pub answer: Answer
-}
-
 impl From<(Option<String>, Option<String>, Option<String>, Option<p_defaults::Error>)> for Result {
     fn from((version, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<p_defaults::Error>)) -> Self {
         Self {
@@ -60,14 +73,6 @@ impl From<(Option<String>, Option<String>, Option<String>, Option<p_defaults::Er
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Answer {
-    pub version: String,
-    pub data: Option<Data>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<p_defaults::Error>
-}
 
 impl From<(Option<String>, Option<String>, Option<String>, Option<p_defaults::Error>)> for Answer {
     fn from((version, ip, uuid, error): (Option<String>, Option<String>, Option<String>, Option<p_defaults::Error>)) -> Self {
@@ -79,13 +84,6 @@ impl From<(Option<String>, Option<String>, Option<String>, Option<p_defaults::Er
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Data {
-    pub ip: Option<String>,
-    pub uuid: Option<String>,
-    pub time: DateTime<Local>
-}
 
 impl From<(Option<String>, Option<String>)> for Data {
     fn from((ip, uuid): (Option<String>, Option<String>)) -> Self {

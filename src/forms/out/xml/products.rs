@@ -1,16 +1,64 @@
 /// Products english struct(s) for XML(s) got from the Octopus call
-use serde::Serialize;
 use quick_xml;
+use macro_rules_attribute::apply;
 
-use crate::forms::{
-    r#in::xml::products as o8_products,
-    out::xml::defaults as p_defaults
+use crate::{
+    macros::out::{OutModelDeriveSerializeOnly, OutModelDeriveOnly},
+    forms::{
+        r#in::xml::products as o8_products,
+        out::xml::defaults as p_defaults
+    }
 };
 
-#[derive(Serialize)]
-pub struct Envelope {
-    pub body: Body
+OutModelDeriveSerializeOnly! {
+    pub struct Envelope {
+        pub body: Body
+    }
+    
+    pub struct Body {
+        pub response: GetProductsAuthResponse
+    }
+    
+    pub struct GetProductsAuthResponse {
+        pub result: GetProductsAuthResult
+    }
+
+    pub struct GetProductsAuthResult {
+        pub answer: Answer
+    }
+
+    pub struct Answer {
+        pub version: String,
+        pub products: Products,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub error: Option<p_defaults::Error>
+    }
+
+    pub struct Products {
+        pub product: Vec<Product>
+    }
+
+    pub struct Product {
+        pub id: u64,
+        pub no: String,
+        pub name: String,
+        pub unit: String,
+        pub base_unit: String,
+        pub base_unit_qty: Option<f64>,
+        pub brand: String,
+        pub category_code: String,
+        pub category_name: String,
+        pub description: String,
+        pub weight: Option<f64>,
+        pub size: Option<Size>,
+        pub oem_code: String,
+        pub main_category_code: String,
+        pub main_category_name: String,
+        pub sell_unit: Option<f64>,
+        pub origin_country: String
+    }
 }
+
 
 impl From<o8_products::Envelope> for Envelope {
     fn from(e: o8_products::Envelope) -> Self {
@@ -21,11 +69,6 @@ impl From<o8_products::Envelope> for Envelope {
 }
 
 
-#[derive(Serialize)]
-pub struct Body {
-    pub response: GetProductsAuthResponse
-}
-
 impl From<o8_products::Body> for Body {
     fn from(b: o8_products::Body) -> Self {
         Self {
@@ -34,11 +77,6 @@ impl From<o8_products::Body> for Body {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct GetProductsAuthResponse {
-    pub result: GetProductsAuthResult
-}
 
 impl From<o8_products::GetCikkekAuthResponse> for GetProductsAuthResponse {
     fn from(r: o8_products::GetCikkekAuthResponse) -> Self {
@@ -49,11 +87,6 @@ impl From<o8_products::GetCikkekAuthResponse> for GetProductsAuthResponse {
 }
 
 
-#[derive(Serialize)]
-pub struct GetProductsAuthResult {
-    pub answer: Answer
-}
-
 impl From<o8_products::GetCikkekAuthResult> for GetProductsAuthResult {
     fn from(r: o8_products::GetCikkekAuthResult) -> Self {
         Self {
@@ -62,14 +95,6 @@ impl From<o8_products::GetCikkekAuthResult> for GetProductsAuthResult {
     }
 }
 
-
-#[derive(Serialize)]
-pub struct Answer {
-    pub version: String,
-    pub products: Products,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<p_defaults::Error>
-}
 
 impl From<o8_products::Valasz> for Answer {
     fn from(v: o8_products::Valasz) -> Self {
@@ -82,11 +107,6 @@ impl From<o8_products::Valasz> for Answer {
 }
 
 
-#[derive(Serialize)]
-pub struct Products {
-    pub product: Vec<Product>
-}
-
 impl FromIterator<o8_products::Cikk> for Products {
     fn from_iter<I: IntoIterator<Item = o8_products::Cikk>>(iter: I) -> Self {
         Self {
@@ -95,27 +115,6 @@ impl FromIterator<o8_products::Cikk> for Products {
     }
 }
 
-
-#[derive(Serialize, Clone)]
-pub struct Product {
-    pub id: u64,
-    pub no: String,
-    pub name: String,
-    pub unit: String,
-    pub base_unit: String,
-    pub base_unit_qty: Option<f64>,
-    pub brand: String,
-    pub category_code: String,
-    pub category_name: String,
-    pub description: String,
-    pub weight: Option<f64>,
-    pub size: Option<Size>,
-    pub oem_code: String,
-    pub main_category_code: String,
-    pub main_category_name: String,
-    pub sell_unit: Option<f64>,
-    pub origin_country: String
-}
 
 impl From<o8_products::Cikk> for Product {
     fn from(c: o8_products::Cikk) -> Self {
@@ -142,12 +141,14 @@ impl From<o8_products::Cikk> for Product {
 }
 
 
-#[derive(Debug, Serialize, Clone, Copy)]
+#[apply(OutModelDeriveOnly)]
+#[derive(Clone, Copy)]
 pub struct Size {
     pub x: Option<f64>,
     pub y: Option<f64>,
     pub z: Option<f64>
 }
+
 
 impl From<o8_products::Meret> for Size {
     fn from(meret: o8_products::Meret) -> Self {
