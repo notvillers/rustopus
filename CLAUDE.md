@@ -51,7 +51,7 @@ cargo run -p rustopus-client        # also: ./client.sh / client.bat
 - `src/main.rs` wires the `actix-web` server, registers all HTTP routes, and serves Swagger docs from `src/static/docs` at `/docs/` (root `/` redirects there). Installs a panic hook that writes to the error log instead of aborting. Note: the server's request/keep-alive timeouts are hardcoded to 1200s here, *not* read from `Config.toml`'s `timeout`.
 - `src/routes/` is the HTTP layer. Each endpoint builds a `CallData` payload from query/body inputs, logs with IP + UUID, calls the service layer, then serializes XML/CSV responses. The registered routes are the GET fetchers `get-products`, `get-stocks`, `get-prices`, `get-images`, `get-barcodes`, `get-bulk`, `get-invoices`, `get-mat` (the "mathematican models" endpoint), `get-test`, the index, and the single POST endpoint `order`.
 - `src/service/` is the integration layer:
-  - `soap.rs` performs outbound SOAP POST requests.
+  - `soap.rs` performs outbound SOAP POST requests through one process-wide, lazily-built `reqwest::Client` (`static CLIENT: Lazy<Client>`) so the connection pool / TLS sessions are reused across calls — never build a client per request. The server uses async reqwest only; the `blocking` feature/API belongs to the desktop `client` crate, not the server (calling it from the async runtime would panic).
   - `get_data.rs` dispatches typed requests (`RequestGet`) to endpoint-specific fetchers in `service/get/*.rs`.
   - `service/get/*.rs` deserializes Octopus XML envelopes, converts HU/EN representations, and returns typed data enums.
   - `service/get/bulk.rs` is an aggregator: it composes products/prices/stocks/images/barcodes calls and merges them into one response with per-subcall fallback errors.
@@ -85,11 +85,12 @@ cargo run -p rustopus-client        # also: ./client.sh / client.bat
   - otherwise → translate to English models.
   - `data_type=csv` → semicolon-delimited CSV output on endpoints that support it.
 - **Conversion style.** Prefer `impl From<...>` mappings between `forms::in` and `forms::out` models over ad-hoc field transforms in route handlers.
+- **Don't clone `CallData` to read it.** `is_hu()`/`is_csv()` take `&self`, and fields (`language`, `data_type`, …) can be read by reference — call them on the borrow instead of `call_data.clone().is_hu()`. Clone only when you need an owned copy, e.g. the concurrent `futures::join!` fan-out in `service/get/bulk.rs`.
 - **Declare models through the `src/macros/` wrappers, not bare `#[derive]`.** New form/response models should reuse the existing macro for that layer (see "High-level architecture") so the derive set stays uniform. Two call styles are in use: the function-like form wrapping a block of definitions (`OutModelDeriveSerializeOnly! { pub struct A {..} pub struct B {..} }`), and the attribute form on a single item via `macro_rules_attribute::apply` (`#[apply(O8ModelLowercase)] pub struct C {..}`). `impl` blocks and `error_struct(_xml)` constructors stay outside the macro block.
 
 ## Configuration files
 
-- `Config.toml` (checked in) — server bind config: `[server] host, port, timeout, workers`. The committed config uses port `1140` (the code defaults to `8080` when absent); the desktop client and the integration test both assume `1140`.
+- `Config.toml` (checked in) — server bind config: `[server] host, port, timeout, workers`. The committed config uses port `1140` (the code defaults to `8080` when absent); the desktop client and the integration test both assume `1140`. `get_settings()` parses this file once into a cached `static SETTINGS: Lazy<Settings>`, so edits take effect only on restart; `timeout` is applied to the outbound `reqwest` client (the actix request/keep-alive timeouts are the separate hardcoded 1200s noted under High-level architecture).
 - `soap.json` (gitignored) — `{ "url": "<default wsdl url>" }`. Used as fallback for `url`/`xmlns` when a request doesn't supply them.
 - `client_config.toml`, `crons.toml` (gitignored) — desktop-client state; not used by the server. See "Client config resolution" above for where the client looks for them.
 
