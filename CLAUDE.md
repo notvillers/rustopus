@@ -48,8 +48,8 @@ cargo run -p rustopus-client        # also: ./client.sh / client.bat
 
 ## High-level architecture
 
-- `src/main.rs` wires the `actix-web` server, registers all HTTP routes, and serves Swagger docs from `src/static/docs` at `/docs/` (root `/` redirects there). Installs a panic hook that writes to the error log instead of aborting.
-- `src/routes/` is the HTTP layer. Each endpoint builds a `CallData` payload from query/body inputs, logs with IP + UUID, calls the service layer, then serializes XML/CSV responses.
+- `src/main.rs` wires the `actix-web` server, registers all HTTP routes, and serves Swagger docs from `src/static/docs` at `/docs/` (root `/` redirects there). Installs a panic hook that writes to the error log instead of aborting. Note: the server's request/keep-alive timeouts are hardcoded to 1200s here, *not* read from `Config.toml`'s `timeout`.
+- `src/routes/` is the HTTP layer. Each endpoint builds a `CallData` payload from query/body inputs, logs with IP + UUID, calls the service layer, then serializes XML/CSV responses. The registered routes are the GET fetchers `get-products`, `get-stocks`, `get-prices`, `get-images`, `get-barcodes`, `get-bulk`, `get-invoices`, `get-mat` (the "mathematican models" endpoint), `get-test`, the index, and the single POST endpoint `order`.
 - `src/service/` is the integration layer:
   - `soap.rs` performs outbound SOAP POST requests.
   - `get_data.rs` dispatches typed requests (`RequestGet`) to endpoint-specific fetchers in `service/get/*.rs`.
@@ -58,6 +58,12 @@ cargo run -p rustopus-client        # also: ./client.sh / client.bat
 - `src/forms/` holds schema/transform models:
   - `forms/in/xml/*`: incoming Octopus SOAP/request models (Hungarian tag names).
   - `forms/out/xml/*` and `forms/out/csv/*`: converted English-facing output models.
+- `src/macros/` defines the `macro_rules!` wrappers that stamp the common `serde` derives onto every model, so the form files declare data shapes without repeating `#[derive(...)]`. Each is `pub(crate) use`-exported from its module:
+  - `macros/in.rs`: `O8ModelDeriveOnly` (Debug + De/Serialize), `O8ModelLowercase`, `O8ModelPascalcase` (add `#[serde(rename_all = ...)]`) — for incoming Octopus models.
+  - `macros/out.rs`: `OutModelDeriveOnly` (Debug + Serialize), `OutModelDeriveSerializeOnly` (Serialize only) — for English output models.
+  - `macros/get.rs`: `get_models` — `#[serde(untagged)]` Serialize enums (the `ResponseGet`/`*Data` response dispatch enums).
+  - `macros/service.rs`: `ConfigModelDerive` (Deserialize) — config/settings structs.
+- Two separate doc trees exist: `src/static/docs/` is the served Swagger UI bundle (with `openapi.yaml`); `docs/api/<endpoint>/` holds hand-written consumer request examples (`request.{sh,py,js,cs,ps1}` + README) — keep these in sync when an endpoint's parameters change.
 - Logging is hybrid Rust + C FFI:
   - `src/service/log.rs` wraps logging behavior.
   - `src/C/*.c` provides append/date helpers compiled by `build.rs`.
@@ -79,6 +85,7 @@ cargo run -p rustopus-client        # also: ./client.sh / client.bat
   - otherwise → translate to English models.
   - `data_type=csv` → semicolon-delimited CSV output on endpoints that support it.
 - **Conversion style.** Prefer `impl From<...>` mappings between `forms::in` and `forms::out` models over ad-hoc field transforms in route handlers.
+- **Declare models through the `src/macros/` wrappers, not bare `#[derive]`.** New form/response models should reuse the existing macro for that layer (see "High-level architecture") so the derive set stays uniform. Two call styles are in use: the function-like form wrapping a block of definitions (`OutModelDeriveSerializeOnly! { pub struct A {..} pub struct B {..} }`), and the attribute form on a single item via `macro_rules_attribute::apply` (`#[apply(O8ModelLowercase)] pub struct C {..}`). `impl` blocks and `error_struct(_xml)` constructors stay outside the macro block.
 
 ## Configuration files
 
