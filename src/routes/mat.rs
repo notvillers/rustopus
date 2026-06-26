@@ -77,7 +77,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
     // Handling got data
     match data {
-        ResponseGet::Mat(MatData::CSV(MatCSV::En(c))) => send_csv(&c.concepts, "products.csv"),
+        ResponseGet::Mat(MatData::CSV(MatCSV::En(c))) => send_csv(&c.concepts, "mat.csv"),
         ResponseGet::Mat(MatData::XML(d)) => send_xml(d.to_xml()),
         _ => return_internal_server_error()
     }
