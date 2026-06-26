@@ -314,6 +314,60 @@ paths:
               schema:
                 $ref: '#/components/schemas/BulkResponse'
 
+  /get-mat:
+    get:
+      summary: Get mathematican models data
+      description: Returns the mathematican models (product attributes/concepts). Supports XML or CSV output.
+      tags:
+        - Mat
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: Endpoint URL with the ```.asmx``` file
+          schema:
+            type: string
+        - name: authcode
+          in: query
+          required: true
+          description: Authorization code
+          schema:
+            type: string
+        - name: xmlns
+          in: query
+          required: false
+          description: Optional XML namespace
+          schema:
+            type: string
+        - name: from_date
+          in: query
+          required: false
+          description: Optional filter date in YYYY-MM-DDThh:mm:ssZ format (2025-01-01T00:00:00Z)
+          schema:
+            type: string
+        - name: data_type
+          in: query
+          required: false
+          description: Optional output format; set to `csv` for semicolon-delimited CSV
+          schema:
+            type: string
+        - name: language
+          in: query
+          required: false
+          description: Optional language (only supports `HU`)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: XML (or CSV) mathematican models list
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/MatResponse'
+            text/csv:
+              schema:
+                type: string
+
   /post-order:
     post:
       summary: Submit an order to Octopus 8 ERP
@@ -703,6 +757,70 @@ components:
         url:
           type: string
     
+    MatResponse:
+      type: object
+      xml:
+        name: Envelope
+      properties:
+        body:
+          type: object
+          properties:
+            response:
+              type: object
+              properties:
+                result:
+                  type: object
+                  properties:
+                    answer:
+                      type: object
+                      properties:
+                        version:
+                          type: string
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: number
+                            description:
+                              type: string
+                        attributes:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/MatAttributes'
+
+    MatAttributes:
+      type: object
+      xml:
+        name: attributes
+      properties:
+        attribute:
+          type: object
+          properties:
+            id:
+              type: number
+            code:
+              type: string
+            name:
+              type: string
+            product_id:
+              type: number
+            product_no:
+              type: string
+            string_value:
+              type: string
+            num_value:
+              type: number
+            order:
+              type: number
+            delstatus:
+              type: number
+            filter:
+              type: number
+            data_type:
+              type: number
+            value_set:
+              type: number
+
     BarcodeResponse:
       type: object
       xml:
