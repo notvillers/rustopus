@@ -1,6 +1,4 @@
 // Bulk hungarian struct(s) from XML(s) got from the Octopus calls
-use quick_xml;
-
 use crate::{
     forms::{
         r#in::xml::{
