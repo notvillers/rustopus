@@ -217,34 +217,3 @@ impl From<bulk::Image> for Kep {
         }
     }
 }
-
-
-pub fn error_struct(errors: Vec<Error>) -> Envelope {
-    Envelope {
-        body: Body {
-            response: Response {
-                result: Result {
-                    valasz: Valasz {
-                        verzio: "1.0".into(),
-                        cikkek: Cikkek {
-                            cikk: vec![]
-                        },
-                        hiba: errors
-                                .into_iter()
-                                .map(Into::into)
-                                .collect()
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-pub fn error_struct_xml(code: u64, description: &str) -> String {
-    let error = Error {
-        code: code,
-        description: description.into()
-    };
-    quick_xml::se::to_string(&error_struct(vec![error])).unwrap_or("<Envelope></Envelope>".into())
-}
