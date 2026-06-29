@@ -5,10 +5,7 @@ use std::str::FromStr;
 
 use crate::{
     macros::r#in::{O8ModelLowercase, O8ModelPascalcase},
-    forms::{
-        r#in::xml::defaults as o8_defaults,
-        out::xml::invoices as p_invoices
-    },
+    forms::r#in::xml::defaults as o8_defaults,
     service::dates::{get_first_date, get_datetime},
 };
 
@@ -140,13 +137,6 @@ O8ModelLowercase! {
         pub brertek: Option<f64>,
         pub rbizonylatszam: Option<String>,
         pub ridegenmegrszam: Option<String>
-    }
-}
-
-
-impl Envelope {
-    pub fn to_en(self) -> p_invoices::Envelope {
-        self.into()
     }
 }
 

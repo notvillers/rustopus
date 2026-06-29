@@ -1,6 +1,5 @@
 // Structs for GetVonalkodokAuth's XML
 use chrono::{DateTime, Utc};
-use macro_rules_attribute::apply;
 
 use crate::{
     macros::r#in::{O8ModelLowercase, O8ModelPascalcase},
@@ -40,9 +39,13 @@ O8ModelPascalcase! {
     }
     
     pub struct GetVonalkodokAuthResult {
+        #[serde(rename = "valasz")]
         pub valasz: Valasz
     }
-    
+}
+
+
+O8ModelLowercase! {
     pub struct Valasz {
         #[serde(rename = "@verzio")]
         pub verzio: String,
@@ -55,14 +58,12 @@ O8ModelPascalcase! {
         #[serde(rename = "vonalkod")]
         pub vonalkod: Vec<Vonalkod>
     }
-}
 
-
-#[apply(O8ModelLowercase)]
-pub struct Vonalkod {
-    pub cikkid: u64,
-    pub cikkszam: String,
-    pub vonalkod: String,
-    pub me: String,
-    pub elsean: u64
+    pub struct Vonalkod {
+        pub cikkid: u64,
+        pub cikkszam: String,
+        pub vonalkod: String,
+        pub me: String,
+        pub elsean: u64
+    }
 }

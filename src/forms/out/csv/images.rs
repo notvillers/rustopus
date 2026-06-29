@@ -16,6 +16,7 @@ OutModelDeriveSerializeOnly! {
     }
 }
 
+
 impl From<o8_images::Cikk> for Product {
     fn from(c: o8_images::Cikk) -> Self {
         Self {
@@ -29,6 +30,7 @@ impl From<o8_images::Cikk> for Product {
     }
 }
 
+
 impl From<o8_images::Envelope> for Products {
     fn from(e: o8_images::Envelope) -> Self {
         let products = e.body.get_cikk_kepek_auth_response.get_cikk_kepek_auth_result.valasz.cikk;
@@ -40,3 +42,10 @@ impl From<o8_images::Envelope> for Products {
         }
     }
 }
+
+/// Hungarian CSV header row for `Product`, in field order. Used when `language=hu`.
+pub const HU_HEADERS: &[&str] = &[
+    "Cikk azonosító",
+    "Cikkszám",
+    "Kép url"
+];

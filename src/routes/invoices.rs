@@ -11,7 +11,10 @@ use crate::{
     },
     forms::{
         r#in::xml::defaults::CallData,
-        out::xml::invoices::error_struct_xml
+        out::{
+            xml::invoices::error_struct_xml,
+            csv::invoices::HU_HEADERS
+        }
     },
     service::{
         slave::get_uuid,
@@ -90,10 +93,10 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     };
 
     // Before log
-    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}, pid: {:#?}", REQUEST_NAME, call_data.url, call_data.authcode, call_data.pid.unwrap_or(0)));
-    if call_data.is_hu() {
-        log_with_ip_uuid(&ip_address, &uuid, format!("Request is hungarian ('{}')", call_data.language.as_deref().unwrap_or("Err.")));
-    }
+    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, {:?}", REQUEST_NAME, call_data));
+
+    // Capturing language before `call_data` is consumed (drives CSV header language)
+    let is_hu = call_data.is_hu();
 
     // Getting data
     let data = RequestGet::Invoices(call_data).to_data().await;
@@ -103,7 +106,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
     // Handling got data
     match data {
-        ResponseGet::Invoices(InvoicesData::CSV(InvoicesCSV::En(d))) => return send_csv(&d.products, "invoices.csv"),
+        ResponseGet::Invoices(InvoicesData::CSV(InvoicesCSV::En(d))) => return send_csv(&d.products, "invoices.csv", if is_hu { Some(HU_HEADERS) } else { None }),
         ResponseGet::Invoices(InvoicesData::XML(d)) => return send_xml(d.to_xml()),
         _ => {}
     }

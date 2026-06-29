@@ -12,7 +12,7 @@ pub struct Hiba {
 }
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CallData {
     pub authcode: String,
     pub url: String,

@@ -1,4 +1,4 @@
-// Bulk english struct(s) fro XML(s) got from the Octopus call
+// Bulk english struct(s) from XML(s) got from the Octopus calls
 use quick_xml;
 
 use crate::{
@@ -236,7 +236,7 @@ impl From<Option<&images::Product>> for Images {
                         url: img.url.clone()
                     }).collect()
                 })
-                .unwrap_or_else(Vec::new)
+                .unwrap_or_default()
         }
     }
 }
@@ -264,7 +264,7 @@ pub fn error_struct(errors: Vec<defaults::Error>) -> Envelope {
 pub fn error_struct_xml(code: u64, description: &str) -> String {
     let error = defaults::Error {
         code: code,
-        description: description.to_string()
+        description: description.into()
     };
     quick_xml::se::to_string(&error_struct(vec![error])).unwrap_or("<Envelope></Envelope>".into())
 }

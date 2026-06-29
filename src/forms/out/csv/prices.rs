@@ -45,3 +45,14 @@ impl From<o8_prices::Envelope> for Prices {
         }
     }
 }
+
+
+/// Hungarian CSV header row for `Price`, in field order. Used when `language=hu`.
+pub const HU_HEADERS: &[&str] = &[
+    "Cikk azonosító",
+    "Cikkszám",
+    "Listaár",
+    "Ár",
+    "Akciós ár",
+    "Devizanem"
+];

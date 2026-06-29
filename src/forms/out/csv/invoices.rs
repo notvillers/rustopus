@@ -91,3 +91,34 @@ impl From<o8_invoices::Envelope> for Products {
         }
     }
 }
+
+
+/// Hungarian CSV header row for `Product`, in field order. Used when `language=hu`.
+pub const HU_HEADERS: &[&str] = &[
+    "Azonosító",
+    "Bizonylatszám",
+    "Bizonylat dátuma",
+    "Teljesítés dátuma",
+    "Fizetési határidő",
+    "Devizanem",
+    "Partner azonosító",
+    "Partner név",
+    "Idegen megrendelésszám",
+    "Szállítási név",
+    "Szállítási ország",
+    "Szállítási irányítószám",
+    "Szállítási város",
+    "Szállítási utca",
+    "Tételszám",
+    "Cikk azonosító",
+    "Cikkszám",
+    "Cikknév",
+    "Mennyiség",
+    "Mennyiségi egység",
+    "Nettó egységár",
+    "Bruttó egységár",
+    "Nettó érték",
+    "Bruttó érték",
+    "Rendelés bizonylatszám",
+    "Rendelés idegen megrendelésszám"
+];

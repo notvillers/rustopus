@@ -1,32 +1,25 @@
 // Bulk GET
 use crate::{
-    macros::get::get_models,
-    global::errors,
     forms::{
         r#in::xml::defaults::CallData,
         out::{
             csv::bulk as csv_bulk,
-            xml::{barcode, bulk, images, prices, stocks}
+            xml::{barcode, bulk, bulk_hu, images, prices, stocks}
         }
-    },
-    service::{
-        get_data::{
-            RequestGet, ResponseGet, ErrorType,
-            error_logger, to_xml_string
-        },
+    }, global::errors, macros::get::get_models, service::{
         get::{
-            products::{ProductsData, ProductsXML},
-            prices::{PricesData, PricesXML},
-            stocks::{StocksData, StocksXML},
-            images::{ImagesData, ImagesXML},
-            barcodes::{BarcodesData, BarcodesXML}
+            barcodes::{BarcodesData, BarcodesXML},
+            images::{ImagesData, ImagesXML}, prices::{PricesData, PricesXML}, products::{ProductsData, ProductsXML}, stocks::{StocksData, StocksXML}
+        }, get_data::{
+            ErrorType, RequestGet, ResponseGet, error_logger, to_xml_string
         }
     }
 };
 
 get_models! {
     pub enum BulkXML {
-        En(bulk::Envelope)
+        En(bulk::Envelope),
+        Hu(bulk_hu::Envelope)
     }
     
     pub enum BulkCSV {
@@ -49,6 +42,9 @@ impl BulkXML {
 
 /// This function gets english bulk envelope from the given `CallData`. It combines a lot of other requests.
 pub async fn get_bulk(mut call_data: CallData) -> BulkData {
+    // Capture the requested output format before wiping the flags for the sub-calls
+    // (the inner product/price/stock/... calls must always run in English).
+    let is_hu = call_data.is_hu();
     let is_csv = call_data.is_csv();
     call_data.language = None;
     call_data.data_type = None;
@@ -71,7 +67,7 @@ pub async fn get_bulk(mut call_data: CallData) -> BulkData {
         RequestGet::Prices(call_data.clone()).to_data(),
         RequestGet::Stocks(call_data.clone()).to_data(),
         RequestGet::Images(call_data.clone()).to_data(),
-        RequestGet::Barcodes(call_data).to_data()
+        RequestGet::Barcodes(call_data.clone()).to_data()
     );
 
     let prices = match prices_response {
@@ -96,8 +92,9 @@ pub async fn get_bulk(mut call_data: CallData) -> BulkData {
 
     let envelope: bulk::Envelope = (products, prices, stocks, images, barcodes).into();
 
-    match is_csv {
-        true => BulkData::CSV(BulkCSV::En(envelope.into())),
-        false => BulkData::XML(BulkXML::En(envelope))
+    match (is_csv, is_hu) {
+        (true, _) => BulkData::CSV(BulkCSV::En(envelope.into())),
+        (false, true) => BulkData::XML(BulkXML::Hu(envelope.into())),
+        _ => BulkData::XML(BulkXML::En(envelope))
     }
 }

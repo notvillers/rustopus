@@ -10,6 +10,7 @@ OutModelDeriveSerializeOnly! {
         pub no: String,
         pub ean: String,
         pub unit: String,
+        #[serde(serialize_with = "crate::tools::csv::bool_lang")]
         pub main_ean: bool
     }
 
@@ -42,3 +43,13 @@ impl From<o8_barcode::Envelope> for Barcodes {
         }
     }
 }
+
+
+/// Hungarian CSV header row for `Barcode`, in field order. Used when `language=hu`.
+pub const HU_HEADERS: &[&str] = &[
+    "Cikk azonosító",
+    "Cikkszám",
+    "Vonalkód",
+    "Mennyiségi egység",
+    "Elsődleges vonalkód"
+];

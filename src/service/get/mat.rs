@@ -50,12 +50,10 @@ pub async fn get_mat(call_data: CallData) -> MatData {
     let response = get_response(&call_data.url, request.clone()).await;
     return match quick_xml::de::from_str::<o8_mat::Envelope>(&response) {
         Ok(envelope) => {
-            if call_data.is_csv() {
-                return MatData::CSV(MatCSV::En(envelope.into()))
-            }
-            match call_data.is_hu() {
-                true => MatData::XML(MatXML::Hu(envelope)),
-                _ => MatData::XML(MatXML::En(envelope.into()))
+            match (call_data.is_csv(), call_data.is_hu()) {
+                (true, _) => return MatData::CSV(MatCSV::En(envelope.into())),
+                (_, true) => return MatData::XML(MatXML::Hu(envelope)),
+                _ => return MatData::XML(MatXML::En(envelope.into()))
             }
         },
         Err(error) => {

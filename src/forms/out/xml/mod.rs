@@ -3,6 +3,7 @@ pub mod products;
 pub mod stocks;
 pub mod prices;
 pub mod bulk;
+pub mod bulk_hu;
 pub mod images;
 pub mod barcode;
 pub mod test;

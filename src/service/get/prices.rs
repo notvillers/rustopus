@@ -1,4 +1,4 @@
-// Prices GET
+// Prices GET 
 use crate::{
     macros::get::get_models,
     global::errors::{GLOBAL_GET_DATA_ERROR, GLOBAL_PID_ERROR},
@@ -52,11 +52,9 @@ pub async fn get_prices(call_data: CallData) -> PricesData {
         let response = get_response(&call_data.url, request).await;
         return match quick_xml::de::from_str::<o8_prices::Envelope>(&response) {
             Ok(envelope) => {
-                if call_data.is_csv() {
-                    return PricesData::CSV(PricesCSV::En(envelope.into()))
-                }
-                match call_data.is_hu() {
-                    true => PricesData::XML(PricesXML::Hu(envelope)),
+                match (call_data.is_csv(), call_data.is_hu()) {
+                    (true, _) => PricesData::CSV(PricesCSV::En(envelope.into())),
+                    (_, true) => PricesData::XML(PricesXML::Hu(envelope)),
                     _ => PricesData::XML(PricesXML::En(envelope.into()))
                 }
             },

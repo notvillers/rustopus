@@ -54,15 +54,28 @@ pub fn send_xml(xml: String) -> HttpResponse {
 }
 
 
-pub fn send_csv<T: serde::Serialize>(records: &[T], filename: &str) -> HttpResponse {
+/// Serializes records into semicolon-delimited CSV.
+/// When `hu_headers` is `Some`, that header row is written verbatim (Hungarian);
+/// when `None`, the English header row is derived from the struct's serde field names.
+pub fn send_csv<T: serde::Serialize>(records: &[T], filename: &str, hu_headers: Option<&[&str]>) -> HttpResponse {
     let mut wtr = csv::WriterBuilder::new()
         .delimiter(b';')
+        .has_headers(hu_headers.is_none())
         .from_writer(vec![]);
 
+    // Drives the language-aware `serialize_with` helpers (e.g. bool -> Igaz/Hamis)
+    crate::tools::csv::set_csv_hu(hu_headers.is_some());
+
+    if let Some(headers) = hu_headers {
+        wtr.write_record(headers).unwrap();
+    }
     for record in records {
         wtr.serialize(record).unwrap();
     }
     let data = wtr.into_inner().unwrap();
+
+    // Reset so the flag never leaks to a later (English) export on this thread
+    crate::tools::csv::set_csv_hu(false);
 
     HttpResponse::Ok()
         .content_type("text/csv")

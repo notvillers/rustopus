@@ -80,6 +80,7 @@ impl From<p_bulk::Product> for Product {
     }
 }
 
+
 impl From<p_bulk::Envelope> for Products {
     fn from(e: p_bulk::Envelope) -> Self {
         let products = e.body.response.result.answer.products.product;
@@ -91,3 +92,32 @@ impl From<p_bulk::Envelope> for Products {
         }
     }
 }
+
+
+/// Hungarian CSV header row for `Product`, in field order. Used when `language=hu`.
+pub const HU_HEADERS: &[&str] = &[
+    "Cikk azonosító",
+    "Cikkszám",
+    "Megnevezés",
+    "Mennyiségi egység",
+    "Alap mennyiségi egység",
+    "Alap mennyiség",
+    "Gyártó",
+    "Cikkcsoport kód",
+    "Cikkcsoport név",
+    "Leírás",
+    "Tömeg",
+    "X méret",
+    "Y méret",
+    "Z méret",
+    "Gyártói cikkszám",
+    "Főcsoport kód",
+    "Főcsoport név",
+    "Értékesítési mennyiség",
+    "Származási ország",
+    "Ár",
+    "Devizanem",
+    "Kép url",
+    "Szabad készlet",
+    "Vonalkód"
+];

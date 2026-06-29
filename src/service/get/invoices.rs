@@ -51,12 +51,10 @@ pub async fn get_invoices(call_data: CallData) -> InvoicesData {
     let response = get_response(&call_data.url, request).await;
     return match quick_xml::de::from_str::<o8_invoices::Envelope>(&response) {
         Ok(envelope) => {
-            if call_data.is_csv() {
-                return InvoicesData::CSV(InvoicesCSV::En(envelope.into()))
-            }
-            match call_data.is_hu() {
-                true => InvoicesData::XML(InvoicesXML::Hu(envelope)),
-                _ => InvoicesData::XML(InvoicesXML::En(envelope.to_en()))
+            match (call_data.is_csv(), call_data.is_hu()) {
+                (true, _) => InvoicesData::CSV(InvoicesCSV::En(envelope.into())),
+                (_, true) => InvoicesData::XML(InvoicesXML::Hu(envelope)),
+                _ => InvoicesData::XML(InvoicesXML::En(envelope.into()))
             }
         },
         Err(error) => {

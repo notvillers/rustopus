@@ -51,11 +51,9 @@ pub async fn get_stocks(call_data: CallData) -> StocksData {
     let response = get_response(&call_data.url, request).await;
     return match quick_xml::de::from_str::<o8_stocks::Envelope>(&response) {
         Ok(envelope) => {
-            if call_data.is_csv() {
-                return StocksData::CSV(StocksCSV::En(envelope.into()))
-            }
-            match call_data.is_hu() {
-                true => StocksData::XML(StocksXML::Hu(envelope)),
+            match (call_data.is_csv(), call_data.is_hu()) {
+                (true, _) => StocksData::CSV(StocksCSV::En(envelope.into())),
+                (_, true) => StocksData::XML(StocksXML::Hu(envelope)),
                 _ => StocksData::XML(StocksXML::En(envelope.into()))
             }
         },

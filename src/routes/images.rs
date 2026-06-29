@@ -11,7 +11,10 @@ use crate::{
     },
     forms::{
         r#in::xml::defaults::CallData,
-        out::xml::images::error_struct_xml
+        out::{
+            xml::images::error_struct_xml,
+            csv::images::HU_HEADERS
+        }
     },
     service::{
         slave::get_uuid,
@@ -59,14 +62,15 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
             None
         },
         language: params.language,
+        data_type: params.data_type,
         ..Default::default()
     };
 
     // Before log
-    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, url: {}, auth: {}", REQUEST_NAME, call_data.url, call_data.authcode));
-    if call_data.is_hu() {
-        log_with_ip_uuid(&ip_address, &uuid, format!("Request is hungarian ('{}')", call_data.language.as_deref().unwrap_or("Err.")));
-    }
+    log_with_ip_uuid(&ip_address, &uuid, format!("Before getting {}, {:?}", REQUEST_NAME, call_data));
+
+    // Capturing language before `call_data` is consumed (drives CSV header language)
+    let is_hu = call_data.is_hu();
 
     // Getting data
     let data = RequestGet::Images(call_data).to_data().await;
@@ -76,7 +80,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
     // Handling got data
     match data {
-        ResponseGet::Images(ImagesData::CSV(ImagesCSV::En(d))) => send_csv(&d.products, "images.csv"),
+        ResponseGet::Images(ImagesData::CSV(ImagesCSV::En(d))) => send_csv(&d.products, "images.csv", if is_hu { Some(HU_HEADERS) } else { None }),
         ResponseGet::Images(ImagesData::XML(d)) => send_xml(d.to_xml()),
         _ => return_internal_server_error()
     }
