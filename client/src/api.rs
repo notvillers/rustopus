@@ -10,6 +10,7 @@ pub enum Endpoint {
     Images,
     Barcodes,
     Bulk,
+    Mat,
 }
 
 impl Endpoint {
@@ -22,6 +23,7 @@ impl Endpoint {
             Endpoint::Images,
             Endpoint::Barcodes,
             Endpoint::Bulk,
+            Endpoint::Mat,
         ]
     }
 
@@ -38,6 +40,7 @@ impl Endpoint {
             Endpoint::Images => "Images",
             Endpoint::Barcodes => "Barcodes",
             Endpoint::Bulk => "Bulk",
+            Endpoint::Mat => "Mat",
         }
     }
 
@@ -50,6 +53,7 @@ impl Endpoint {
             Endpoint::Images => "/get-images",
             Endpoint::Barcodes => "/get-barcodes",
             Endpoint::Bulk => "/get-bulk",
+            Endpoint::Mat => "/get-mat",
         }
     }
 
@@ -69,6 +73,7 @@ impl Endpoint {
                 | Endpoint::Images
                 | Endpoint::Barcodes
                 | Endpoint::Bulk
+                | Endpoint::Mat
         )
     }
 
