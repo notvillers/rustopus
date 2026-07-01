@@ -5,7 +5,7 @@ info:
   description: Get Octopus 8 ERP SOAP XML with english tags instead of hungarians
 
 paths:
-  /get-products:
+  /get-product:
     get:
       summary: Get product data
       description: Returns basic data for the products.
@@ -44,7 +44,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProductResponse'
 
-  /get-stocks:
+  /get-stock:
     get:
       summary: Get stock data
       description: Returns stock for the products.
@@ -83,7 +83,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StockResponse'
 
-  /get-prices:
+  /get-price:
     get:
       summary: Get price data
       description: Returns price for the products
@@ -128,7 +128,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PriceResponse'
   
-  /get-images:
+  /get-image:
     get:
       summary: Get image data
       description: Returns images for the products
@@ -167,7 +167,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ImageResponse'
           
-  /get-barcodes:
+  /get-barcode:
     get:
       summary: Get barcodes data
       description: Returns barcodes/eans for the products
@@ -206,7 +206,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BarcodeResponse'        
   
-  /get-invoices:
+  /get-invoice:
     get:
       summary: Get invoice data
       description: Returns invoice data.

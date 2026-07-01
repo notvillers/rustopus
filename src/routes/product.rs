@@ -5,15 +5,15 @@ use actix_web::{
 
 use crate::{
     routes::default::{
-        RequestParameters, GetStringResponse, GetDateResponse,
+        RequestParameters, GetStringResponse, GetDateResponse, 
         send_xml, send_csv, return_internal_server_error,
-        get_auth, get_date, get_url, get_xmlns
+        get_auth, get_url, get_xmlns, get_date
     },
     forms::{
         r#in::xml::defaults::CallData,
         out::{
-            xml::images::error_struct_xml,
-            csv::images::HU_HEADERS
+            xml::products::error_struct_xml,
+            csv::products::HU_HEADERS
         }
     },
     service::{
@@ -21,12 +21,12 @@ use crate::{
         log::log_with_ip_uuid,
         ipv4::log_ip,
         get_data::{RequestGet, ResponseGet},
-        get::images::{ImagesData, ImagesCSV}
+        get::products::{ProductsData, ProductsCSV}
     }
 };
 
 /// Name of the current request
-const REQUEST_NAME: &'static str = "IMAGES REQUEST";
+const REQUEST_NAME: &'static str = "PRODUCTS REQUEST";
 
 /// Handler
 async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder {
@@ -73,22 +73,29 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let is_hu = call_data.is_hu();
 
     // Getting data
-    let data = RequestGet::Images(call_data).to_data().await;
+    let data = RequestGet::Products(call_data).to_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     // Handling got data
     match data {
-        ResponseGet::Images(ImagesData::CSV(ImagesCSV::En(d))) => send_csv(&d.products, "images.csv", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Images(ImagesData::XML(d)) => send_xml(d.to_xml()),
+        ResponseGet::Products(ProductsData::CSV(ProductsCSV::En(d))) => send_csv(&d.products, "products.csv", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Products(ProductsData::XML(d)) => send_xml(d.to_xml()),
         _ => return_internal_server_error()
     }
 }
 
 
 /// GET handler
-#[get("/get-images")]
-pub async fn get_handler(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
+#[get("/get-product")]
+pub async fn get(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
+    handler(req, query.into_inner()).await
+}
+
+
+/// GET handler alias
+#[get("/get-products")]
+pub async fn get_alias(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
     handler(req, query.into_inner()).await
 }

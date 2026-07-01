@@ -88,7 +88,14 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
 
 /// GET handler
+#[get("/get-stock")]
+async fn get(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
+    handler(req, query.into_inner()).await
+}
+
+
+/// GET handler alias
 #[get("/get-stocks")]
-async fn get_handler(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
+async fn get_alias(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
     handler(req, query.into_inner()).await
 }

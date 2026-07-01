@@ -88,7 +88,14 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
 
 /// GET handler
+#[get("/get-barcode")]
+pub async fn get(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
+    handler(req, query.into_inner()).await
+}
+
+
+/// GET handler alias
 #[get("/get-barcodes")]
-pub async fn get_handler(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
+pub async fn get_alias(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
     handler(req, query.into_inner()).await
 }

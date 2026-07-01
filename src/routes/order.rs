@@ -132,7 +132,15 @@ async fn handler(req: HttpRequest, params: RequestParameters, body: Bytes) -> im
 }
 
 
+/// POST handler
 #[post("/post-order")]
-pub async fn post_handler(req: HttpRequest, query: Query<RequestParameters>, body: Bytes, ) -> impl Responder {
+pub async fn post(req: HttpRequest, query: Query<RequestParameters>, body: Bytes, ) -> impl Responder {
+    handler(req, query.into_inner(), body).await
+}
+
+
+/// POST handler alias
+#[post("/post-orders")]
+pub async fn post_alias(req: HttpRequest, query: Query<RequestParameters>, body: Bytes, ) -> impl Responder {
     handler(req, query.into_inner(), body).await
 }

@@ -1,12 +1,12 @@
 pub mod default;
 pub mod index;
-pub mod products;
-pub mod stocks;
-pub mod prices;
+pub mod product;
+pub mod stock;
+pub mod price;
 pub mod bulk;
-pub mod images;
+pub mod image;
 pub mod test;
 pub mod barcode;
-pub mod invoices;
+pub mod invoice;
 pub mod order;
 pub mod mat;

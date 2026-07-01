@@ -9,12 +9,15 @@ mod routes;
 mod global;
 mod tools;
 
-use crate::service::{
-    log::{logger, elogger},
-    soap_config::{
-        get_soap_path, check_soap_config,
-        SoapConfig, SOAP_URL
-    }
+use crate::{
+    service::{
+        log::{logger, elogger},
+        soap_config::{
+            get_soap_path, check_soap_config,
+            SoapConfig, SOAP_URL
+        }
+    },
+    routes::{barcode, bulk, image, index, invoice, mat, order, price, product, stock, test}
 };
 
 async fn not_found() -> impl Responder {
@@ -33,7 +36,8 @@ async fn main() -> std::io::Result<()> {
     let config = service::config::get_settings();
 
     let soap_url: Option<String> = if check_soap_config() {
-        Some(SoapConfig::load().url.unwrap_or_default())
+        Some(SoapConfig::load().url
+            .unwrap_or_default())
             .filter(|s| !s.is_empty())
     } else {
         elogger(format!("'{:#?}' not found. (Do not bother this message, if you are not willing to work with static 'url'.)", get_soap_path()));
@@ -54,20 +58,20 @@ async fn main() -> std::io::Result<()> {
     let server = HttpServer::new(move || {
         App::new()
             .default_service(web::to(not_found))
-            .service(routes::index::get_handler)
+            .service(index::get)
             .service(Files::new("/docs/", docs_dir.clone())
                 .index_file("index.html")
                 .use_last_modified(true))
-            .service(routes::products::get_handler)
-            .service(routes::stocks::get_handler)
-            .service(routes::prices::get_handler)
-            .service(routes::images::get_handler)
-            .service(routes::barcode::get_handler)
-            .service(routes::bulk::get_handler)
-            .service(routes::invoices::get_handler)
-            .service(routes::test::get_handler)
-            .service(routes::order::post_handler)
-            .service(routes::mat::get_handler)
+            .service(product::get).service(product::get_alias)
+            .service(stock::get).service(stock::get_alias)
+            .service(price::get).service(stock::get_alias)
+            .service(image::get).service(image::get_alias)
+            .service(barcode::get).service(barcode::get_alias)
+            .service(bulk::get).service(bulk::get_alias)
+            .service(invoice::get).service(invoice::get_alias)
+            .service(mat::get).service(mat::get_alias)
+            .service(order::post).service(order::post_alias)
+            .service(test::get_handler)
     })
         .client_request_timeout(std::time::Duration::from_secs(1200))
         .keep_alive(std::time::Duration::from_secs(1200))

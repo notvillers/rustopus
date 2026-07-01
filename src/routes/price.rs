@@ -5,15 +5,15 @@ use actix_web::{
 
 use crate::{
     routes::default::{
-        GetStringResponse, GetI64Response, GetDateResponse, RequestParameters,
+        RequestParameters, GetStringResponse, GetI64Response,
         send_xml, send_csv, return_internal_server_error,
-        get_auth, get_url, get_xmlns, get_pid, get_i64, get_date
+        get_auth, get_url, get_xmlns, get_pid
     },
     forms::{
         r#in::xml::defaults::CallData,
         out::{
-            xml::invoices::error_struct_xml,
-            csv::invoices::HU_HEADERS
+            xml::prices::error_struct_xml,
+            csv::prices::HU_HEADERS
         }
     },
     service::{
@@ -21,13 +21,12 @@ use crate::{
         log::log_with_ip_uuid,
         ipv4::log_ip,
         get_data::{RequestGet, ResponseGet},
-        dates::{get_first_date, is_min_date},
-        get::invoices::{InvoicesData, InvoicesCSV}
+        get::prices::{PricesData, PricesCSV}
     }
 };
 
 /// Name of the current request
-const REQUEST_NAME: &'static str = "INVOICES REQUEST";
+const REQUEST_NAME: &'static str = "PRICES REQUEST";
 
 /// Handler
 async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder {
@@ -57,35 +56,8 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
         xmlns: xmlns,
         // Getting partner ID from parameters
         pid: match get_pid(REQUEST_NAME, &ip_address, &uuid, &params, error_struct_xml) {
-            GetI64Response::Number(num) => Some(num),
+            GetI64Response::Number(pid) => Some(pid),
             GetI64Response::Response(response) => return response
-        },
-        // Getting `type_mod` from parameters
-        type_mod: if let GetI64Response::Number(num) = get_i64(REQUEST_NAME, &ip_address, &uuid, params.type_mod, error_struct_xml, Some("type_mod")) {
-            Some(num)
-        } else {
-            Some(1)
-        },
-        // Getting `from_date` from parameters
-        from_date: match get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, error_struct_xml,  Some("from_date"), true) {
-            GetDateResponse::DateTime(datetime) => Some(datetime),
-            GetDateResponse::Response(response) => {
-                let first_date = get_first_date();
-                if is_min_date(&first_date) {
-                    return response
-                }
-                Some(first_date)
-            }
-        },
-        to_date: if let GetDateResponse::DateTime(datetime) = get_date(REQUEST_NAME, &ip_address, &uuid, params.to_date, error_struct_xml, Some("to_date"), true) {
-            Some(datetime)
-        } else {
-            None
-        },
-        unpaid: if let GetI64Response::Number(num) = get_i64(REQUEST_NAME, &ip_address, &uuid, params.unpaid, error_struct_xml, Some("unpaid")) {
-            Some(num)
-        } else {
-            Some(0)
         },
         language: params.language,
         data_type: params.data_type,
@@ -99,25 +71,29 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let is_hu = call_data.is_hu();
 
     // Getting data
-    let data = RequestGet::Invoices(call_data).to_data().await;
+    let data = RequestGet::Prices(call_data).to_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     // Handling got data
     match data {
-        ResponseGet::Invoices(InvoicesData::CSV(InvoicesCSV::En(d))) => return send_csv(&d.products, "invoices.csv", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Invoices(InvoicesData::XML(d)) => return send_xml(d.to_xml()),
-        _ => {}
+        ResponseGet::Prices(PricesData::CSV(PricesCSV::En(d))) => send_csv(&d.prices, "prices.csv", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Prices(PricesData::XML(d)) => send_xml(d.to_xml()),
+        _ => return_internal_server_error()
     }
-
-    // Error if something went wrong at handling
-    return_internal_server_error()
 }
 
 
 /// GET handler
-#[get("/get-invoices")]
-pub async fn get_handler(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
+#[get("/get-price")]
+async fn get(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
+    handler(req, query.into_inner()).await
+}
+
+
+/// GET handler alias
+#[get("/get-prices")]
+async fn get_alias(req: HttpRequest, query: Query<RequestParameters>) -> impl Responder {
     handler(req, query.into_inner()).await
 }
