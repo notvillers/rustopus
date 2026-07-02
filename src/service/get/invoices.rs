@@ -17,6 +17,10 @@ use crate::{
         get_data::{
             ErrorType,
             error_logger, to_xml_string
+        },
+        get::defaults::{
+            ReturnType as RT,
+            get_return_type
         }
     }
 };
@@ -33,7 +37,8 @@ get_models! {
     
     pub enum InvoicesData {
         XML(InvoicesXML),
-        CSV(InvoicesCSV)
+        CSV(InvoicesCSV),
+        XLSX(InvoicesCSV)
     }
 }
 
@@ -49,11 +54,12 @@ impl InvoicesXML {
 pub async fn get_invoices(call_data: CallData) -> InvoicesData {
     let request = o8_invoices::get_request_string_opt(&call_data.xmlns, &call_data.pid, &call_data.type_mod, &call_data.from_date, &call_data.to_date, &call_data.unpaid, &call_data.authcode);
     let response = get_response(&call_data.url, request).await;
-    return match quick_xml::de::from_str::<o8_invoices::Envelope>(&response) {
+    match quick_xml::de::from_str::<o8_invoices::Envelope>(&response) {
         Ok(envelope) => {
-            match (call_data.is_csv(), call_data.is_hu()) {
-                (true, _) => InvoicesData::CSV(InvoicesCSV::En(envelope.into())),
-                (_, true) => InvoicesData::XML(InvoicesXML::Hu(envelope)),
+            match get_return_type(call_data) {
+                RT::Xlsx => InvoicesData::XLSX(InvoicesCSV::En(envelope.into())),
+                RT::Csv => InvoicesData::CSV(InvoicesCSV::En(envelope.into())),
+                RT::XmlHu => InvoicesData::XML(InvoicesXML::Hu(envelope)),
                 _ => InvoicesData::XML(InvoicesXML::En(envelope.into()))
             }
         },

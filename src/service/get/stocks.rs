@@ -17,6 +17,10 @@ use crate::{
         get_data::{
             FIRST_DATE, ErrorType,
             error_logger, to_xml_string
+        },
+        get::defaults::{
+            ReturnType as RT,
+            get_return_type
         }
     }
 };
@@ -33,7 +37,8 @@ get_models! {
 
     pub enum StocksData {
         XML(StocksXML),
-        CSV(StocksCSV)
+        CSV(StocksCSV),
+        XLSX(StocksCSV)
     }
 }
 
@@ -51,9 +56,10 @@ pub async fn get_stocks(call_data: CallData) -> StocksData {
     let response = get_response(&call_data.url, request).await;
     return match quick_xml::de::from_str::<o8_stocks::Envelope>(&response) {
         Ok(envelope) => {
-            match (call_data.is_csv(), call_data.is_hu()) {
-                (true, _) => StocksData::CSV(StocksCSV::En(envelope.into())),
-                (_, true) => StocksData::XML(StocksXML::Hu(envelope)),
+            match get_return_type(call_data) {
+                RT::Xlsx => StocksData::XLSX(StocksCSV::En(envelope.into())),
+                RT::Csv => StocksData::CSV(StocksCSV::En(envelope.into())),
+                RT::XmlHu => StocksData::XML(StocksXML::Hu(envelope)),
                 _ => StocksData::XML(StocksXML::En(envelope.into()))
             }
         },

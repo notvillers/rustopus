@@ -84,6 +84,50 @@ pub fn send_csv<T: serde::Serialize>(records: &[T], filename: &str, hu_headers: 
 }
 
 
+/// Builds an in-memory `.xlsx` workbook from serializable records.
+/// English headers are derived from the struct's serde field names (via an example
+/// record); when `hu_headers` is `Some`, that verbatim Hungarian row overwrites row 0.
+fn build_xlsx<T: serde::Serialize>(records: &[T], hu_headers: Option<&[&str]>) -> Result<Vec<u8>, rust_xlsxwriter::XlsxError> {
+    let mut workbook = rust_xlsxwriter::Workbook::new();
+    {
+        let worksheet = workbook.add_worksheet();
+        // Header derivation needs an example record; with no rows there is nothing
+        // to derive from (matches CSV, which also omits English headers when empty).
+        if let Some(first) = records.first() {
+            worksheet.serialize_headers(0, 0, first)?;
+            for record in records {
+                worksheet.serialize(record)?;
+            }
+        }
+        if let Some(headers) = hu_headers {
+            for (col, header) in headers.iter().enumerate() {
+                worksheet.write_string(0, col as u16, *header)?;
+            }
+        }
+    }
+    workbook.save_to_buffer()
+}
+
+
+/// Serializes records into an `.xlsx` spreadsheet. Header language mirrors `send_csv`:
+/// `Some(hu_headers)` writes the Hungarian row, `None` uses the English field names.
+pub fn send_xlsx<T: serde::Serialize>(records: &[T], filename: &str, hu_headers: Option<&[&str]>) -> HttpResponse {
+    // Drives the language-aware `serialize_with` helpers (e.g. bool -> Igaz/Hamis)
+    crate::tools::csv::set_csv_hu(hu_headers.is_some());
+    let result = build_xlsx(records, hu_headers);
+    // Reset so the flag never leaks to a later (English) export on this thread
+    crate::tools::csv::set_csv_hu(false);
+
+    match result {
+        Ok(data) => HttpResponse::Ok()
+            .content_type("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            .insert_header(("Content-Disposition", format!("attachment; filename=\"{}\"", filename)))
+            .body(data),
+        Err(_) => return_internal_server_error()
+    }
+}
+
+
 /// Tries to get authentication from the parameter, sends back error xml on fail
 pub fn get_auth(request_name: &str, ip_address: &str, uuid: &str, params: &RequestParameters, send_error_xml_fn: fn(u64, &str) -> String) -> GetStringResponse {
     if let Some(s) = params.authcode.as_ref().filter(|x| !x.trim().is_empty()) {

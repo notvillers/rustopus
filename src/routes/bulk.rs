@@ -6,7 +6,7 @@ use actix_web::{
 use crate::{
     routes::default::{
         RequestParameters, GetStringResponse, GetI64Response, GetDateResponse,
-        send_xml, send_csv, return_internal_server_error,
+        send_xml, send_csv, send_xlsx, return_internal_server_error,
         get_auth, get_url, get_xmlns, get_pid, get_date
     },
     forms::{
@@ -83,6 +83,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
 
     // Handling got data
     match data {
+        ResponseGet::Bulk(BulkData::XLSX(BulkCSV::En(d))) => send_xlsx(&d.products, "bulk.xlsx", if is_hu { Some(HU_HEADERS) } else { None }),
         ResponseGet::Bulk(BulkData::CSV(BulkCSV::En(d))) => send_csv(&d.products, "bulk.csv", if is_hu { Some(HU_HEADERS) } else { None }),
         ResponseGet::Bulk(BulkData::XML(d)) => send_xml(d.to_xml()),
         _ => return_internal_server_error()

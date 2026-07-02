@@ -17,6 +17,10 @@ use crate::{
         get_data::{
             FIRST_DATE, ErrorType,
             error_logger, to_xml_string
+        },
+        get::defaults::{
+            ReturnType as RT,
+            get_return_type
         }
     }
 };
@@ -33,7 +37,8 @@ get_models! {
     
     pub enum ImagesData {
         XML(ImagesXML),
-        CSV(ImagesCSV)
+        CSV(ImagesCSV),
+        XLSX(ImagesCSV)
     }
 }
 
@@ -51,11 +56,12 @@ impl ImagesXML {
 pub async fn get_images(call_data: CallData) -> ImagesData {
     let request = o8_images::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = get_response(&call_data.url, request).await;
-    return match quick_xml::de::from_str::<o8_images::Envelope>(&response) {
+    match quick_xml::de::from_str::<o8_images::Envelope>(&response) {
         Ok(envelope) => {
-            match (call_data.is_csv(), call_data.is_hu()) {
-                (true, _) => ImagesData::CSV(ImagesCSV::En(envelope.into())),
-                (_, true) => ImagesData::XML(ImagesXML::Hu(envelope)),
+            match get_return_type(call_data) {
+                RT::Xlsx => ImagesData::XLSX(ImagesCSV::En(envelope.into())),
+                RT::Csv => ImagesData::CSV(ImagesCSV::En(envelope.into())),
+                RT::XmlHu => ImagesData::XML(ImagesXML::Hu(envelope)),
                 _ => ImagesData::XML(ImagesXML::En(envelope.into()))
             }
         },

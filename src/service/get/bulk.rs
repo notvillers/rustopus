@@ -8,8 +8,11 @@ use crate::{
         }
     }, global::errors, macros::get::get_models, service::{
         get::{
-            barcodes::{BarcodesData, BarcodesXML},
-            images::{ImagesData, ImagesXML}, prices::{PricesData, PricesXML}, products::{ProductsData, ProductsXML}, stocks::{StocksData, StocksXML}
+            products::{ProductsData, ProductsXML},
+            prices::{PricesData, PricesXML},
+            stocks::{StocksData, StocksXML},
+            images::{ImagesData, ImagesXML},
+            barcodes::{BarcodesData, BarcodesXML}
         }, get_data::{
             ErrorType, RequestGet, ResponseGet, error_logger, to_xml_string
         }
@@ -28,7 +31,8 @@ get_models! {
     
     pub enum BulkData {
         XML(BulkXML),
-        CSV(BulkCSV)
+        CSV(BulkCSV),
+        XLSX(BulkCSV)
     }
 }
 
@@ -46,6 +50,7 @@ pub async fn get_bulk(mut call_data: CallData) -> BulkData {
     // (the inner product/price/stock/... calls must always run in English).
     let is_hu = call_data.is_hu();
     let is_csv = call_data.is_csv();
+    let is_xlsx = call_data.is_xlsx();
     call_data.language = None;
     call_data.data_type = None;
 
@@ -92,9 +97,10 @@ pub async fn get_bulk(mut call_data: CallData) -> BulkData {
 
     let envelope: bulk::Envelope = (products, prices, stocks, images, barcodes).into();
 
-    match (is_csv, is_hu) {
-        (true, _) => BulkData::CSV(BulkCSV::En(envelope.into())),
-        (false, true) => BulkData::XML(BulkXML::Hu(envelope.into())),
+    match (is_xlsx, is_csv, is_hu) {
+        (true, _, _) => BulkData::XLSX(BulkCSV::En(envelope.into())),
+        (_, true, _) => BulkData::CSV(BulkCSV::En(envelope.into())),
+        (_, _, true) => BulkData::XML(BulkXML::Hu(envelope.into())),
         _ => BulkData::XML(BulkXML::En(envelope))
     }
 }

@@ -17,6 +17,10 @@ use crate::{
         get_data::{
             ErrorType,
             error_logger, to_xml_string
+        },
+        get::defaults::{
+            ReturnType as RT,
+            get_return_type
         }
     }
 };
@@ -33,7 +37,8 @@ get_models! {
 
     pub enum PricesData {
         XML(PricesXML),
-        CSV(PricesCSV)
+        CSV(PricesCSV),
+        XLSX(PricesCSV)
     }
 }
 
@@ -52,9 +57,10 @@ pub async fn get_prices(call_data: CallData) -> PricesData {
         let response = get_response(&call_data.url, request).await;
         return match quick_xml::de::from_str::<o8_prices::Envelope>(&response) {
             Ok(envelope) => {
-                match (call_data.is_csv(), call_data.is_hu()) {
-                    (true, _) => PricesData::CSV(PricesCSV::En(envelope.into())),
-                    (_, true) => PricesData::XML(PricesXML::Hu(envelope)),
+                match get_return_type(call_data) {
+                    RT::Xlsx => PricesData::XLSX(PricesCSV::En(envelope.into())),
+                    RT::Csv => PricesData::CSV(PricesCSV::En(envelope.into())),
+                    RT::XmlHu => PricesData::XML(PricesXML::Hu(envelope)),
                     _ => PricesData::XML(PricesXML::En(envelope.into()))
                 }
             },

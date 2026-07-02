@@ -60,3 +60,12 @@ impl CallData {
         false
     }
 }
+
+impl CallData {
+    pub fn is_xlsx(&self) -> bool {
+        if let Some(data_type) = &self.data_type {
+            return matches!(data_type.to_lowercase().as_str(), "xlsx")
+        }
+        false
+    }
+}

@@ -17,6 +17,10 @@ use crate::{
         get_data::{
             FIRST_DATE, ErrorType,
             error_logger, to_xml_string
+        },
+        get::defaults::{
+            ReturnType as RT,
+            get_return_type
         }
     }
 };
@@ -33,7 +37,8 @@ get_models! {
 
     pub enum BarcodesData {
         XML(BarcodesXML),
-        CSV(BarcodesCSV)
+        CSV(BarcodesCSV),
+        XLSX(BarcodesCSV)
     }
 }
 
@@ -49,11 +54,12 @@ impl BarcodesXML {
 pub async fn get_barcode(call_data: CallData) -> BarcodesData {
     let request = o8_barcode::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = get_response(&call_data.url, request).await;
-    return match quick_xml::de::from_str::<o8_barcode::Envelope>(&response) {
+    match quick_xml::de::from_str::<o8_barcode::Envelope>(&response) {
         Ok(envelope) => {
-            match (call_data.is_csv(), call_data.is_hu()) {
-                (true, _) => BarcodesData::CSV(BarcodesCSV::En(envelope.into())),
-                (_, true) => BarcodesData::XML(BarcodesXML::Hu(envelope)),
+            match get_return_type(call_data) {
+                RT::Xlsx => BarcodesData::XLSX(BarcodesCSV::En(envelope.into())),
+                RT::Csv => BarcodesData::CSV(BarcodesCSV::En(envelope.into())),
+                RT::XmlHu => BarcodesData::XML(BarcodesXML::Hu(envelope)),
                 _ => BarcodesData::XML(BarcodesXML::En(envelope.into()))
             }
         },

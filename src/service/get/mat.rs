@@ -17,6 +17,10 @@ use crate::{
         get_data::{
             FIRST_DATE, ErrorType,
             error_logger, to_xml_string
+        },
+        get::defaults::{
+            ReturnType as RT,
+            get_return_type
         }
     }
 };
@@ -33,7 +37,8 @@ get_models! {
 
     pub enum MatData {
         XML(MatXML),
-        CSV(MatCSV)
+        CSV(MatCSV),
+        XLSX(MatCSV)
     }
 }
 
@@ -50,9 +55,10 @@ pub async fn get_mat(call_data: CallData) -> MatData {
     let response = get_response(&call_data.url, request.clone()).await;
     return match quick_xml::de::from_str::<o8_mat::Envelope>(&response) {
         Ok(envelope) => {
-            match (call_data.is_csv(), call_data.is_hu()) {
-                (true, _) => MatData::CSV(MatCSV::En(envelope.into())),
-                (_, true) => MatData::XML(MatXML::Hu(envelope)),
+            match get_return_type(call_data) {
+                RT::Xlsx => MatData::XLSX(MatCSV::En(envelope.into())),
+                RT::Csv => MatData::CSV(MatCSV::En(envelope.into())),
+                RT::XmlHu => MatData::XML(MatXML::Hu(envelope)),
                 _ => MatData::XML(MatXML::En(envelope.into()))
             }
         },
