@@ -28,7 +28,8 @@ use crate::{
         ipv4::log_ip,
         get_data::to_xml_string,
         soap::get_response
-    }
+    },
+    language::countries::order_country_to_hu
 };
 
 fn lowercase_xml_tags(xml: &str) -> String {
@@ -88,7 +89,9 @@ async fn handler(req: HttpRequest, params: RequestParameters, body: Bytes) -> im
 
     // 2. Parse into `Order`
     let order: Order = match quick_xml::de::from_str(&raw) {
-        Ok(o) => o,
+        Ok(o) => {
+            order_country_to_hu(o)
+        },
         Err(e) => {
             log_with_ip_uuid(&ip_address, &uuid, format!("{REQUEST_NAME}: parse error: {e}"));
             return HttpResponse::BadRequest()

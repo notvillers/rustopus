@@ -8,6 +8,7 @@ mod forms;
 mod routes;
 mod global;
 mod tools;
+mod language;
 
 use crate::{
     service::{
