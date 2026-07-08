@@ -26,6 +26,7 @@ async fn not_found() -> impl Responder {
         .body("Page not found")
 }
 
+
 /// Security response headers applied to every response.
 ///
 /// Values are tuned so the self-hosted Swagger UI at `/docs/` keeps working:
