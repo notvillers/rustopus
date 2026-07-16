@@ -10,4 +10,12 @@
     if (cmd && base) {
         cmd.textContent = 'curl "' + base + '/get-product?url=<octopus-wsdl>&authcode=<code>"';
     }
+
+    var heroXml = document.getElementById("hero-xml-sample");
+    if (heroXml) {
+        fetch("/docs/example.xml")
+            .then(function (res) { return res.text(); })
+            .then(function (text) { heroXml.textContent = text.trim(); })
+            .catch(function () {});
+    }
 })();

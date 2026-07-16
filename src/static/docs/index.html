@@ -17,26 +17,15 @@
 
   <body class="landing">
     <header class="hero">
-      <!-- decorative sample (content of ./example.xml) — hidden on narrow screens -->
+      <!-- decorative sample — content fetched from ./example.xml by landing.js — hidden on narrow screens -->
       <div class="hero-xml" aria-hidden="true">
-        <p class="terminal-label">A LANGUAGE YOU UNDERSTAND</p>
-<pre>&lt;Envelope&gt;
-  &lt;body&gt;
-    &lt;response&gt;
-      &lt;result&gt;
-        &lt;answer&gt;
-          &lt;version&gt;1.0&lt;/version&gt;
-          &lt;products/&gt;
-        &lt;/answer&gt;
-      &lt;/result&gt;
-    &lt;/response&gt;
-  &lt;/body&gt;
-&lt;/Envelope&gt;</pre>
+        <p class="terminal-label">THE LANGUAGE WE ALL UNDERSTAND</p>
+<pre id="hero-xml-sample"></pre>
       </div>
       <img class="hero-logo" src="/docs/octopus.png" alt="rustopus logo" width="48" height="48">
-      <p class="hero-kicker">OPEN SOURCE&nbsp;&nbsp;&bull;&nbsp;&nbsp;<a href="/LICENSE">MIT LICENSE</a>&nbsp;&nbsp;&bull;&nbsp;&nbsp;BUILT WITH RUST</p>
+      <p class="hero-kicker">OPEN SOURCE&nbsp;&nbsp;&bull;&nbsp;&nbsp;BUILT WITH RUST</p>
       <h1 class="hero-title">OCTOPUS API<br>THAT SPEAKS<br>ENGLISH</h1>
-      <p class="hero-sub">HUNGARIAN IN &mdash; CLEAN ENGLISH OUT.</p>
+      <p class="hero-sub">HUNGARIAN IN &mdash; ENGLISH OUT.</p>
 
       <div class="cta-row">
         <a class="cta" href="/docs/swagger.html">EXPLORE THE API &rarr;</a>
@@ -65,7 +54,7 @@
 
       <section class="feature">
         <p class="feature-no">#3 AGGREGATE</p>
-        <h2>ONE CALL, EVERYTHING</h2>
+        <h2>CALL ONCE, GET EVERYTHING</h2>
         <p><code>/get-bulk</code> COMPOSES PRODUCTS, PRICES, STOCKS, IMAGES AND BARCODES INTO A SINGLE RESPONSE WITH PER-CALL FALLBACK ERRORS.</p>
       </section>
 
@@ -75,7 +64,7 @@
         <p><code>/post-order</code> ACCEPTS ENGLISH-TAGGED INPUT AND FORWARDS IT TO OCTOPUS AS HUNGARIAN.</p>
       </section>
     </main>
-
+<!--
     <section class="endpoints">
       <p class="terminal-label">ENDPOINTS</p>
       <p class="endpoint-strip">
@@ -90,7 +79,7 @@
         <a href="/docs/swagger.html#/Orders/post_post_order">/post-order</a>
       </p>
     </section>
-
+-->
     <footer class="colophon">
       <a href="/LICENSE">RUSTOPUS &middot; MIT LICENSE</a>
     </footer>

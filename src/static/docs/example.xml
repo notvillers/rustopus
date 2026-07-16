@@ -1,12 +1,12 @@
 <Envelope>
-	<body>
-		<response>
-			<result>
-				<answer>
-					<version>1.0</version>
-					<products/>
-				</answer>
-			</result>
-		</response>
-	</body>
+ <body>
+  <response>
+   <result>
+    <answer>
+     <version>1.0</version>
+     <products/>
+    </answer>
+   </result>
+  </response>
+ </body>
 </Envelope>
