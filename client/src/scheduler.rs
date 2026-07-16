@@ -43,12 +43,20 @@ pub fn run_due_jobs(
     ctx_waker: &egui::Context,
 ) {
     let snapshots: Vec<(usize, CronJob)> = {
-        let guard = jobs.lock().unwrap();
+        let mut guard = jobs.lock().unwrap();
+        let claimed_at = Utc::now().to_rfc3339();
         guard
-            .iter()
+            .iter_mut()
             .enumerate()
             .filter(|(_, j)| j.enabled && j.is_due())
-            .map(|(i, j)| (i, j.clone()))
+            .map(|(i, j)| {
+                // Claim the job *now*, before the fetch runs: a slow request
+                // (bulk can take minutes) must not look "due" again on the
+                // next 30s poll, or it would be fired repeatedly in parallel.
+                j.last_run = Some(claimed_at.clone());
+                j.last_status = Some("Running…".to_string());
+                (i, j.clone())
+            })
             .collect()
     };
 
@@ -113,8 +121,14 @@ pub fn run_job_now(
     ctx_waker: &egui::Context,
 ) {
     let job = {
-        let guard = jobs.lock().unwrap();
-        guard.get(idx).cloned()
+        let mut guard = jobs.lock().unwrap();
+        guard.get_mut(idx).map(|j| {
+            // Same claim-at-start as run_due_jobs: block the 30s poll from
+            // double-firing this job while the manual run is in flight.
+            j.last_run = Some(Utc::now().to_rfc3339());
+            j.last_status = Some("Running…".to_string());
+            j.clone()
+        })
     };
     let Some(job) = job else { return };
 
