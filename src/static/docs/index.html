@@ -1,8 +1,13 @@
 <!-- HTML for static distribution bundle build -->
+<!--
+  The endpoint documentation below is rendered by Swagger UI from ./openapi.yaml.
+  To add or change an endpoint, edit openapi.yaml only — this page updates itself.
+-->
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>RustOpus</title>
     <link rel="stylesheet" type="text/css" href="./swagger-ui.css" />
     <link rel="stylesheet" type="text/css" href="index.css" />
@@ -10,7 +15,20 @@
   </head>
 
   <body>
+    <header class="hero">
+      <img class="hero-logo" src="./octopus.png" alt="rustopus logo" width="48" height="48">
+      <p class="hero-kicker">OPEN SOURCE&nbsp;&nbsp;&bull;&nbsp;&nbsp;MIT LICENSE&nbsp;&nbsp;&bull;&nbsp;&nbsp;BUILT WITH RUST</p>
+      <h1 class="hero-title">THE API<br>THAT SPEAKS<br>OCTOPUS</h1>
+      <p class="hero-sub">HUNGARIAN SOAP/XML IN &mdash; CLEAN ENGLISH XML (OR CSV) OUT.</p>
+      <p class="hero-hint">LIVE REFERENCE &mdash; GENERATED FROM <a href="./openapi.yaml">OPENAPI.YAML</a></p>
+    </header>
+
     <div id="swagger-ui"></div>
+
+    <footer class="colophon">
+      RUSTOPUS &middot; POWERED BY SWAGGER UI &middot; MIT LICENSE
+    </footer>
+
     <script src="./swagger-ui-bundle.js" charset="UTF-8"> </script>
     <script src="./swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
     <script src="./swagger-initializer.js" charset="UTF-8"> </script>

@@ -1,3 +1,19 @@
+/* ------------------------------------------------------------------ */
+/*  RustOpus docs — Hermes-style theme layered over swagger-ui.css.   */
+/*  Endpoint content is rendered from openapi.yaml; this file only    */
+/*  restyles the chrome.                                              */
+/* ------------------------------------------------------------------ */
+
+:root {
+    --ko-blue: #0038E8;
+    --ko-blue-deep: #002bb4;
+    --cream: #F5F2E9;
+    --card: #FDFCF8;
+    --ink: #14161a;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --serif: "Didot", "Bodoni MT", "Playfair Display", Georgia, "Times New Roman", serif;
+}
+
 html {
     box-sizing: border-box;
     overflow: -moz-scrollbars-vertical;
@@ -12,5 +28,317 @@ html {
 
 body {
     margin: 0;
-    background: #fafafa;
+    background: var(--ko-blue);
+    color: var(--cream);
+    font-family: var(--mono);
+}
+
+/* ------------------------------- hero ---------------------------- */
+
+.hero {
+    max-width: 1420px;
+    margin: 0 auto;
+    padding: 64px 20px 8px;
+}
+
+.hero-logo {
+    display: block;
+    margin-bottom: 32px;
+    image-rendering: auto;
+}
+
+.hero-kicker {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .35em;
+    text-transform: uppercase;
+    opacity: .85;
+}
+
+.hero-title {
+    margin: 26px 0 22px;
+    font-family: var(--serif);
+    font-weight: 400;
+    text-transform: uppercase;
+    color: #fff;
+    font-size: clamp(46px, 8vw, 104px);
+    line-height: .95;
+    letter-spacing: .01em;
+}
+
+.hero-sub {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+}
+
+.hero-hint {
+    margin: 0;
+    font-size: 10px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    opacity: .7;
+}
+
+.hero-hint a {
+    color: #fff;
+}
+
+/* ----------------------------- footer ---------------------------- */
+
+.colophon {
+    padding: 56px 20px 44px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    color: var(--cream);
+}
+
+/* ------------------------ swagger-ui: layout --------------------- */
+
+.swagger-ui {
+    font-family: var(--mono);
+}
+
+.swagger-ui .wrapper {
+    max-width: 1460px;
+}
+
+/* info block (title / version / description from openapi.yaml) */
+.swagger-ui .info {
+    margin: 24px 0 40px;
+}
+
+.swagger-ui .info .title {
+    font-family: var(--serif);
+    font-weight: 400;
+    text-transform: uppercase;
+    color: #fff;
+    letter-spacing: .02em;
+}
+
+.swagger-ui .info .title small {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, .55);
+    border-radius: 2px;
+    top: -8px;
+}
+
+.swagger-ui .info .title small.version-stamp {
+    background-color: transparent;
+}
+
+.swagger-ui .info .title small pre {
+    font-family: var(--mono);
+}
+
+.swagger-ui .info .description,
+.swagger-ui .info .description p,
+.swagger-ui .info p,
+.swagger-ui .info li {
+    color: var(--cream);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+}
+
+.swagger-ui .info a {
+    color: #fff;
+}
+
+/* servers / scheme strip */
+.swagger-ui .scheme-container {
+    background: transparent;
+    box-shadow: none;
+    padding: 0 0 20px;
+}
+
+.swagger-ui .servers > label,
+.swagger-ui .servers-title {
+    color: var(--cream);
+}
+
+/* ---------------------- swagger-ui: sections ---------------------- */
+
+.swagger-ui .opblock-tag {
+    color: #fff;
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 30px;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    border-bottom: 1px solid rgba(255, 255, 255, .35);
+    padding-bottom: 12px;
+}
+
+.swagger-ui .opblock-tag:hover {
+    background: rgba(255, 255, 255, .04);
+}
+
+.swagger-ui .opblock-tag small {
+    color: var(--cream);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+}
+
+.swagger-ui .opblock-tag svg,
+.swagger-ui .expand-operation svg,
+.swagger-ui section.models svg {
+    fill: #fff;
+}
+
+/* --------------------- swagger-ui: operations --------------------- */
+
+/* monochrome cards — override the per-method tinting */
+.swagger-ui .opblock,
+.swagger-ui .opblock.opblock-get,
+.swagger-ui .opblock.opblock-post,
+.swagger-ui .opblock.opblock-put,
+.swagger-ui .opblock.opblock-delete,
+.swagger-ui .opblock.opblock-patch,
+.swagger-ui .opblock.opblock-head,
+.swagger-ui .opblock.opblock-options {
+    background: var(--card);
+    border: none;
+    border-radius: 2px;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, .25);
+    margin: 0 0 14px;
+}
+
+.swagger-ui .opblock .opblock-summary,
+.swagger-ui .opblock.opblock-get .opblock-summary,
+.swagger-ui .opblock.opblock-post .opblock-summary,
+.swagger-ui .opblock.opblock-put .opblock-summary,
+.swagger-ui .opblock.opblock-delete .opblock-summary,
+.swagger-ui .opblock.opblock-patch .opblock-summary {
+    border: none;
+}
+
+.swagger-ui .opblock .opblock-summary-method,
+.swagger-ui .opblock.opblock-get .opblock-summary-method,
+.swagger-ui .opblock.opblock-post .opblock-summary-method,
+.swagger-ui .opblock.opblock-put .opblock-summary-method,
+.swagger-ui .opblock.opblock-delete .opblock-summary-method,
+.swagger-ui .opblock.opblock-patch .opblock-summary-method {
+    background: var(--ko-blue);
+    border-radius: 2px;
+    font-family: var(--mono);
+    letter-spacing: .15em;
+    min-width: 84px;
+}
+
+.swagger-ui .opblock .tab-header .tab-item.active h4 span:after,
+.swagger-ui .opblock.opblock-get .tab-header .tab-item.active h4 span:after,
+.swagger-ui .opblock.opblock-post .tab-header .tab-item.active h4 span:after {
+    background: var(--ko-blue);
+}
+
+.swagger-ui .opblock .opblock-summary-path,
+.swagger-ui .opblock .opblock-summary-path__deprecated {
+    color: var(--ink);
+    font-family: var(--mono);
+}
+
+.swagger-ui .opblock .opblock-summary-description {
+    color: #4a4a44;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.swagger-ui .opblock.is-open .opblock-summary {
+    border-bottom: 1px solid rgba(0, 0, 0, .1);
+}
+
+.swagger-ui .opblock .opblock-section-header {
+    background: #F1EDE1;
+    box-shadow: none;
+}
+
+.swagger-ui .opblock .opblock-section-header h4,
+.swagger-ui .opblock .opblock-section-header label {
+    color: var(--ink);
+}
+
+/* ---------------------- swagger-ui: controls ---------------------- */
+
+.swagger-ui .btn {
+    border-radius: 2px;
+    box-shadow: none;
+    border: 1px solid var(--ko-blue);
+    color: var(--ko-blue);
+    font-family: var(--mono);
+    letter-spacing: .15em;
+    text-transform: uppercase;
+}
+
+.swagger-ui .btn:hover {
+    box-shadow: none;
+}
+
+.swagger-ui .btn.execute {
+    background: var(--ko-blue);
+    border-color: var(--ko-blue);
+    color: #fff;
+}
+
+.swagger-ui .btn.execute:hover {
+    background: var(--ko-blue-deep);
+}
+
+.swagger-ui .btn.cancel {
+    border-color: #93261f;
+    color: #93261f;
+}
+
+.swagger-ui select,
+.swagger-ui input[type=text],
+.swagger-ui input[type=password],
+.swagger-ui input[type=search],
+.swagger-ui input[type=email],
+.swagger-ui textarea {
+    border-radius: 2px;
+    font-family: var(--mono);
+}
+
+/* ------------------------ swagger-ui: models ---------------------- */
+
+.swagger-ui section.models {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, .35);
+    border-radius: 2px;
+}
+
+.swagger-ui section.models.is-open h4 {
+    border-bottom: 1px solid rgba(255, 255, 255, .35);
+}
+
+.swagger-ui section.models h4 {
+    color: #fff;
+    font-family: var(--serif);
+    text-transform: uppercase;
+}
+
+.swagger-ui section.models .model-container {
+    background: var(--card);
+}
+
+/* ------------------------------ misc ------------------------------ */
+
+.swagger-ui .loading-container .loading:after {
+    color: #fff;
+}
+
+.swagger-ui .loading-container .loading:before {
+    border-color: rgba(255, 255, 255, .6);
+    border-top-color: #fff;
 }
