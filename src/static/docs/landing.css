@@ -39,6 +39,21 @@ body.landing::before {
     pointer-events: none;
 }
 
+/* on narrow screens the corner crop cuts the "O" — show the whole ring,
+   centered at the top instead, with the fade running out on every side */
+@media (max-width: 720px) {
+    body.landing::before {
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(80vw, 340px);
+        height: min(80vw, 340px);
+        background-size: contain;
+        background-position: center;
+        -webkit-mask-image: radial-gradient(circle at center, #000 45%, transparent 74%);
+        mask-image: radial-gradient(circle at center, #000 45%, transparent 74%);
+    }
+}
+
 /* ------------------------------- hero ---------------------------- */
 
 /* full-width blue band, used on swagger.html where the body is light */
