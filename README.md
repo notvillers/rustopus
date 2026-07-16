@@ -5,7 +5,7 @@
 <samp>OPEN SOURCE&nbsp;&nbsp;•&nbsp;&nbsp;<a href="LICENSE">MIT LICENSE</a>&nbsp;&nbsp;•&nbsp;&nbsp;BUILT WITH RUST</samp>
 
 <h1>
-THIS BRIDGE<br>
+THIS API<br>
 SPEAKS<br>
 OCTOPUS
 </h1>
