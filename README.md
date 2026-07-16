@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="./client/src/assets/images/octopus.png" alt="rustopus logo" height="72">
-
-<br><br>
+<img src="./src/static/docs/octo.png" alt="rustopus logo" height="72">
 
 <samp>OPEN SOURCE&nbsp;&nbsp;•&nbsp;&nbsp;<a href="LICENSE">MIT LICENSE</a>&nbsp;&nbsp;•&nbsp;&nbsp;BUILT WITH RUST</samp>
 
@@ -25,9 +23,7 @@ OCTOPUS
 
 <br>
 
-> Rustopus sits between the **Octopus 8 ERP** and your clients. It fetches the
-> Hungarian-tagged SOAP payloads, translates them into English-tagged XML or
-> CSV — and forwards English-tagged input back to Octopus as Hungarian.
+> Rustopus sits between the **Octopus 8 ERP** and your clients. It fetches the Hungarian-tagged SOAP payloads, translates them into English-tagged XML, CSV or XLSX — and forwards English-tagged input back to Octopus as Hungarian.
 
 <br>
 
@@ -95,11 +91,3 @@ needs an `openapi.yaml` entry to show up there.
 A native GUI app to exercise the server and cron the calls, unattended.
 
 **→ [CLIENT README](./client/README.md)**
-
-<br>
-
----
-
-<div align="center">
-<samp>RUSTOPUS V1.1.0 · <a href="LICENSE">MIT LICENSE</a> · 2026</samp>
-</div>
