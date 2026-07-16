@@ -64,6 +64,12 @@ used for both `url` and `xmlns`.
 { "url": "<default wsdl url>" }
 ```
 
+### `src/static/docs/landing-config.js`
+
+Sets the API base URL shown in the docs landing page's `CALL VIA TERMINAL`
+example (`RUSTOPUS_API_BASE`). Leave it `""` to fall back to the host the
+page is served from.
+
 <br>
 
 ## #2 CALL
@@ -74,7 +80,10 @@ used for both `url` and `xmlns`.
 
 Ready-to-run request examples in shell, Python, JavaScript, C# and PowerShell:
 
-**→ [DOCS](./docs/)** — when the server runs, `/docs/` serves the landing page and `/docs/swagger.html` the live Swagger UI.
+**→ [DOCS](./docs/)** — when the server runs, `/` (and `/docs/`) serves the
+docs landing page and `/docs/swagger.html` the live Swagger UI, rendered
+from [`openapi.yaml`](./src/static/docs/openapi.yaml) — a new endpoint only
+needs an `openapi.yaml` entry to show up there.
 
 <br>
 

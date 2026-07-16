@@ -48,7 +48,7 @@ cargo run -p rustopus-client        # also: ./client.sh / client.bat
 
 ## High-level architecture
 
-- `src/main.rs` wires the `actix-web` server, registers all HTTP routes, and serves Swagger docs from `src/static/docs` at `/docs/` (root `/` redirects there). Installs a panic hook that writes to the error log instead of aborting. Note: the server's request/keep-alive timeouts are hardcoded to 1200s here, *not* read from `Config.toml`'s `timeout`.
+- `src/main.rs` wires the `actix-web` server, registers all HTTP routes, and serves the static docs tree `src/static/docs` at `/docs/`. Root `/` (`src/routes/index.rs`) serves the docs landing page (`index.html`) directly via `NamedFile`, falling back to a `/docs/` redirect if the file can't be opened — one more reason the server must run from the repo root. Installs a panic hook that writes to the error log instead of aborting. Note: the server's request/keep-alive timeouts are hardcoded to 1200s here, *not* read from `Config.toml`'s `timeout`.
 - `src/routes/` is the HTTP layer. Each endpoint builds a `CallData` payload from query/body inputs, logs with IP + UUID, calls the service layer, then serializes XML/CSV responses. Each fetcher route file exposes a **canonical singular path plus a plural alias** that share one `handler` — e.g. `product.rs` registers `#[get("/get-product")]` (`get`) and `#[get("/get-products")]` (`get_alias`). Both variants are wired in `main.rs`. The GET fetchers are `get-product`, `get-stock`, `get-price`, `get-image`, `get-barcode`, `get-bulk`, `get-invoice`, `get-mat` (the "mathematican models" endpoint) — each with its plural alias — plus `get-test` (no alias) and the index `/`. The single POST endpoint is `/post-order` (alias `/post-orders`).
 - `src/service/` is the integration layer:
   - `soap.rs` performs outbound SOAP POST requests through one process-wide, lazily-built `reqwest::Client` (`static CLIENT: Lazy<Client>`) so the connection pool / TLS sessions are reused across calls — never build a client per request. The server uses async reqwest only; the `blocking` feature/API belongs to the desktop `client` crate, not the server (calling it from the async runtime would panic).
@@ -63,7 +63,11 @@ cargo run -p rustopus-client        # also: ./client.sh / client.bat
   - `macros/out.rs`: `OutModelDeriveOnly` (Debug + Serialize), `OutModelDeriveSerializeOnly` (Serialize only) — for English output models.
   - `macros/get.rs`: `get_models` — `#[serde(untagged)]` Serialize enums (the `ResponseGet`/`*Data` response dispatch enums).
   - `macros/service.rs`: `ConfigModelDerive` (Deserialize) — config/settings structs.
-- Two separate doc trees exist: `src/static/docs/` is the served Swagger UI bundle (with `openapi.yaml`); `docs/api/<endpoint>/` holds hand-written consumer request examples (`request.{sh,py,js,cs,ps1}` + README) — keep these in sync when an endpoint's parameters change.
+- Two separate doc trees exist: `src/static/docs/` is the served docs bundle; `docs/api/<endpoint>/` holds hand-written consumer request examples (`request.{sh,py,js,cs,ps1}` + README) — keep these in sync when an endpoint's parameters change.
+- The served docs bundle (`src/static/docs/`) has two pages:
+  - `index.html` — static landing page (Hermes-style design), served at both `/` and `/docs/`, so all its asset/link paths are absolute (`/docs/...`). Styled by `landing.css` (never touch `index.css` / `swagger-ui.css` for landing work — those are the stock Swagger UI dist files). `landing.js` fills the `CALL VIA TERMINAL` example's domain from `landing-config.js`; scripts must be external files because the CSP in `main.rs::security_headers()` is `script-src 'self'` (no inline scripts).
+  - `swagger.html` — Swagger UI (stock look) rendering `openapi.yaml`, served at `/docs/swagger.html`; it reuses `landing.css` only for the blue hero band on top.
+  - **Adding/renaming an endpoint**: update `openapi.yaml` (Swagger picks it up automatically) *and* the hand-written endpoint strip on `index.html`, whose links deep-link into operations as `swagger.html#/{Tag}/{method}_{path_with_underscores}` (e.g. `#/Products/get_get_product`).
 - Logging is hybrid Rust + C FFI:
   - `src/service/log.rs` wraps logging behavior.
   - `src/C/*.c` provides append/date helpers compiled by `build.rs`.
@@ -94,6 +98,7 @@ cargo run -p rustopus-client        # also: ./client.sh / client.bat
 - `Config.toml` (checked in) — server bind config: `[server] host, port, timeout, workers`. The committed config uses port `1140` (the code defaults to `8080` when absent); the desktop client and the integration test both assume `1140`. `get_settings()` parses this file once into a cached `static SETTINGS: Lazy<Settings>`, so edits take effect only on restart; `timeout` is applied to the outbound `reqwest` client (the actix request/keep-alive timeouts are the separate hardcoded 1200s noted under High-level architecture).
 - `soap.json` (gitignored) — `{ "url": "<default wsdl url>" }`. Used as fallback for `url`/`xmlns` when a request doesn't supply them.
 - `client_config.toml`, `crons.toml` (gitignored) — desktop-client state; not used by the server. See "Client config resolution" above for where the client looks for them.
+- `src/static/docs/landing-config.js` (checked in) — per-deployment docs setting: `RUSTOPUS_API_BASE`, the base URL shown in the landing page's terminal example (empty string → falls back to `window.location.origin`).
 
 `*.xml`, `*.log`, `*.csv`, `example/`, and `test/` are gitignored — treat the `example/` and `test/` XML files as scratch fixtures, not source of truth. (`tests/` — with an "s" — is the real integration-test directory and is tracked.)
 

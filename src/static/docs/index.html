@@ -1,7 +1,9 @@
 <!--
   RustOpus docs landing page — static, no Swagger here.
-  The interactive API reference lives at ./swagger.html and renders ./openapi.yaml;
-  to add or change an endpoint, edit openapi.yaml only.
+  Served at "/" (src/routes/index.rs) and at "/docs/", hence the absolute
+  /docs/... asset paths. The interactive API reference lives at
+  /docs/swagger.html and renders /docs/openapi.yaml; to add or change an
+  endpoint, edit openapi.yaml only.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -9,25 +11,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>RustOpus</title>
-    <link rel="stylesheet" type="text/css" href="index.css" />
-    <link rel="icon" type="image/png" href="./favicon.ico"/>
+    <link rel="stylesheet" type="text/css" href="/docs/landing.css" />
+    <link rel="icon" type="image/png" href="/docs/favicon.ico"/>
   </head>
 
   <body class="landing">
     <header class="hero">
-      <img class="hero-logo" src="./octopus.png" alt="rustopus logo" width="48" height="48">
-      <p class="hero-kicker">OPEN SOURCE&nbsp;&nbsp;&bull;&nbsp;&nbsp;MIT LICENSE&nbsp;&nbsp;&bull;&nbsp;&nbsp;BUILT WITH RUST</p>
-      <h1 class="hero-title">THE API<br>THAT SPEAKS<br>OCTOPUS</h1>
-      <p class="hero-sub">HUNGARIAN SOAP/XML IN &mdash; CLEAN ENGLISH XML (OR CSV) OUT.</p>
+      <img class="hero-logo" src="/docs/octopus.png" alt="rustopus logo" width="48" height="48">
+      <p class="hero-kicker">OPEN SOURCE&nbsp;&nbsp;&bull;&nbsp;&nbsp;<a href="/LICENSE">MIT LICENSE</a>&nbsp;&nbsp;&bull;&nbsp;&nbsp;BUILT WITH RUST</p>
+      <h1 class="hero-title">THE OCTOPUS API<br>THAT SPEAKS<br>ENGLISH</h1>
+      <p class="hero-sub">HUNGARIAN IN &mdash; CLEAN ENGLISH OUT.</p>
 
       <div class="cta-row">
-        <a class="cta" href="./swagger.html">EXPLORE THE API &rarr;</a>
-        <a class="cta cta--ghost" href="./openapi.yaml">OPENAPI.YAML</a>
+        <a class="cta" href="/docs/swagger.html">EXPLORE THE API &rarr;</a>
+        <a class="cta cta--ghost" href="/docs/openapi.yaml">OPENAPI.YAML</a>
       </div>
 
       <p class="terminal-label">CALL VIA TERMINAL</p>
       <div class="terminal">
-        <code>curl "http://localhost:1140/get-product?url=&lt;octopus-wsdl&gt;&amp;authcode=&lt;code&gt;"</code>
+        <!-- domain is filled in by landing.js from landing-config.js -->
+        <code id="terminal-cmd">curl "https://api.orinkhungary.hu/get-product?url=&lt;octopus-wsdl&gt;&amp;authcode=&lt;code&gt;"</code>
       </div>
     </header>
 
@@ -52,7 +55,7 @@
 
       <section class="feature">
         <p class="feature-no">#4 FORWARD</p>
-        <h2>ORDERS GO BACK <span class="beta-tag">(BETA)</span></h2>
+        <h2>ORDERS GO BACK <span class="beta-tag">BETA</span></h2>
         <p><code>/post-order</code> ACCEPTS ENGLISH-TAGGED INPUT AND FORWARDS IT TO OCTOPUS AS HUNGARIAN.</p>
       </section>
     </main>
@@ -60,20 +63,23 @@
     <section class="endpoints">
       <p class="terminal-label">ENDPOINTS</p>
       <p class="endpoint-strip">
-        <a href="./swagger.html">/get-product</a> &middot;
-        <a href="./swagger.html">/get-stock</a> &middot;
-        <a href="./swagger.html">/get-price</a> &middot;
-        <a href="./swagger.html">/get-image</a> &middot;
-        <a href="./swagger.html">/get-barcode</a> &middot;
-        <a href="./swagger.html">/get-bulk</a> &middot;
-        <a href="./swagger.html">/get-invoice</a> &middot;
-        <a href="./swagger.html">/get-mat</a> &middot;
-        <a href="./swagger.html">/post-order</a>
+        <a href="/docs/swagger.html#/Bulk/get_get_bulk">/get-bulk</a> &middot;
+        <a href="/docs/swagger.html#/Products/get_get_product">/get-product</a> &middot;
+        <a href="/docs/swagger.html#/Stocks/get_get_stock">/get-stock</a> &middot;
+        <a href="/docs/swagger.html#/Prices/get_get_price">/get-price</a> &middot;
+        <a href="/docs/swagger.html#/Images/get_get_image">/get-image</a> &middot;
+        <a href="/docs/swagger.html#/Barcodes/get_get_barcode">/get-barcode</a> &middot;
+        <a href="/docs/swagger.html#/Invoices/get_get_invoice">/get-invoice</a> &middot;
+        <a href="/docs/swagger.html#/Mat/get_get_mat">/get-mat</a> &middot;
+        <a href="/docs/swagger.html#/Orders/post_post_order">/post-order</a>
       </p>
     </section>
 
     <footer class="colophon">
-      RUSTOPUS &middot; MIT LICENSE
+      <a href="/LICENSE">RUSTOPUS &middot; MIT LICENSE</a>
     </footer>
+
+    <script src="/docs/landing-config.js" charset="UTF-8"> </script>
+    <script src="/docs/landing.js" charset="UTF-8"> </script>
   </body>
 </html>

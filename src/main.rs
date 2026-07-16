@@ -11,14 +11,11 @@ mod tools;
 mod language;
 
 use crate::{
-    service::{
-        log::{logger, elogger},
-        soap_config::{
-            get_soap_path, check_soap_config,
-            SoapConfig, SOAP_URL
+    routes::{barcode, bulk, image, index, invoice, mat, order, price, product, stock, test}, service::{
+        log::{elogger, logger}, soap_config::{
+            SOAP_URL, SoapConfig, check_soap_config, get_soap_path
         }
-    },
-    routes::{barcode, bulk, image, index, invoice, mat, order, price, product, stock, test}
+    }
 };
 
 async fn not_found() -> impl Responder {
@@ -77,12 +74,23 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
+    let license_dir = match env::current_dir() {
+        Ok(dir) => dir.join("src").join("static").join("LICENSE"),
+        Err(e) => {
+            elogger(format!("Failed to get current directory: '{}'", e));
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, e));
+        }
+    };
+
     let server = HttpServer::new(move || {
         App::new()
             .wrap(security_headers())
             .default_service(web::to(not_found))
             .service(index::get)
             .service(Files::new("/docs/", docs_dir.clone())
+                .index_file("index.html")
+                .use_last_modified(true))
+            .service(Files::new("/LICENSE", license_dir.clone())
                 .index_file("index.html")
                 .use_last_modified(true))
             .service(product::get).service(product::get_alias)
