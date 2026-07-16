@@ -88,7 +88,7 @@ body.landing::before {
 .hero-xml pre {
     margin: 0;
     font-family: var(--mono);
-    font-size: clamp(14px, 1.4vw, 20px);
+    font-size: clamp(11px, 1.1vw, 15px);
     line-height: 1.75;
     color: rgba(255, 255, 255, .55);
     border-left: 1px solid rgba(255, 255, 255, .35);
