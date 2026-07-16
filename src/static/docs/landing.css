@@ -50,8 +50,8 @@ body.landing::before {
         height: min(80vw, 340px);
         background-size: contain;
         background-position: center;
-        -webkit-mask-image: radial-gradient(circle at center, #000 45%, transparent 74%);
-        mask-image: radial-gradient(circle at center, #000 45%, transparent 74%);
+        /* -webkit-mask-image: radial-gradient(circle at center, #000 45%, transparent 74%);
+        mask-image: radial-gradient(circle at center, #000 45%, transparent 74%); */
     }
 }
 
