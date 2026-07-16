@@ -5,9 +5,9 @@
 <samp>OPEN SOURCE&nbsp;&nbsp;•&nbsp;&nbsp;<a href="LICENSE">MIT LICENSE</a>&nbsp;&nbsp;•&nbsp;&nbsp;BUILT WITH RUST</samp>
 
 <h1>
-AN OCTOPUS API<br>
-WHICH SPEAKS<br>
-ENGLISH
+THIS BRIDGE<br>
+SPEAKS<br>
+OCTOPUS
 </h1>
 
 <samp>HUNGARIAN SOAP/XML IN — CLEAN ENGLISH XML (OR CSV) OUT.</samp>
