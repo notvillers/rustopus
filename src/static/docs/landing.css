@@ -21,21 +21,21 @@ body.landing {
     position: relative;
 }
 
-/* generative "O" watermark bleeding off the top-right corner.
+/* generative "O" watermark bleeding off the top-left corner.
    The box stays inside the page; the bleed comes from the oversized
-   background (131%) anchored bottom-left, so nothing overflows/scrolls. */
+   background (131%) anchored bottom-right, so nothing overflows/scrolls. */
 body.landing::before {
     content: "";
     position: absolute;
     top: 0;
-    right: 0;
+    left: 0;
     width: clamp(260px, 42vw, 580px);
     height: clamp(260px, 42vw, 580px);
-    background: url("/docs/rustopus_o_logo.svg") no-repeat left bottom / 131% 131%;
-    opacity: .14;
+    background: url("/docs/rustopus_o_logo.svg") no-repeat right bottom / 131% 131%;
+    opacity: .30;
     /* fade the strokes out toward the page so the corner blends in */
-    -webkit-mask-image: radial-gradient(circle at top right, #000 35%, transparent 78%);
-    mask-image: radial-gradient(circle at top right, #000 35%, transparent 78%);
+    -webkit-mask-image: radial-gradient(circle at top left, #000 35%, transparent 78%);
+    mask-image: radial-gradient(circle at top left, #000 35%, transparent 78%);
     pointer-events: none;
 }
 
