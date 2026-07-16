@@ -3,3 +3,5 @@ host = "0.0.0.0"
 port = 1140
 timeout = 1200
 workers = 2
+# Max concurrent outbound SOAP calls; extra requests wait. Optional, default 4.
+soap_concurrency = 4

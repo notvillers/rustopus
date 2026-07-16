@@ -53,6 +53,7 @@ Manages the defaults of the webserver.
 | `port` | Port the webapp is served on | `8080` |
 | `timeout` | Timeout limit in second(s) | `1200` |
 | `workers` | Worker count — the higher, the faster | `std::thread::available_parallelism()` |
+| `soap_concurrency` | Max concurrent outbound SOAP calls — extra requests wait in a queue | `4` |
 
 ### `soap.json`
 

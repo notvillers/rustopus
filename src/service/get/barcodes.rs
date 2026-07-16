@@ -13,7 +13,7 @@ use crate::{
         }
     },
     service::{
-        soap::get_response,
+        soap::get_response_shared,
         get_data::{
             FIRST_DATE, ErrorType,
             error_logger, to_xml_string
@@ -53,7 +53,7 @@ impl BarcodesXML {
 /// This function gets english barcodes envelope from the given `CallData`
 pub async fn get_barcode(call_data: CallData) -> BarcodesData {
     let request = o8_barcode::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
-    let response = get_response(&call_data.url, request).await;
+    let response = get_response_shared(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_barcode::Envelope>(&response) {
         Ok(envelope) => {
             match get_return_type(call_data) {

@@ -5,11 +5,10 @@ example/
 ping/
 target/
 test/
-/out/
+out/
+log/
 *.csv
 *.env
-*.log
-*.xml
 rustopus
 soap.json
 client_config.toml

@@ -13,7 +13,7 @@ use crate::{
         }
     },
     service::{
-        soap::get_response,
+        soap::get_response_shared,
         get_data::{
             ErrorType,
             error_logger, to_xml_string
@@ -54,7 +54,7 @@ impl PricesXML {
 pub async fn get_prices(call_data: CallData) -> PricesData {
     if let Some(pid) = call_data.pid {
         let request = o8_prices::get_request_string(&call_data.xmlns, &call_data.authcode, &pid);
-        let response = get_response(&call_data.url, request).await;
+        let response = get_response_shared(&call_data.url, request).await;
         return match quick_xml::de::from_str::<o8_prices::Envelope>(&response) {
             Ok(envelope) => {
                 match get_return_type(call_data) {

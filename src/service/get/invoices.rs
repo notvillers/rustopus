@@ -13,7 +13,7 @@ use crate::{
         }
     },
     service::{
-        soap::get_response,
+        soap::get_response_shared,
         get_data::{
             ErrorType,
             error_logger, to_xml_string
@@ -53,7 +53,7 @@ impl InvoicesXML {
 /// This function gets english invoices envelope from the given `CallData`
 pub async fn get_invoices(call_data: CallData) -> InvoicesData {
     let request = o8_invoices::get_request_string_opt(&call_data.xmlns, &call_data.pid, &call_data.type_mod, &call_data.from_date, &call_data.to_date, &call_data.unpaid, &call_data.authcode);
-    let response = get_response(&call_data.url, request).await;
+    let response = get_response_shared(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_invoices::Envelope>(&response) {
         Ok(envelope) => {
             match get_return_type(call_data) {

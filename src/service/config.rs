@@ -18,7 +18,11 @@ ConfigModelDerive! {
         pub host: String,
         pub port: u16,
         pub timeout: u64,
-        pub workers: usize
+        pub workers: usize,
+        // Optional so existing Config.toml files without the key keep
+        // deserializing (a missing required field would fail the whole parse
+        // and silently fall back to the hardcoded defaults, port 8080 included).
+        pub soap_concurrency: Option<usize>
     }
 
 }
@@ -57,7 +61,8 @@ fn load_settings() -> Settings {
                     elogger(format!("Error getting available_parallelism(): {}", error));
                     1
                 }
-            }
+            },
+            soap_concurrency: None
         }
     }
 }
