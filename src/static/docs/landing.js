@@ -8,7 +8,7 @@
 
     var cmd = document.getElementById("terminal-cmd");
     if (cmd && base) {
-        cmd.textContent = 'curl "' + base + '/get-product?url=<octopus-wsdl>&authcode=<code>"';
+        cmd.textContent = 'curl "' + base + '/get-bulk?url=<wsdl>&authcode=<code>&pid=<partner_id>"';
     }
 
     var heroXml = document.getElementById("hero-xml-sample");
