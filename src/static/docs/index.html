@@ -1,7 +1,7 @@
-<!-- HTML for static distribution bundle build -->
 <!--
-  The endpoint documentation below is rendered by Swagger UI from ./openapi.yaml.
-  To add or change an endpoint, edit openapi.yaml only — this page updates itself.
+  RustOpus docs landing page — static, no Swagger here.
+  The interactive API reference lives at ./swagger.html and renders ./openapi.yaml;
+  to add or change an endpoint, edit openapi.yaml only.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -9,28 +9,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>RustOpus</title>
-    <link rel="stylesheet" type="text/css" href="./swagger-ui.css" />
     <link rel="stylesheet" type="text/css" href="index.css" />
     <link rel="icon" type="image/png" href="./favicon.ico"/>
   </head>
 
-  <body>
+  <body class="landing">
     <header class="hero">
       <img class="hero-logo" src="./octopus.png" alt="rustopus logo" width="48" height="48">
       <p class="hero-kicker">OPEN SOURCE&nbsp;&nbsp;&bull;&nbsp;&nbsp;MIT LICENSE&nbsp;&nbsp;&bull;&nbsp;&nbsp;BUILT WITH RUST</p>
       <h1 class="hero-title">THE API<br>THAT SPEAKS<br>OCTOPUS</h1>
       <p class="hero-sub">HUNGARIAN SOAP/XML IN &mdash; CLEAN ENGLISH XML (OR CSV) OUT.</p>
-      <p class="hero-hint">LIVE REFERENCE &mdash; GENERATED FROM <a href="./openapi.yaml">OPENAPI.YAML</a></p>
+
+      <div class="cta-row">
+        <a class="cta" href="./swagger.html">EXPLORE THE API &rarr;</a>
+        <a class="cta cta--ghost" href="./openapi.yaml">OPENAPI.YAML</a>
+      </div>
+
+      <p class="terminal-label">CALL VIA TERMINAL</p>
+      <div class="terminal">
+        <code>curl "http://localhost:1140/get-product?url=&lt;octopus-wsdl&gt;&amp;authcode=&lt;code&gt;"</code>
+      </div>
     </header>
 
-    <div id="swagger-ui"></div>
+    <main class="features">
+      <section class="feature">
+        <p class="feature-no">#1 TRANSLATE</p>
+        <h2>HUNGARIAN IN, ENGLISH OUT</h2>
+        <p>FETCHES OCTOPUS 8 ERP SOAP PAYLOADS AND RETURNS THEM AS ENGLISH-TAGGED XML. PASS <code>language=hu</code> TO KEEP THE ORIGINAL HUNGARIAN.</p>
+      </section>
+
+      <section class="feature">
+        <p class="feature-no">#2 CONVERT</p>
+        <h2>XML OR CSV</h2>
+        <p>EVERY SUPPORTED ENDPOINT CAN ALSO ANSWER IN SEMICOLON-DELIMITED CSV &mdash; JUST ADD <code>data_type=csv</code>.</p>
+      </section>
+
+      <section class="feature">
+        <p class="feature-no">#3 AGGREGATE</p>
+        <h2>ONE CALL, EVERYTHING</h2>
+        <p><code>/get-bulk</code> COMPOSES PRODUCTS, PRICES, STOCKS, IMAGES AND BARCODES INTO A SINGLE RESPONSE WITH PER-CALL FALLBACK ERRORS.</p>
+      </section>
+
+      <section class="feature">
+        <p class="feature-no">#4 FORWARD</p>
+        <h2>ORDERS GO BACK <span class="beta-tag">(BETA)</span></h2>
+        <p><code>/post-order</code> ACCEPTS ENGLISH-TAGGED INPUT AND FORWARDS IT TO OCTOPUS AS HUNGARIAN.</p>
+      </section>
+    </main>
+
+    <section class="endpoints">
+      <p class="terminal-label">ENDPOINTS</p>
+      <p class="endpoint-strip">
+        <a href="./swagger.html">/get-product</a> &middot;
+        <a href="./swagger.html">/get-stock</a> &middot;
+        <a href="./swagger.html">/get-price</a> &middot;
+        <a href="./swagger.html">/get-image</a> &middot;
+        <a href="./swagger.html">/get-barcode</a> &middot;
+        <a href="./swagger.html">/get-bulk</a> &middot;
+        <a href="./swagger.html">/get-invoice</a> &middot;
+        <a href="./swagger.html">/get-mat</a> &middot;
+        <a href="./swagger.html">/post-order</a>
+      </p>
+    </section>
 
     <footer class="colophon">
-      RUSTOPUS &middot; POWERED BY SWAGGER UI &middot; MIT LICENSE
+      RUSTOPUS &middot; MIT LICENSE
     </footer>
-
-    <script src="./swagger-ui-bundle.js" charset="UTF-8"> </script>
-    <script src="./swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
-    <script src="./swagger-initializer.js" charset="UTF-8"> </script>
   </body>
 </html>

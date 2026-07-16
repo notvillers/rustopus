@@ -74,7 +74,7 @@ used for both `url` and `xmlns`.
 
 Ready-to-run request examples in shell, Python, JavaScript, C# and PowerShell:
 
-**→ [DOCS](./docs/)** — live Swagger UI served at `/docs/` when the server runs.
+**→ [DOCS](./docs/)** — when the server runs, `/docs/` serves the landing page and `/docs/swagger.html` the live Swagger UI.
 
 <br>
 

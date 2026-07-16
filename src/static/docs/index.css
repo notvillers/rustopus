@@ -87,6 +87,165 @@ body {
     color: #fff;
 }
 
+.hero--compact {
+    padding-bottom: 0;
+}
+
+.hero--compact .hero-title {
+    font-size: clamp(38px, 5vw, 64px);
+}
+
+.hero--compact .hero-kicker a {
+    color: #fff;
+}
+
+/* ------------------------- landing page -------------------------- */
+
+.cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin: 34px 0 44px;
+}
+
+.cta {
+    display: inline-block;
+    background: var(--cream);
+    color: var(--ko-blue);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 13px 26px;
+    border: 1px solid var(--cream);
+    border-radius: 2px;
+}
+
+.cta:hover {
+    background: #fff;
+}
+
+.cta--ghost {
+    background: transparent;
+    color: var(--cream);
+}
+
+.cta--ghost:hover {
+    background: rgba(255, 255, 255, .08);
+}
+
+.terminal-label {
+    margin: 0 0 12px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    opacity: .8;
+}
+
+.terminal {
+    background: var(--card);
+    border-radius: 2px;
+    padding: 16px 20px;
+    max-width: 720px;
+    overflow-x: auto;
+}
+
+.terminal code {
+    color: var(--ko-blue);
+    font-family: var(--mono);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.features {
+    max-width: 1420px;
+    margin: 0 auto;
+    padding: 56px 20px 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 40px 48px;
+}
+
+.feature {
+    border-top: 1px solid rgba(255, 255, 255, .35);
+    padding-top: 22px;
+}
+
+.feature-no {
+    margin: 0 0 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    opacity: .8;
+}
+
+.feature h2 {
+    margin: 0 0 14px;
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 30px;
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+.beta-tag {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .25em;
+    color: var(--cream);
+    border: 1px solid rgba(255, 255, 255, .55);
+    border-radius: 2px;
+    padding: 4px 8px 3px;
+    position: relative;
+    top: -4px;
+}
+
+.feature p {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.9;
+    letter-spacing: .12em;
+}
+
+.feature code {
+    background: rgba(255, 255, 255, .12);
+    padding: 2px 6px;
+    border-radius: 2px;
+    color: #fff;
+    text-transform: none;
+}
+
+.endpoints {
+    max-width: 1420px;
+    margin: 0 auto;
+    padding: 56px 20px 0;
+}
+
+.endpoint-strip {
+    margin: 0;
+    font-size: 13px;
+    line-height: 2.2;
+    letter-spacing: .06em;
+}
+
+.endpoint-strip a {
+    color: #fff;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 255, 255, .45);
+}
+
+.endpoint-strip a:hover {
+    border-bottom-color: #fff;
+}
+
 /* ----------------------------- footer ---------------------------- */
 
 .colophon {
