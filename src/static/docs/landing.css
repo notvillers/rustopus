@@ -21,37 +21,31 @@ body.landing {
     position: relative;
 }
 
-/* generative "O" watermark bleeding off the top-left corner.
-   The box stays inside the page; the bleed comes from the oversized
-   background (131%) anchored bottom-right, so nothing overflows/scrolls. */
-body.landing::before {
+/* octopus watermark sitting BEHIND the hero title. Anchored to the centered
+   .hero column (via .hero's position:relative) rather than the viewport, so on
+   wide screens it stays with the headline instead of drifting to the far-left
+   edge. z-index:-1 keeps it behind the text; the blue body shows through. */
+body.landing .hero::before {
     content: "";
     position: absolute;
-    top: 0;
+    top: 40px;
     left: 0;
-    width: clamp(260px, 42vw, 580px);
-    height: clamp(260px, 42vw, 580px);
-    /*background: url("/docs/rustopus_o_logo.svg") no-repeat right bottom / 131% 131%;*/
-    background: url("/docs/octo_flip.png") no-repeat right bottom / 110% 110%;
+    width: clamp(300px, 38vw, 620px);
+    height: clamp(300px, 38vw, 620px);
+    background: url("/docs/assets/octo_flip.png") no-repeat left top / contain;
     opacity: .25;
-    /* fade the strokes out toward the page so the corner blends in */
-    /* -webkit-mask-image: radial-gradient(circle at top left, #000 35%, transparent 78%);
-    mask-image: radial-gradient(circle at top left, #000 35%, transparent 78%); */
+    z-index: -1;
     pointer-events: none;
 }
 
-/* on narrow screens the corner crop cuts the "O" — show the whole ring,
-   centered at the top instead, with the fade running out on every side */
+/* on narrow screens center it at the top, behind the stacked title */
 @media (max-width: 720px) {
-    body.landing::before {
+    body.landing .hero::before {
         left: 50%;
         transform: translateX(-50%);
         width: min(80vw, 340px);
         height: min(80vw, 340px);
-        background-size: contain;
-        background-position: center;
-        /* -webkit-mask-image: radial-gradient(circle at center, #000 45%, transparent 74%);
-        mask-image: radial-gradient(circle at center, #000 45%, transparent 74%); */
+        background-position: center top;
     }
 }
 

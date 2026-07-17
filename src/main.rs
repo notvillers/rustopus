@@ -90,7 +90,7 @@ async fn main() -> std::io::Result<()> {
             .service(Files::new("/docs/", docs_dir.clone())
                 .index_file("index.html")
                 .use_last_modified(true))
-            .service(Files::new("/LICENSE", license_dir.clone())
+            .service(Files::new("/LICENSE/", license_dir.clone())
                 .index_file("index.html")
                 .use_last_modified(true))
             .service(product::get).service(product::get_alias)
