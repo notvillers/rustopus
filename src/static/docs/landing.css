@@ -235,6 +235,65 @@ body.landing .hero::before {
     padding-top: 22px;
 }
 
+/* #1 TRANSLATE — tentacles decoration bleeding out behind the text */
+.feature--tentacles {
+    position: relative;
+    isolation: isolate;
+}
+
+.feature--tentacles::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -0px;
+    bottom: -40px;
+    left: -30px;
+    background: url("/docs/assets/tentacles.svg") no-repeat right top / contain;
+    -webkit-mask-image:
+        linear-gradient(to right, transparent 0%, #000 38%),
+        linear-gradient(to top, transparent 0%, #000 30%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+        linear-gradient(to right, transparent 0%, #000 38%),
+        linear-gradient(to top, transparent 0%, #000 30%);
+    mask-composite: intersect;
+    opacity: .18;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* #2 CONVERT — octopus decoration bleeding out behind the text */
+.feature--octopus {
+    position: relative;
+    isolation: isolate;
+}
+
+.feature--octopus::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -0px;
+    bottom: -40px;
+    left: -30px;
+    /* enlarged to 150% and positioned (y 70%) so the top ~1/4, right 1/3 and
+       bottom ~10% of the octopus overflow the box and get clipped (cropped) */
+    background: url("/docs/assets/octopus.svg") no-repeat left 70% / 150% 150%;
+    /* Fade only the LEFT and BOTTOM edges into the blue; keep the TOP and RIGHT
+       as hard crops. Two gradients intersected: opaque only where both are —
+       i.e. everywhere except near the left edge and near the bottom edge. */
+    -webkit-mask-image:
+        linear-gradient(to right, transparent 0%, #000 38%),
+        linear-gradient(to top, transparent 0%, #000 30%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+        linear-gradient(to right, transparent 0%, #000 38%),
+        linear-gradient(to top, transparent 0%, #000 30%);
+    mask-composite: intersect;
+    opacity: .16;
+    z-index: -1;
+    pointer-events: none;
+}
+
 .feature-no {
     margin: 0 0 14px;
     font-size: 11px;
