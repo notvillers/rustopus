@@ -294,6 +294,69 @@ body.landing .hero::before {
     pointer-events: none;
 }
 
+/* #3 AGGREGATE — sea decoration bleeding out behind the text */
+.feature--sea {
+    position: relative;
+    isolation: isolate;
+}
+
+.feature--sea::before {
+    content: "";
+    position: absolute;
+    top: -30px;
+    right: -0px;
+    bottom: -0px;
+    left: -30px;
+    /* natural (contain) size — no scaling, so nothing crops vertically */
+    background: url("/docs/assets/sea.svg") no-repeat right top / contain;
+    /* Crop via the mask (not by scaling): a hard cut removes the left 10% of
+       the image, intersected with a soft fade on the bottom edge. Scaling to
+       crop would enlarge height too and crop top/bottom — the mask doesn't. */
+    -webkit-mask-image:
+        linear-gradient(to right, transparent 0 30%, #000 50%),
+        linear-gradient(to top, transparent 0%, #000 30%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+        linear-gradient(to right, transparent 0 30%, #000 50%),
+        linear-gradient(to top, transparent 0%, #000 30%);
+    mask-composite: intersect;
+    opacity: .16;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* #4 FORWARD — octopus8 decoration, only its LEFT HALF showing */
+.feature--forward {
+    position: relative;
+    isolation: isolate;
+}
+
+.feature--forward::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -0px;
+    bottom: -40px;
+    left: -30px;
+    /* Octopus8 (square) sized fixed and pushed right by half its width via
+       calc(100% + 150px), so its centre line sits on the card's right edge:
+       the right half overflows and is clipped, leaving the LEFT HALF flush
+       right. No hard-cut mask needed — the box edge does the cropping. */
+    background: url("/docs/assets/octopus8.svg") no-repeat calc(100% + 150px) center / 300px 300px;
+    /* same blend as the others: fade the left and bottom edges into the blue */
+    -webkit-mask-image:
+        linear-gradient(to right, transparent 48%, #000 78%),
+        linear-gradient(to top, transparent 0%, #000 30%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+        linear-gradient(to right, transparent 48%, #000 78%),
+        linear-gradient(to top, transparent 0%, #000 30%);
+    mask-composite: intersect;
+    opacity: .16;
+    z-index: -1;
+    pointer-events: none;
+}
+
 .feature-no {
     margin: 0 0 14px;
     font-size: 11px;
