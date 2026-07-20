@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./src/static/docs/octo.png" alt="rustopus logo" height="72">
+<img src="./src/static/docs/assets/octo.png" alt="rustopus logo" height="72">
 
 <samp>OPEN SOURCE&nbsp;&nbsp;•&nbsp;&nbsp;<a href="LICENSE">MIT LICENSE</a>&nbsp;&nbsp;•&nbsp;&nbsp;BUILT WITH RUST</samp>
 
