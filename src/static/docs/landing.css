@@ -1,9 +1,3 @@
-/* ------------------------------------------------------------------ */
-/*  RustOpus docs — Hermes-style landing theme.                        */
-/*  Used by index.html (full landing) and swagger.html (hero band      */
-/*  only). Swagger UI itself keeps its stock look from swagger-ui.css. */
-/* ------------------------------------------------------------------ */
-
 :root {
     --ko-blue: #0038E8;
     --ko-blue-deep: #002bb4;
@@ -21,10 +15,6 @@ body.landing {
     position: relative;
 }
 
-/* octopus watermark sitting BEHIND the hero title. Anchored to the centered
-   .hero column (via .hero's position:relative) rather than the viewport, so on
-   wide screens it stays with the headline instead of drifting to the far-left
-   edge. z-index:-1 keeps it behind the text; the blue body shows through. */
 body.landing .hero::before {
     content: "";
     position: absolute;
