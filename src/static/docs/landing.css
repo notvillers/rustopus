@@ -238,7 +238,7 @@ body.landing .hero::before {
     right: -0px;
     bottom: -40px;
     left: -30px;
-    background: url("/docs/assets/tentacles.svg") no-repeat right top / contain;
+    background: url("/docs/assets/tentacles_small.svg") no-repeat right top / contain;
     -webkit-mask-image:
         linear-gradient(to right, transparent 0%, #000 38%),
         linear-gradient(to top, transparent 0%, #000 30%);
@@ -267,7 +267,7 @@ body.landing .hero::before {
     left: -30px;
     /* enlarged to 150% and positioned (y 70%) so the top ~1/4, right 1/3 and
        bottom ~10% of the octopus overflow the box and get clipped (cropped) */
-    background: url("/docs/assets/octopus.svg") no-repeat left 70% / 150% 150%;
+    background: url("/docs/assets/octopus_small.svg") no-repeat left 70% / 150% 150%;
     /* Fade only the LEFT and BOTTOM edges into the blue; keep the TOP and RIGHT
        as hard crops. Two gradients intersected: opaque only where both are —
        i.e. everywhere except near the left edge and near the bottom edge. */
@@ -298,7 +298,7 @@ body.landing .hero::before {
     bottom: -0px;
     left: -30px;
     /* natural (contain) size — no scaling, so nothing crops vertically */
-    background: url("/docs/assets/sea.svg") no-repeat right top / contain;
+    background: url("/docs/assets/sea_small.svg") no-repeat right top / contain;
     /* Crop via the mask (not by scaling): a hard cut removes the left 10% of
        the image, intersected with a soft fade on the bottom edge. Scaling to
        crop would enlarge height too and crop top/bottom — the mask doesn't. */
@@ -332,7 +332,7 @@ body.landing .hero::before {
        calc(100% + 150px), so its centre line sits on the card's right edge:
        the right half overflows and is clipped, leaving the LEFT HALF flush
        right. No hard-cut mask needed — the box edge does the cropping. */
-    background: url("/docs/assets/octopus8.svg") no-repeat calc(100% + 150px) center / 300px 300px;
+    background: url("/docs/assets/octopus8_small.svg") no-repeat calc(100% + 150px) center / 300px 300px;
     /* same blend as the others: fade the left and bottom edges into the blue */
     -webkit-mask-image:
         linear-gradient(to right, transparent 48%, #000 78%),
