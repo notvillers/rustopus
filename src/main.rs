@@ -1,5 +1,5 @@
 use std::{env, panic};
-use actix_web::{App, HttpResponse, HttpServer, Responder, web, middleware::DefaultHeaders};
+use actix_web::{App, HttpResponse, HttpServer, Responder, web, middleware::{Compress, DefaultHeaders}};
 use actix_files::Files;
 
 mod macros;
@@ -84,6 +84,7 @@ async fn main() -> std::io::Result<()> {
 
     let server = HttpServer::new(move || {
         App::new()
+            .wrap(Compress::default())
             .wrap(security_headers())
             .default_service(web::to(not_found))
             .service(index::get)
