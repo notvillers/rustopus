@@ -265,12 +265,16 @@ body.landing .hero::before {
     right: -0px;
     bottom: -40px;
     left: -30px;
-    /* positioned (y 70%) so the top ~1/4, right 1/3 and bottom ~10% of the
-       octopus overflow the box and get clipped (cropped) */
-    background: url("/docs/assets/octopus_small.webp") no-repeat left 70%;
+    /* ◀▶ ADJUST POSITION HERE ▲▼ — two values: "horizontal vertical".
+       1st value (80px)   = LEFT/RIGHT: negative = left (crops left), larger = right.
+       2nd value (-37px)  = UP/DOWN: negative = up, positive = down. NOTE: because
+                            background-size below is 100% (image == box height), a
+                            PERCENTAGE here won't move it vertically — use px.
+                            The box is ~244px tall, so ~15% ≈ 37px. */
+    background: url("/docs/assets/octopus_small.webp") no-repeat 100px -50px;
     /* ▼ ADJUST OCTOPUS SIZE HERE ▼ — bigger % = wider/larger octopus, smaller %
        = smaller. Keep the two numbers equal so it doesn't stretch. (Was 150%.) */
-    background-size: 110% 110%;
+    background-size: 100% 100%;
     /* Fade only the LEFT and BOTTOM edges into the blue; keep the TOP and RIGHT
        as hard crops. Two gradients intersected: opaque only where both are —
        i.e. everywhere except near the left edge and near the bottom edge. */
