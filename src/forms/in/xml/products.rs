@@ -1,8 +1,8 @@
 /// Structs for GetCikkekAuth's XML
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Deserializer};
-use std::str::FromStr;
 use macro_rules_attribute::apply;
+use std::str::FromStr;
 
 use crate::{
     macros::r#in::{O8ModelDeriveOnly, O8ModelLowercase, O8ModelPascalcase},
@@ -11,7 +11,7 @@ use crate::{
 
 /// Get the string for the request
 pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &str) -> String {
-    return format!(
+    format!(
         r#"<?xml version="1.0" encoding="utf-8"?>
             <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
                 <soap:Body>
