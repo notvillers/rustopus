@@ -27,7 +27,7 @@ use crate::{
 };
 
 /// Name of the current request
-const REQUEST_NAME: &'static str = "INVOICES REQUEST";
+const REQUEST_NAME: &str = "INVOICES REQUEST";
 
 /// Handler
 async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder {
@@ -53,8 +53,8 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
             GetStringResponse::Text(auth) => auth,
             GetStringResponse::Response(response) => return response
         },
-        url: url,
-        xmlns: xmlns,
+        url,
+        xmlns,
         // Getting partner ID from parameters
         pid: match get_pid(REQUEST_NAME, &ip_address, &uuid, &params, error_struct_xml) {
             GetI64Response::Number(num) => Some(num),
@@ -88,8 +88,7 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
             Some(0)
         },
         language: params.language,
-        data_type: params.data_type,
-        ..Default::default()
+        data_type: params.data_type
     };
 
     // Before log

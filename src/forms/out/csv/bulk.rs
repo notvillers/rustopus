@@ -73,7 +73,7 @@ impl From<p_bulk::Product> for Product {
             image: c.images.image
                 .first()
                 .map(|i| i.url.clone())
-                .unwrap_or_else(|| "".to_string()),
+                .unwrap_or_default(),
             stock: c.stock,
             barcode: c.ean
         }

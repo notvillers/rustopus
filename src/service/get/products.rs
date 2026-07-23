@@ -53,7 +53,7 @@ impl ProductsXML {
 pub async fn get_products(call_data: CallData) -> ProductsData {
     let request = o8_products::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = get_response_shared(&call_data.url, request).await;
-    return match quick_xml::de::from_str::<o8_products::Envelope>(&response) {
+    match quick_xml::de::from_str::<o8_products::Envelope>(&response) {
         Ok(envelope) => {
             match get_return_type(call_data) {
                 RT::Xlsx => ProductsData::XLSX(ProductsCSV::En(envelope.into())),

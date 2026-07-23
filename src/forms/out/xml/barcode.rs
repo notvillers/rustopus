@@ -114,7 +114,7 @@ impl From<o8_barcode::Vonalkod> for Barcode {
             no: v.cikkszam,
             ean: v.vonalkod,
             unit: v.me,
-            main_ean: if v.elsean == 1 { true } else { false }
+            main_ean: v.elsean == 1
         }
     }
 }

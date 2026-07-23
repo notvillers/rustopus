@@ -26,7 +26,7 @@ use crate::{
 };
 
 /// Name of the current request
-const REQUEST_NAME: &'static str = "STOCKS REQUEST";
+const REQUEST_NAME: &str = "STOCKS REQUEST";
 
 /// Handler
 async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder {
@@ -52,8 +52,8 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
             GetStringResponse::Text(auth) => auth,
             GetStringResponse::Response(response) => return response // Error response if something went wrong
         },
-        url: url,
-        xmlns: xmlns,
+        url,
+        xmlns,
         pid: None,
         // Getting `from_date` from parameters
         from_date: if let GetDateResponse::DateTime(datetime) = get_date(REQUEST_NAME, &ip_address, &uuid, params.from_date, error_struct_xml, Some("from_date"), true) {

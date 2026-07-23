@@ -25,7 +25,7 @@ impl From<o8_images::Cikk> for Product {
             url: c.kepek.kep
                 .first()
                 .map(|k| k.url.clone())
-                .unwrap_or_else(|| "".to_string())
+                .unwrap_or_default()
         }
     }
 }

@@ -70,7 +70,7 @@ async fn main() -> std::io::Result<()> {
         Ok(dir) => dir.join("src").join("static").join("docs"),
         Err(e) => {
             elogger(format!("Failed to get current directory: '{}'", e));
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, e));
+            return Err(std::io::Error::other(e));
         }
     };
 
@@ -78,7 +78,7 @@ async fn main() -> std::io::Result<()> {
         Ok(dir) => dir.join("src").join("static").join("LICENSE"),
         Err(e) => {
             elogger(format!("Failed to get current directory: '{}'", e));
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, e));
+            return Err(std::io::Error::other(e));
         }
     };
 

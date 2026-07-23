@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-const SRC_FOLDER: &'static str = "src";
-const C_FOLDER: &'static str = "C";
+const SRC_FOLDER: &str = "src";
+const C_FOLDER: &str = "C";
 
 pub struct BuildableCFile {
     pub path: PathBuf,

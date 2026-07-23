@@ -79,7 +79,7 @@ impl From<(Option<String>, Option<String>, Option<String>, Option<p_defaults::Er
         Self {
             version: version.unwrap_or("1.0".into()),
             data: if ip.is_some() || uuid.is_some() { Some((ip, uuid).into()) } else { None },
-            error: error
+            error
         }
     }
 }
@@ -88,8 +88,8 @@ impl From<(Option<String>, Option<String>, Option<String>, Option<p_defaults::Er
 impl From<(Option<String>, Option<String>)> for Data {
     fn from((ip, uuid): (Option<String>, Option<String>)) -> Self {
         Self {
-            ip: ip,
-            uuid: uuid,
+            ip,
+            uuid,
             time: Local::now()
         }
     }

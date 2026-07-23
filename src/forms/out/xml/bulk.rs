@@ -263,7 +263,7 @@ pub fn error_struct(errors: Vec<defaults::Error>) -> Envelope {
 
 pub fn error_struct_xml(code: u64, description: &str) -> String {
     let error = defaults::Error {
-        code: code,
+        code,
         description: description.into()
     };
     quick_xml::se::to_string(&error_struct(vec![error])).unwrap_or("<Envelope></Envelope>".into())

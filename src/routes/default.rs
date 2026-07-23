@@ -161,13 +161,12 @@ pub fn get_url(request_name: &str, ip_address: &str, uuid: &str, params: &Reques
 pub fn get_xmlns(params: &RequestParameters, url: &str) -> String {
     let serv_str = "/services/";
     let mut xmlns = params.xmlns.clone().unwrap_or_default();
-    if xmlns.trim().is_empty() && url.contains(serv_str) {
-        if let Some(pos) = url.find(serv_str) {
+    if xmlns.trim().is_empty() && url.contains(serv_str) 
+        && let Some(pos) = url.find(serv_str) {
             let end = pos + serv_str.len();
             xmlns = url[..end].to_string();
-        }
     }
-    return xmlns
+    xmlns
 }
 
 

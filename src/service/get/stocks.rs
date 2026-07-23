@@ -54,7 +54,7 @@ impl StocksXML {
 pub async fn get_stocks(call_data: CallData) -> StocksData {
     let request = o8_stocks::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = get_response_shared(&call_data.url, request).await;
-    return match quick_xml::de::from_str::<o8_stocks::Envelope>(&response) {
+    match quick_xml::de::from_str::<o8_stocks::Envelope>(&response) {
         Ok(envelope) => {
             match get_return_type(call_data) {
                 RT::Xlsx => StocksData::XLSX(StocksCSV::En(envelope.into())),

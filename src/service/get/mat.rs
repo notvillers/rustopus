@@ -53,7 +53,7 @@ impl MatXML {
 pub async fn get_mat(call_data: CallData) -> MatData {
     let request = o8_mat::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = get_response_shared(&call_data.url, request.clone()).await;
-    return match quick_xml::de::from_str::<o8_mat::Envelope>(&response) {
+    match quick_xml::de::from_str::<o8_mat::Envelope>(&response) {
         Ok(envelope) => {
             match get_return_type(call_data) {
                 RT::Xlsx => MatData::XLSX(MatCSV::En(envelope.into())),

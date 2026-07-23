@@ -27,7 +27,7 @@ use crate::{
 };
 
 /// Name of the current request
-const REQUEST_NAME: &'static str = "TEST REQUEST";
+const REQUEST_NAME: &str = "TEST REQUEST";
 
 /// Handler
 async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder {

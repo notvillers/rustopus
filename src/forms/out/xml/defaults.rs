@@ -19,7 +19,7 @@ pub struct Error {
 impl Error {
     pub fn load<S: AsRef<str>>(code: u64, description: S) -> Self {
         Self {
-            code: code,
+            code,
             description: description.as_ref().into()
         }
     }
