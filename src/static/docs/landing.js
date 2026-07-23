@@ -11,11 +11,17 @@
         cmd.textContent = 'curl "' + base + '/get-bulk?url=<wsdl>&authcode=<code>&pid=<partner_id>"';
     }
 
-    var heroXml = document.getElementById("hero-xml-sample");
-    if (heroXml) {
-        fetch("/docs/example.xml")
+    // Fill an XML <pre> from a docs file; used to show the original Hungarian
+    // Octopus payload next to the English one Rustopus returns.
+    function fillXml(elementId, url) {
+        var el = document.getElementById(elementId);
+        if (!el) return;
+        fetch(url)
             .then(function (res) { return res.text(); })
-            .then(function (text) { heroXml.textContent = text.trim(); })
+            .then(function (text) { el.textContent = text.trim(); })
             .catch(function () {});
     }
+
+    fillXml("hero-xml-sample-hu", "/docs/example_hu.xml");
+    fillXml("hero-xml-sample", "/docs/example_en.xml");
 })();

@@ -1,0 +1,12 @@
+<Envelope>
+ <Body>
+  <GetCikkekAuthResponse>
+   <GetCikkekAuthResult>
+    <Valasz xmlns="" verzio="1.0">
+
+     <Cikkek/>
+    </Valasz>
+   </GetCikkekAuthResult>
+  </GetCikkekAuthResponse>
+ </Body>
+</Envelope>

@@ -69,6 +69,21 @@ body.landing .hero::before {
     margin-bottom: 16px;
 }
 
+/* two samples side by side: original (HU) on the left, english (EN) on the right */
+.hero-xml-cols {
+    display: flex;
+    gap: 40px;
+}
+
+.hero-xml-caption {
+    margin: 0 0 10px 26px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, .4);
+}
+
 .hero-xml pre {
     margin: 0;
     font-family: var(--mono);
