@@ -74,6 +74,15 @@ body.landing .hero::before {
 .hero-xml-cols {
     display: flex;
     gap: 40px;
+    align-items: center;
+}
+
+/* arrow between the two samples, signalling HU -> EN conversion */
+.hero-xml-arrow {
+    align-self: center;
+    font-size: 28px;
+    line-height: 1;
+    color: rgba(255, 255, 255, .55);
 }
 
 .hero-xml-caption {
