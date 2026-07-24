@@ -67,6 +67,7 @@ body.landing .hero::before {
 
 .hero-xml .terminal-label {
     margin-bottom: 16px;
+    text-align: right;
 }
 
 /* two samples side by side: original (HU) on the left, english (EN) on the right */
