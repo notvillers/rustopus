@@ -73,16 +73,16 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let is_hu = call_data.is_hu();
 
     // Getting data
-    let data = RequestGet::Images(call_data).to_data().await;
+    let data = RequestGet::Images(call_data).into_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     // Handling got data
     match data {
-        ResponseGet::Images(ImagesData::XLSX(ImagesCSV::En(d))) => send_xlsx(&d.products, "images.xlsx", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Images(ImagesData::CSV(ImagesCSV::En(d))) => send_csv(&d.products, "images.csv", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Images(ImagesData::XML(d)) => send_xml(d.to_xml()),
+        ResponseGet::Images(ImagesData::Xlsx(ImagesCSV::En(d))) => send_xlsx(&d.products, "images.xlsx", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Images(ImagesData::Csv(ImagesCSV::En(d))) => send_csv(&d.products, "images.csv", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Images(ImagesData::Xml(d)) => send_xml(d.to_xml()),
         _ => return_internal_server_error()
     }
 }

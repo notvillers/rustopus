@@ -41,8 +41,8 @@ pub fn get_request_string(xmlns: &str, pid: &i64, tipus: &i64, datumtol: &DateTi
         xmlns,
         pid,
         tipus,
-        datumtol.format("%Y-%m-%dT%H:%M:%S").to_string(),
-        datumig.format("%Y-%m-%dT%H:%M:%S").to_string(),
+        datumtol.format("%Y-%m-%dT%H:%M:%S"),
+        datumig.format("%Y-%m-%dT%H:%M:%S"),
         osszes_fizetetlen,
         authcode
     )

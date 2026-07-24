@@ -9,7 +9,7 @@ fn init_errors() -> Vec<errors::ErrorMessage> {
 }
 
 /// Error initalized in ./errors/errors.json
-pub const ERRORS: Lazy<Vec<errors::ErrorMessage>> = Lazy::new(init_errors);
+pub static ERRORS: Lazy<Vec<errors::ErrorMessage>> = Lazy::new(init_errors);
 
 pub struct RustopusError {
     pub code: u64,

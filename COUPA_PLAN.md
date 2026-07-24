@@ -35,7 +35,7 @@ Everything else has a clean pattern to mirror (below). Decisions locked with the
 | Secrets file loader (gitignored) | `SoapConfig`/`SOAP_URL` (OnceLock, cwd-relative) | `src/service/soap_config.rs` |
 | Route + plural alias, private `handler` | `get`/`get_alias`, `post`/`post_alias` | `src/routes/product.rs`, `src/routes/order.rs` |
 | Param/error plumbing helpers | `get_auth`, `get_url`, `send_xml`, … | `src/routes/default.rs` |
-| Read Octopus data (for outbound push) | `RequestGet::to_data`, `get_bulk` `futures::join!` | `src/service/get_data.rs:86`, `src/service/get/bulk.rs:71` |
+| Read Octopus data (for outbound push) | `RequestGet::into_data`, `get_bulk` `futures::join!` | `src/service/get_data.rs:86`, `src/service/get/bulk.rs:71` |
 | Write to Octopus (for inbound) | SOAP push via raw `get_response` + `get_request_string` | `src/routes/order.rs:113`, `src/forms/out/xml/orders.rs:9` |
 | Model derive macros | add a `CoupaModel` alongside existing | `src/macros/*.rs` |
 | Numeric error codes + catalog | `RustopusError`, `errors.json` | `src/global/errors.rs`, `src/errors/errors.json` |
@@ -82,7 +82,7 @@ First JSON users in the repo. Add macro `CoupaModel` in `src/macros/coupa.rs` = 
 ### 6. Routes — `src/routes/coupa/*.rs`, registered in `src/main.rs:97-106`
 Each `handler` + singular/plural alias, using `default.rs` helpers + uuid/`log_ip` logging pattern.
 - `GET /coupa/ping` — verifies OAuth + connectivity (the Phase 0 vertical slice).
-- Outbound: `POST /coupa/push-items`, `/coupa/push-suppliers`, `/coupa/push-invoices` — read Octopus via `RequestGet::to_data`, map, upsert to Coupa.
+- Outbound: `POST /coupa/push-items`, `/coupa/push-suppliers`, `/coupa/push-invoices` — read Octopus via `RequestGet::into_data`, map, upsert to Coupa.
 - Inbound: `POST /coupa/pull-orders`, `/coupa/pull-invoices` — GET from Coupa, map, push to Octopus SOAP.
 (One pattern, repeated per object.)
 

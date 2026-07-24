@@ -36,9 +36,9 @@ get_models! {
     }
 
     pub enum BarcodesData {
-        XML(BarcodesXML),
-        CSV(BarcodesCSV),
-        XLSX(BarcodesCSV)
+        Xml(BarcodesXML),
+        Csv(BarcodesCSV),
+        Xlsx(BarcodesCSV)
     }
 }
 
@@ -57,15 +57,15 @@ pub async fn get_barcode(call_data: CallData) -> BarcodesData {
     match quick_xml::de::from_str::<o8_barcode::Envelope>(&response) {
         Ok(envelope) => {
             match get_return_type(call_data) {
-                RT::Xlsx => BarcodesData::XLSX(BarcodesCSV::En(envelope.into())),
-                RT::Csv => BarcodesData::CSV(BarcodesCSV::En(envelope.into())),
-                RT::XmlHu => BarcodesData::XML(BarcodesXML::Hu(envelope)),
-                _ => BarcodesData::XML(BarcodesXML::En(envelope.into()))
+                RT::Xlsx => BarcodesData::Xlsx(BarcodesCSV::En(envelope.into())),
+                RT::Csv => BarcodesData::Csv(BarcodesCSV::En(envelope.into())),
+                RT::XmlHu => BarcodesData::Xml(BarcodesXML::Hu(envelope)),
+                _ => BarcodesData::Xml(BarcodesXML::En(envelope.into()))
             }
         },
         Err(error) => {
             error_logger(ErrorType::DeError(error), &GLOBAL_GET_DATA_ERROR);
-            BarcodesData::XML(BarcodesXML::En(p_barcode::error_struct(GLOBAL_GET_DATA_ERROR.code, GLOBAL_GET_DATA_ERROR.description)))
+            BarcodesData::Xml(BarcodesXML::En(p_barcode::error_struct(GLOBAL_GET_DATA_ERROR.code, GLOBAL_GET_DATA_ERROR.description)))
         }
     }
 }

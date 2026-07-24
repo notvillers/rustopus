@@ -25,7 +25,7 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
             </soap:Envelope>
         "#,
         xmlns,
-        web_update.format("%Y-%m-%dT%H:%M:%S").to_string(),
+        web_update.format("%Y-%m-%dT%H:%M:%S"),
         authcode
     )
 }

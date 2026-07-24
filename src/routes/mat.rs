@@ -73,16 +73,16 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let is_hu = call_data.is_hu();
 
     // Getting data
-    let data = RequestGet::Mat(call_data).to_data().await;
+    let data = RequestGet::Mat(call_data).into_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     // Handling got data
     match data {
-        ResponseGet::Mat(MatData::XLSX(MatCSV::En(c))) => send_xlsx(&c.concepts, "mat.csv", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Mat(MatData::CSV(MatCSV::En(c))) => send_csv(&c.concepts, "mat.csv", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Mat(MatData::XML(d)) => send_xml(d.to_xml()),
+        ResponseGet::Mat(MatData::Xlsx(MatCSV::En(c))) => send_xlsx(&c.concepts, "mat.csv", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Mat(MatData::Csv(MatCSV::En(c))) => send_csv(&c.concepts, "mat.csv", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Mat(MatData::Xml(d)) => send_xml(d.to_xml()),
         _ => return_internal_server_error()
     }
 }

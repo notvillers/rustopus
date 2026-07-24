@@ -30,9 +30,9 @@ get_models! {
     }
     
     pub enum BulkData {
-        XML(BulkXML),
-        CSV(BulkCSV),
-        XLSX(BulkCSV)
+        Xml(BulkXML),
+        Csv(BulkCSV),
+        Xlsx(BulkCSV)
     }
 }
 
@@ -55,52 +55,52 @@ pub async fn get_bulk(mut call_data: CallData) -> BulkData {
     call_data.data_type = None;
 
     // Handling products
-    let ResponseGet::Products(ProductsData::XML(ProductsXML::En(products))) = RequestGet::Products(call_data.clone()).to_data().await else {
+    let ResponseGet::Products(ProductsData::Xml(ProductsXML::En(products))) = RequestGet::Products(call_data.clone()).into_data().await else {
         let rustopus_error = errors::BULK_GET_PRODUCTS_ERROR;
         error_logger(ErrorType::Text("`ProductsData::XML(ProductsXML::En())` did not return!"), &rustopus_error);
-        return BulkData::XML(BulkXML::En(bulk::error_struct(vec![rustopus_error.into()])))
+        return BulkData::Xml(BulkXML::En(bulk::error_struct(vec![rustopus_error.into()])))
     };
 
     if let Some(error) = products.body.response.result.answer.error {
         let rustopus_error = errors::GLOBAL_GET_DATA_ERROR;
         error_logger(ErrorType::Text("Can not get products"), &rustopus_error);
-        return BulkData::XML(BulkXML::En(bulk::error_struct(vec![rustopus_error.into(), error])))
+        return BulkData::Xml(BulkXML::En(bulk::error_struct(vec![rustopus_error.into(), error])))
     };
 
     // Products succeeded, so the remaining independent calls can run concurrently.
     let (prices_response, stocks_response, images_response, barcodes_response) = futures::join!(
-        RequestGet::Prices(call_data.clone()).to_data(),
-        RequestGet::Stocks(call_data.clone()).to_data(),
-        RequestGet::Images(call_data.clone()).to_data(),
-        RequestGet::Barcodes(call_data.clone()).to_data()
+        RequestGet::Prices(call_data.clone()).into_data(),
+        RequestGet::Stocks(call_data.clone()).into_data(),
+        RequestGet::Images(call_data.clone()).into_data(),
+        RequestGet::Barcodes(call_data.clone()).into_data()
     );
 
     let prices = match prices_response {
-        ResponseGet::Prices(PricesData::XML(PricesXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
+        ResponseGet::Prices(PricesData::Xml(PricesXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(prices::error_struct(errors::BULK_GET_PRICES_ERROR.code, errors::BULK_GET_PRICES_ERROR.description))
     };
 
     let stocks = match stocks_response {
-        ResponseGet::Stocks(StocksData::XML(StocksXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
+        ResponseGet::Stocks(StocksData::Xml(StocksXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(stocks::error_struct(errors::BULK_GET_STOCKS_ERROR.code, errors::BULK_GET_STOCKS_ERROR.description))
     };
 
     let images = match images_response {
-        ResponseGet::Images(ImagesData::XML(ImagesXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
+        ResponseGet::Images(ImagesData::Xml(ImagesXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(images::error_struct(errors::BULK_GET_IMAGES_ERROR.code, errors::BULK_GET_IMAGES_ERROR.description))
     };
 
     let barcodes = match barcodes_response {
-        ResponseGet::Barcodes(BarcodesData::XML(BarcodesXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
+        ResponseGet::Barcodes(BarcodesData::Xml(BarcodesXML::En(envelope))) if envelope.body.response.result.answer.error.is_none() => Some(envelope),
         _ => Some(barcode::error_struct(errors::BULK_GET_BARCODES_ERROR.code, errors::BULK_GET_BARCODES_ERROR.description))
     };
 
     let envelope: bulk::Envelope = (products, prices, stocks, images, barcodes).into();
 
     match (is_xlsx, is_csv, is_hu) {
-        (true, _, _) => BulkData::XLSX(BulkCSV::En(envelope.into())),
-        (_, true, _) => BulkData::CSV(BulkCSV::En(envelope.into())),
-        (_, _, true) => BulkData::XML(BulkXML::Hu(envelope.into())),
-        _ => BulkData::XML(BulkXML::En(envelope))
+        (true, _, _) => BulkData::Xlsx(BulkCSV::En(envelope.into())),
+        (_, true, _) => BulkData::Csv(BulkCSV::En(envelope.into())),
+        (_, _, true) => BulkData::Xml(BulkXML::Hu(envelope.into())),
+        _ => BulkData::Xml(BulkXML::En(envelope))
     }
 }

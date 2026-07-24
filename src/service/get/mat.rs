@@ -36,9 +36,9 @@ get_models! {
     }
 
     pub enum MatData {
-        XML(MatXML),
-        CSV(MatCSV),
-        XLSX(MatCSV)
+        Xml(MatXML),
+        Csv(MatCSV),
+        Xlsx(MatCSV)
     }
 }
 
@@ -56,16 +56,16 @@ pub async fn get_mat(call_data: CallData) -> MatData {
     match quick_xml::de::from_str::<o8_mat::Envelope>(&response) {
         Ok(envelope) => {
             match get_return_type(call_data) {
-                RT::Xlsx => MatData::XLSX(MatCSV::En(envelope.into())),
-                RT::Csv => MatData::CSV(MatCSV::En(envelope.into())),
-                RT::XmlHu => MatData::XML(MatXML::Hu(envelope)),
-                _ => MatData::XML(MatXML::En(envelope.into()))
+                RT::Xlsx => MatData::Xlsx(MatCSV::En(envelope.into())),
+                RT::Csv => MatData::Csv(MatCSV::En(envelope.into())),
+                RT::XmlHu => MatData::Xml(MatXML::Hu(envelope)),
+                _ => MatData::Xml(MatXML::En(envelope.into()))
             }
         },
         Err(error) => {
             let rustopus_error = GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(error), &rustopus_error);
-            MatData::XML(MatXML::En(p_mat::error_sturuct(rustopus_error.code, rustopus_error.description)))
+            MatData::Xml(MatXML::En(p_mat::error_sturuct(rustopus_error.code, rustopus_error.description)))
         }
     }
 }

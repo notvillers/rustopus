@@ -51,7 +51,7 @@ impl fmt::Display for ErrorType {
 
 /// Logs special error with `ErrorType`` enum
 pub fn error_logger(in_error: ErrorType, error: &RustopusError) {
-    elogger(format!("{}: {} ({})", error.code, error.description, in_error.to_string()));
+    elogger(format!("{}: {} ({})", error.code, error.description, in_error));
 }
 
 
@@ -83,7 +83,7 @@ pub enum RequestGet {
 
 impl RequestGet {
     /// This function converts the `RequestGet` enum to `ResponseGet`
-    pub fn to_data(self) -> Pin<Box<dyn Future<Output = ResponseGet> + Send>> {
+    pub fn into_data(self) -> Pin<Box<dyn Future<Output = ResponseGet> + Send>> {
         Box::pin(async move {
             match self {
                 RequestGet::Products(call_data) => ResponseGet::Products(get_products(call_data).await),

@@ -36,9 +36,9 @@ get_models! {
     }
 
     pub enum StocksData {
-        XML(StocksXML),
-        CSV(StocksCSV),
-        XLSX(StocksCSV)
+        Xml(StocksXML),
+        Csv(StocksCSV),
+        Xlsx(StocksCSV)
     }
 }
 
@@ -57,16 +57,16 @@ pub async fn get_stocks(call_data: CallData) -> StocksData {
     match quick_xml::de::from_str::<o8_stocks::Envelope>(&response) {
         Ok(envelope) => {
             match get_return_type(call_data) {
-                RT::Xlsx => StocksData::XLSX(StocksCSV::En(envelope.into())),
-                RT::Csv => StocksData::CSV(StocksCSV::En(envelope.into())),
-                RT::XmlHu => StocksData::XML(StocksXML::Hu(envelope)),
-                _ => StocksData::XML(StocksXML::En(envelope.into()))
+                RT::Xlsx => StocksData::Xlsx(StocksCSV::En(envelope.into())),
+                RT::Csv => StocksData::Csv(StocksCSV::En(envelope.into())),
+                RT::XmlHu => StocksData::Xml(StocksXML::Hu(envelope)),
+                _ => StocksData::Xml(StocksXML::En(envelope.into()))
             }
         },
         Err(error) => {
             let rustopus_error = GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(error), &rustopus_error);
-            StocksData::XML(StocksXML::En(p_stocks::error_struct(rustopus_error.code, rustopus_error.description)))
+            StocksData::Xml(StocksXML::En(p_stocks::error_struct(rustopus_error.code, rustopus_error.description)))
         }
     }
 }

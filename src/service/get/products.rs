@@ -36,9 +36,9 @@ get_models! {
     }
     
     pub enum ProductsData {
-        XML(ProductsXML),
-        CSV(ProductsCSV),
-        XLSX(ProductsCSV)
+        Xml(ProductsXML),
+        Csv(ProductsCSV),
+        Xlsx(ProductsCSV)
     }
 }
 
@@ -56,16 +56,16 @@ pub async fn get_products(call_data: CallData) -> ProductsData {
     match quick_xml::de::from_str::<o8_products::Envelope>(&response) {
         Ok(envelope) => {
             match get_return_type(call_data) {
-                RT::Xlsx => ProductsData::XLSX(ProductsCSV::En(envelope.into())),
-                RT::Csv => ProductsData::CSV(ProductsCSV::En(envelope.into())),
-                RT::XmlHu => ProductsData::XML(ProductsXML::Hu(envelope)),
-                _ => ProductsData::XML(ProductsXML::En(envelope.into()))
+                RT::Xlsx => ProductsData::Xlsx(ProductsCSV::En(envelope.into())),
+                RT::Csv => ProductsData::Csv(ProductsCSV::En(envelope.into())),
+                RT::XmlHu => ProductsData::Xml(ProductsXML::Hu(envelope)),
+                _ => ProductsData::Xml(ProductsXML::En(envelope.into()))
             }
         },
         Err(error) => {
             let rustopus_error = GLOBAL_GET_DATA_ERROR;
             error_logger(ErrorType::DeError(error), &rustopus_error);
-            ProductsData::XML(ProductsXML::En(p_products::error_struct(rustopus_error.code, rustopus_error.description)))
+            ProductsData::Xml(ProductsXML::En(p_products::error_struct(rustopus_error.code, rustopus_error.description)))
         }
     }
 }

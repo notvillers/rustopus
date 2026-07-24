@@ -47,7 +47,7 @@ impl SoapConfig {
     /// Load for `SoapConfig` from soap file, or `default`
     pub fn load() -> Self {
         if get_soap_path().is_file() {
-            match fs::read_to_string(&get_soap_path()) {
+            match fs::read_to_string(get_soap_path()) {
                 Ok(content) => {
                     match serde_json::from_str::<Self>(&content) {
                         Ok(config) => return config,

@@ -36,9 +36,9 @@ get_models! {
     }
     
     pub enum ImagesData {
-        XML(ImagesXML),
-        CSV(ImagesCSV),
-        XLSX(ImagesCSV)
+        Xml(ImagesXML),
+        Csv(ImagesCSV),
+        Xlsx(ImagesCSV)
     }
 }
 
@@ -59,15 +59,15 @@ pub async fn get_images(call_data: CallData) -> ImagesData {
     match quick_xml::de::from_str::<o8_images::Envelope>(&response) {
         Ok(envelope) => {
             match get_return_type(call_data) {
-                RT::Xlsx => ImagesData::XLSX(ImagesCSV::En(envelope.into())),
-                RT::Csv => ImagesData::CSV(ImagesCSV::En(envelope.into())),
-                RT::XmlHu => ImagesData::XML(ImagesXML::Hu(envelope)),
-                _ => ImagesData::XML(ImagesXML::En(envelope.into()))
+                RT::Xlsx => ImagesData::Xlsx(ImagesCSV::En(envelope.into())),
+                RT::Csv => ImagesData::Csv(ImagesCSV::En(envelope.into())),
+                RT::XmlHu => ImagesData::Xml(ImagesXML::Hu(envelope)),
+                _ => ImagesData::Xml(ImagesXML::En(envelope.into()))
             }
         },
         Err(error) => {
             error_logger(ErrorType::DeError(error), &GLOBAL_GET_DATA_ERROR);
-            ImagesData::XML(ImagesXML::En(p_images::error_struct(GLOBAL_GET_DATA_ERROR.code, GLOBAL_GET_DATA_ERROR.description)))
+            ImagesData::Xml(ImagesXML::En(p_images::error_struct(GLOBAL_GET_DATA_ERROR.code, GLOBAL_GET_DATA_ERROR.description)))
         }
     }
 }

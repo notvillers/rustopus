@@ -36,9 +36,9 @@ get_models! {
     }
     
     pub enum InvoicesData {
-        XML(InvoicesXML),
-        CSV(InvoicesCSV),
-        XLSX(InvoicesCSV)
+        Xml(InvoicesXML),
+        Csv(InvoicesCSV),
+        Xlsx(InvoicesCSV)
     }
 }
 
@@ -57,15 +57,15 @@ pub async fn get_invoices(call_data: CallData) -> InvoicesData {
     match quick_xml::de::from_str::<o8_invoices::Envelope>(&response) {
         Ok(envelope) => {
             match get_return_type(call_data) {
-                RT::Xlsx => InvoicesData::XLSX(InvoicesCSV::En(envelope.into())),
-                RT::Csv => InvoicesData::CSV(InvoicesCSV::En(envelope.into())),
-                RT::XmlHu => InvoicesData::XML(InvoicesXML::Hu(envelope)),
-                _ => InvoicesData::XML(InvoicesXML::En(envelope.into()))
+                RT::Xlsx => InvoicesData::Xlsx(InvoicesCSV::En(envelope.into())),
+                RT::Csv => InvoicesData::Csv(InvoicesCSV::En(envelope.into())),
+                RT::XmlHu => InvoicesData::Xml(InvoicesXML::Hu(envelope)),
+                _ => InvoicesData::Xml(InvoicesXML::En(envelope.into()))
             }
         },
         Err(error) => {
             error_logger(ErrorType::DeError(error), &GLOBAL_GET_DATA_ERROR);
-            InvoicesData::XML(InvoicesXML::En(p_invoices::error_struct(GLOBAL_GET_DATA_ERROR.code, GLOBAL_GET_DATA_ERROR.description)))
+            InvoicesData::Xml(InvoicesXML::En(p_invoices::error_struct(GLOBAL_GET_DATA_ERROR.code, GLOBAL_GET_DATA_ERROR.description)))
         }
     }
 }

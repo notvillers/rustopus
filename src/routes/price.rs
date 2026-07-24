@@ -71,16 +71,16 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let is_hu = call_data.is_hu();
 
     // Getting data
-    let data = RequestGet::Prices(call_data).to_data().await;
+    let data = RequestGet::Prices(call_data).into_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     // Handling got data
     match data {
-        ResponseGet::Prices(PricesData::XLSX(PricesCSV::En(d))) => send_xlsx(&d.prices, "prices.xlsx", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Prices(PricesData::CSV(PricesCSV::En(d))) => send_csv(&d.prices, "prices.csv", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Prices(PricesData::XML(d)) => send_xml(d.to_xml()),
+        ResponseGet::Prices(PricesData::Xlsx(PricesCSV::En(d))) => send_xlsx(&d.prices, "prices.xlsx", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Prices(PricesData::Csv(PricesCSV::En(d))) => send_csv(&d.prices, "prices.csv", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Prices(PricesData::Xml(d)) => send_xml(d.to_xml()),
         _ => return_internal_server_error()
     }
 }

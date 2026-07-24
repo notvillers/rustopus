@@ -73,16 +73,16 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let is_hu = call_data.is_hu();
 
     // Getting data
-    let data = RequestGet::Barcodes(call_data).to_data().await;
+    let data = RequestGet::Barcodes(call_data).into_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     // Handling got data
     match data {
-        ResponseGet::Barcodes(BarcodesData::XLSX(BarcodesCSV::En(d))) => send_xlsx(&d.barcodes, "barcodes.xlsx", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Barcodes(BarcodesData::CSV(BarcodesCSV::En(d))) => send_csv(&d.barcodes, "barcodes.csv", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Barcodes(BarcodesData::XML(d)) => send_xml(d.to_xml()),
+        ResponseGet::Barcodes(BarcodesData::Xlsx(BarcodesCSV::En(d))) => send_xlsx(&d.barcodes, "barcodes.xlsx", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Barcodes(BarcodesData::Csv(BarcodesCSV::En(d))) => send_csv(&d.barcodes, "barcodes.csv", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Barcodes(BarcodesData::Xml(d)) => send_xml(d.to_xml()),
         _ => return_internal_server_error()
     }
 }

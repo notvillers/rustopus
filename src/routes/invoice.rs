@@ -98,16 +98,16 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let is_hu = call_data.is_hu();
 
     // Getting data
-    let data = RequestGet::Invoices(call_data).to_data().await;
+    let data = RequestGet::Invoices(call_data).into_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     // Handling got data
     match data {
-        ResponseGet::Invoices(InvoicesData::XLSX(InvoicesCSV::En(d))) => return send_xlsx(&d.products, "invoices.csv", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Invoices(InvoicesData::CSV(InvoicesCSV::En(d))) => return send_csv(&d.products, "invoices.csv", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Invoices(InvoicesData::XML(d)) => return send_xml(d.to_xml()),
+        ResponseGet::Invoices(InvoicesData::Xlsx(InvoicesCSV::En(d))) => return send_xlsx(&d.products, "invoices.csv", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Invoices(InvoicesData::Csv(InvoicesCSV::En(d))) => return send_csv(&d.products, "invoices.csv", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Invoices(InvoicesData::Xml(d)) => return send_xml(d.to_xml()),
         _ => {}
     }
 

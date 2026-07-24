@@ -36,9 +36,9 @@ get_models! {
     }
 
     pub enum PricesData {
-        XML(PricesXML),
-        CSV(PricesCSV),
-        XLSX(PricesCSV)
+        Xml(PricesXML),
+        Csv(PricesCSV),
+        Xlsx(PricesCSV)
     }
 }
 
@@ -58,18 +58,18 @@ pub async fn get_prices(call_data: CallData) -> PricesData {
         return match quick_xml::de::from_str::<o8_prices::Envelope>(&response) {
             Ok(envelope) => {
                 match get_return_type(call_data) {
-                    RT::Xlsx => PricesData::XLSX(PricesCSV::En(envelope.into())),
-                    RT::Csv => PricesData::CSV(PricesCSV::En(envelope.into())),
-                    RT::XmlHu => PricesData::XML(PricesXML::Hu(envelope)),
-                    _ => PricesData::XML(PricesXML::En(envelope.into()))
+                    RT::Xlsx => PricesData::Xlsx(PricesCSV::En(envelope.into())),
+                    RT::Csv => PricesData::Csv(PricesCSV::En(envelope.into())),
+                    RT::XmlHu => PricesData::Xml(PricesXML::Hu(envelope)),
+                    _ => PricesData::Xml(PricesXML::En(envelope.into()))
                 }
             },
             Err(error) => {
                 error_logger(ErrorType::DeError(error), &GLOBAL_GET_DATA_ERROR);
-                PricesData::XML(PricesXML::En(p_prices::error_struct(GLOBAL_GET_DATA_ERROR.code, GLOBAL_GET_DATA_ERROR.description)))
+                PricesData::Xml(PricesXML::En(p_prices::error_struct(GLOBAL_GET_DATA_ERROR.code, GLOBAL_GET_DATA_ERROR.description)))
             }
         };
     }
     error_logger(ErrorType::Text("get_prices - PID missing"), &GLOBAL_PID_ERROR);
-    PricesData::XML(PricesXML::En(p_prices::error_struct(GLOBAL_PID_ERROR.code, GLOBAL_PID_ERROR.description)))
+    PricesData::Xml(PricesXML::En(p_prices::error_struct(GLOBAL_PID_ERROR.code, GLOBAL_PID_ERROR.description)))
 }

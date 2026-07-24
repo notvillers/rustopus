@@ -59,7 +59,7 @@ enum AppendFileError {
 
 /// This function append string to a file's content
 fn append_to_file(path: &PathBuf, content: &str) -> Result<(), AppendFileError> {
-    let c_path = match path_to_cstring(&path) {
+    let c_path = match path_to_cstring(path) {
         Ok(csstring) => csstring,
         Err(error) => {
             println!("Error while searching for path {:#?}, error: '{}'", path, error);
@@ -111,11 +111,10 @@ fn log_handler<S: AsRef<str>>(message: S, log_type: Option<LogType>) {
     };
 
     let log_dir = get_current_or_root_dir().join("log");
-    if !log_dir.exists() {
-        if let Err(e) = std::fs::create_dir_all(&log_dir) {
-            println!("Failed to create log directory '{}', content '{}', error '{}'", &log_dir.to_string_lossy(), content, e);
+    if !log_dir.exists()
+        && let Err(e) = std::fs::create_dir_all(&log_dir) {
+            println!("Failed to create log directory '{}', content '{}', error '{}'", log_dir.to_string_lossy(), content, e);
             return
-        }
     }
 
     let file_path = log_dir.join(format!("{}.log", get_date_str()));

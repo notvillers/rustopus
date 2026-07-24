@@ -73,16 +73,16 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
     let is_hu = call_data.is_hu();
 
     // Getting data
-    let data = RequestGet::Products(call_data).to_data().await;
+    let data = RequestGet::Products(call_data).into_data().await;
 
     // After log
     log_with_ip_uuid(&ip_address, &uuid, format!("After {} got", REQUEST_NAME));
 
     // Handling got data
     match data {
-        ResponseGet::Products(ProductsData::XLSX(ProductsCSV::En(d))) => send_xlsx(&d.products, "products.xlsx", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Products(ProductsData::CSV(ProductsCSV::En(d))) => send_csv(&d.products, "products.csv", if is_hu { Some(HU_HEADERS) } else { None }),
-        ResponseGet::Products(ProductsData::XML(d)) => send_xml(d.to_xml()),
+        ResponseGet::Products(ProductsData::Xlsx(ProductsCSV::En(d))) => send_xlsx(&d.products, "products.xlsx", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Products(ProductsData::Csv(ProductsCSV::En(d))) => send_csv(&d.products, "products.csv", if is_hu { Some(HU_HEADERS) } else { None }),
+        ResponseGet::Products(ProductsData::Xml(d)) => send_xml(d.to_xml()),
         _ => return_internal_server_error()
     }
 }
