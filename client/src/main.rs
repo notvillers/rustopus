@@ -17,8 +17,8 @@ fn rust_theme() -> egui::Visuals {
     let widget_active = egui::Color32::from_rgb(82, 60, 54);
     let text_color    = egui::Color32::from_rgb(230, 215, 205);
     let subtle_text   = egui::Color32::from_rgb(155, 135, 125);
-    let subtle_stroke = egui::Stroke::new(1.0, egui::Color32::from_rgb(75, 58, 53));
-    let rust_stroke   = egui::Stroke::new(1.0, rust_orange);
+    let subtle_stroke = egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(75, 58, 53));
+    let rust_stroke   = egui::Stroke::new(1.0_f32, rust_orange);
 
     let mut v = egui::Visuals::dark();
     v.override_text_color  = Some(text_color);
@@ -38,27 +38,27 @@ fn rust_theme() -> egui::Visuals {
     v.widgets.noninteractive.bg_fill     = panel_bg;
     v.widgets.noninteractive.weak_bg_fill = panel_bg;
     v.widgets.noninteractive.bg_stroke   = subtle_stroke;
-    v.widgets.noninteractive.fg_stroke   = egui::Stroke::new(1.0, subtle_text);
+    v.widgets.noninteractive.fg_stroke   = egui::Stroke::new(1.0_f32, subtle_text);
 
     v.widgets.inactive.bg_fill     = widget_bg;
     v.widgets.inactive.weak_bg_fill = widget_bg;
     v.widgets.inactive.bg_stroke   = subtle_stroke;
-    v.widgets.inactive.fg_stroke   = egui::Stroke::new(1.0, text_color);
+    v.widgets.inactive.fg_stroke   = egui::Stroke::new(1.0_f32, text_color);
 
     v.widgets.hovered.bg_fill     = widget_hover;
     v.widgets.hovered.weak_bg_fill = widget_hover;
     v.widgets.hovered.bg_stroke   = rust_stroke;
-    v.widgets.hovered.fg_stroke   = egui::Stroke::new(1.5, rust_orange);
+    v.widgets.hovered.fg_stroke   = egui::Stroke::new(1.5_f32, rust_orange);
 
     v.widgets.active.bg_fill     = widget_active;
     v.widgets.active.weak_bg_fill = widget_active;
     v.widgets.active.bg_stroke   = rust_stroke;
-    v.widgets.active.fg_stroke   = egui::Stroke::new(2.0, rust_orange);
+    v.widgets.active.fg_stroke   = egui::Stroke::new(2.0_f32, rust_orange);
 
     v.widgets.open.bg_fill     = widget_hover;
     v.widgets.open.weak_bg_fill = widget_hover;
     v.widgets.open.bg_stroke   = rust_stroke;
-    v.widgets.open.fg_stroke   = egui::Stroke::new(1.5, rust_orange);
+    v.widgets.open.fg_stroke   = egui::Stroke::new(1.5_f32, rust_orange);
 
     v
 }
