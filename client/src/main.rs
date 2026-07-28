@@ -7,58 +7,65 @@ mod cron;
 mod scheduler;
 mod menubar;
 
-fn rust_theme() -> egui::Visuals {
-    // Rust brand orange: #CE422B
-    let rust_orange   = egui::Color32::from_rgb(206, 66, 43);
-    let panel_bg      = egui::Color32::from_rgb(36, 28, 26);
-    let window_bg     = egui::Color32::from_rgb(28, 22, 20);
-    let widget_bg     = egui::Color32::from_rgb(50, 40, 37);
-    let widget_hover  = egui::Color32::from_rgb(66, 52, 48);
-    let widget_active = egui::Color32::from_rgb(82, 60, 54);
-    let text_color    = egui::Color32::from_rgb(230, 215, 205);
-    let subtle_text   = egui::Color32::from_rgb(155, 135, 125);
-    let subtle_stroke = egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(75, 58, 53));
-    let rust_stroke   = egui::Stroke::new(1.0_f32, rust_orange);
+fn octopus_theme() -> egui::Visuals {
+    // Palette mirrors the RustOpus docs landing page (src/static/docs/landing.css):
+    //   --ko-blue #0038E8 · --ko-blue-deep #002bb4 · --cream #F5F2E9 · --card #FDFCF8
+    // The calm deep-blue navies are the dominant surfaces; the vibrant --ko-blue is
+    // reserved as an ACCENT (hover / active / selection) so it pops without flooding
+    // the window. Cream text, white headings, amber warm signal.
+    let well_blue    = egui::Color32::from_rgb(0, 16, 58);    // #00103a — text-field / code wells
+    let window_navy  = egui::Color32::from_rgb(0, 26, 94);    // #001a5e — window backdrop
+    let widget_navy  = egui::Color32::from_rgb(0, 36, 134);   // #002486 — resting buttons/fields
+    let panel_blue   = egui::Color32::from_rgb(0, 43, 180);   // #002bb4 — main panel surface
+    let stripe_blue  = egui::Color32::from_rgb(13, 55, 192);  // #0d37c0 — striped-row tint
+    let ko_blue      = egui::Color32::from_rgb(0, 56, 232);   // #0038E8 — vibrant accent
+    let ko_bright    = egui::Color32::from_rgb(26, 77, 255);  // #1a4dff — active accent
+    let cream        = egui::Color32::from_rgb(245, 242, 233); // #F5F2E9 — body text
+    let white        = egui::Color32::from_rgb(255, 255, 255); // headings / links
+    let subtle_text  = egui::Color32::from_rgb(183, 195, 235); // muted cream-blue
+    let subtle_stroke = egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(74, 104, 200));
+    let cream_stroke  = egui::Stroke::new(1.0_f32, cream);
 
     let mut v = egui::Visuals::dark();
-    v.override_text_color  = Some(text_color);
-    v.hyperlink_color      = rust_orange;
-    v.faint_bg_color       = egui::Color32::from_rgb(42, 33, 30);
-    v.extreme_bg_color     = egui::Color32::from_rgb(18, 14, 12);
-    v.code_bg_color        = egui::Color32::from_rgb(30, 24, 22);
-    v.warn_fg_color        = egui::Color32::from_rgb(220, 140, 60);
-    v.error_fg_color       = egui::Color32::from_rgb(230, 80, 60);
-    v.panel_fill           = panel_bg;
-    v.window_fill          = window_bg;
+    v.override_text_color  = Some(cream);
+    v.hyperlink_color      = white;
+    v.faint_bg_color       = stripe_blue;
+    v.extreme_bg_color     = well_blue;
+    v.code_bg_color        = well_blue;
+    v.warn_fg_color        = egui::Color32::from_rgb(230, 170, 70);
+    v.error_fg_color       = egui::Color32::from_rgb(255, 120, 110);
+    v.panel_fill           = panel_blue;
+    v.window_fill          = window_navy;
     v.window_stroke        = subtle_stroke;
 
-    v.selection.bg_fill = egui::Color32::from_rgba_unmultiplied(206, 66, 43, 110);
-    v.selection.stroke  = rust_stroke;
+    // Selected tabs / text selection use the vibrant brand blue as the accent.
+    v.selection.bg_fill = egui::Color32::from_rgba_unmultiplied(0, 56, 232, 200);
+    v.selection.stroke  = cream_stroke;
 
-    v.widgets.noninteractive.bg_fill     = panel_bg;
-    v.widgets.noninteractive.weak_bg_fill = panel_bg;
+    v.widgets.noninteractive.bg_fill     = panel_blue;
+    v.widgets.noninteractive.weak_bg_fill = panel_blue;
     v.widgets.noninteractive.bg_stroke   = subtle_stroke;
     v.widgets.noninteractive.fg_stroke   = egui::Stroke::new(1.0_f32, subtle_text);
 
-    v.widgets.inactive.bg_fill     = widget_bg;
-    v.widgets.inactive.weak_bg_fill = widget_bg;
+    v.widgets.inactive.bg_fill     = widget_navy;
+    v.widgets.inactive.weak_bg_fill = widget_navy;
     v.widgets.inactive.bg_stroke   = subtle_stroke;
-    v.widgets.inactive.fg_stroke   = egui::Stroke::new(1.0_f32, text_color);
+    v.widgets.inactive.fg_stroke   = egui::Stroke::new(1.0_f32, cream);
 
-    v.widgets.hovered.bg_fill     = widget_hover;
-    v.widgets.hovered.weak_bg_fill = widget_hover;
-    v.widgets.hovered.bg_stroke   = rust_stroke;
-    v.widgets.hovered.fg_stroke   = egui::Stroke::new(1.5_f32, rust_orange);
+    v.widgets.hovered.bg_fill     = ko_blue;
+    v.widgets.hovered.weak_bg_fill = ko_blue;
+    v.widgets.hovered.bg_stroke   = cream_stroke;
+    v.widgets.hovered.fg_stroke   = egui::Stroke::new(1.5_f32, white);
 
-    v.widgets.active.bg_fill     = widget_active;
-    v.widgets.active.weak_bg_fill = widget_active;
-    v.widgets.active.bg_stroke   = rust_stroke;
-    v.widgets.active.fg_stroke   = egui::Stroke::new(2.0_f32, rust_orange);
+    v.widgets.active.bg_fill     = ko_bright;
+    v.widgets.active.weak_bg_fill = ko_bright;
+    v.widgets.active.bg_stroke   = cream_stroke;
+    v.widgets.active.fg_stroke   = egui::Stroke::new(2.0_f32, white);
 
-    v.widgets.open.bg_fill     = widget_hover;
-    v.widgets.open.weak_bg_fill = widget_hover;
-    v.widgets.open.bg_stroke   = rust_stroke;
-    v.widgets.open.fg_stroke   = egui::Stroke::new(1.5_f32, rust_orange);
+    v.widgets.open.bg_fill     = ko_blue;
+    v.widgets.open.weak_bg_fill = ko_blue;
+    v.widgets.open.bg_stroke   = cream_stroke;
+    v.widgets.open.fg_stroke   = egui::Stroke::new(1.5_f32, white);
 
     v
 }
@@ -90,7 +97,7 @@ fn main() -> eframe::Result<()> {
         "Rustopus",
         options,
         Box::new(|cc| {
-            cc.egui_ctx.set_visuals(rust_theme());
+            cc.egui_ctx.set_visuals(octopus_theme());
             Ok(Box::new(app::RustopusApp::new(cc)))
         }),
     )
