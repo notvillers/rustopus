@@ -5,9 +5,7 @@
 <samp>OPEN SOURCE&nbsp;&nbsp;•&nbsp;&nbsp;<a href="LICENSE">MIT LICENSE</a>&nbsp;&nbsp;•&nbsp;&nbsp;BUILT WITH RUST</samp>
 
 <h1>
-THIS API<br>
-SPEAKS<br>
-OCTOPUS
+THIS API SPEAKS OCTOPUS
 </h1>
 
 <samp>HUNGARIAN SOAP/XML IN — CLEAN ENGLISH XML (OR CSV) OUT.</samp>
@@ -77,17 +75,7 @@ page is served from.
 
 Ready-to-run request examples in shell, Python, JavaScript, C# and PowerShell:
 
-**→ [DOCS](./docs/)** — when the server runs, `/` (and `/docs/`) serves the
+**→ [DOCS](./src/static/docs/)** — when the server runs, `/` (and `/docs/`) serves the
 docs landing page and `/docs/swagger.html` the live Swagger UI, rendered
 from [`openapi.yaml`](./src/static/docs/openapi.yaml) — a new endpoint only
 needs an `openapi.yaml` entry to show up there.
-
-<br>
-
-## #3 SCHEDULE
-
-<samp>RUSTOPUS-CLIENT — THE DESKTOP COMPANION.</samp>
-
-A native GUI app to exercise the server and cron the calls, unattended.
-
-**→ [CLIENT README](./client/README.md)**
