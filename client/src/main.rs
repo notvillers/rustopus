@@ -64,7 +64,7 @@ fn rust_theme() -> egui::Visuals {
 }
 
 fn app_icon() -> egui::IconData {
-    let bytes = include_bytes!("assets/images/octopus.png");
+    let bytes = include_bytes!("assets/images/octo_icon.png");
     let img = image::load_from_memory(bytes)
         .expect("valid PNG icon")
         .into_rgba8();

@@ -229,7 +229,7 @@ mod imp {
             // Returning from Accessory to Regular leaves a generic "exec"
             // Dock icon; restore the octopus explicitly.
             if visible {
-                let data = NSData::with_bytes(include_bytes!("assets/images/octopus.png"));
+                let data = NSData::with_bytes(include_bytes!("assets/images/octo_icon.png"));
                 if let Some(img) = NSImage::initWithData(NSImage::alloc(), &data) {
                     // SAFETY: called on the main thread with a valid NSImage.
                     unsafe { app.setApplicationIconImage(Some(&img)) };
@@ -239,7 +239,7 @@ mod imp {
     }
 
     fn octopus_icon() -> Option<tray_icon::Icon> {
-        let bytes = include_bytes!("assets/images/octopus.png");
+        let bytes = include_bytes!("assets/images/octo_icon.png");
         let img = image::load_from_memory(bytes).ok()?.into_rgba8();
         let (w, h) = img.dimensions();
         tray_icon::Icon::from_rgba(img.into_raw(), w, h).ok()

@@ -64,9 +64,9 @@ pub struct ClientConfig {
     pub xmlns: String,
     pub pid: String,
     /// Start hidden with only a menu-bar icon (macOS) / tray icon (Windows);
-    /// also makes the close button hide instead of quit on those platforms.
+    /// Also makes the close button hide instead of quit on those platforms.
     #[serde(default)]
-    pub start_minimized: bool,
+    pub start_minimized: bool
 }
 
 impl Default for ClientConfig {
