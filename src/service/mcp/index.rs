@@ -264,7 +264,8 @@ pub fn fold(text: &str) -> String {
 static TAG_BR: Lazy<Option<Regex>> = Lazy::new(|| build_regex(r"(?i)<br\s*/?>"));
 static TAG_P_CLOSE: Lazy<Option<Regex>> = Lazy::new(|| build_regex(r"(?i)</p>"));
 static TAG_ANY: Lazy<Option<Regex>> = Lazy::new(|| build_regex(r"<[^>]+>"));
-static SPACES: Lazy<Option<Regex>> = Lazy::new(|| build_regex(r"[ \t]+"));
+/// Horizontal whitespace, including the non-breaking space `&nbsp;` decodes to.
+static SPACES: Lazy<Option<Regex>> = Lazy::new(|| build_regex(r"[ \t\u{00a0}]+"));
 static BLANK_LINES: Lazy<Option<Regex>> = Lazy::new(|| build_regex(r"\n{3,}"));
 
 /// Compiles a pattern once, logging instead of panicking if one is malformed —
@@ -281,6 +282,143 @@ fn build_regex(pattern: &str) -> Option<Regex> {
 }
 
 
+/// Longest entity name this decoder will consider, so a bare `&` in prose does
+/// not send it scanning to the end of a 2 KB description looking for a `;`.
+const MAX_ENTITY_LEN: usize = 10;
+
+
+/// Resolves one HTML entity body (the text between `&` and `;`).
+///
+/// Covers numeric references plus the named entities that actually turn up in
+/// Octopus descriptions — typography, symbols and the accented Latin letters
+/// Hungarian and German product text uses. Anything unrecognized returns `None`
+/// and is left verbatim, which is the safe failure: a stray `&foo;` in the text
+/// is better than silently deleting it.
+fn resolve_entity(name: &str) -> Option<char> {
+    // Numeric: &#8482; (decimal) and &#x2122; (hex).
+    if let Some(digits) = name.strip_prefix('#') {
+        let code = match digits.strip_prefix(['x', 'X']) {
+            Some(hex) => u32::from_str_radix(hex, 16).ok()?,
+            None => digits.parse::<u32>().ok()?
+        };
+        return char::from_u32(code)
+    }
+
+    Some(match name {
+        // The five the previous implementation handled.
+        "amp" => '&',
+        "lt" => '<',
+        "gt" => '>',
+        "quot" => '"',
+        // A plain space, not U+00A0: nothing downstream renders this text, and a
+        // non-breaking space would survive the whitespace collapse below.
+        "nbsp" => ' ',
+        // Typography — the long tail that was surviving into tool output.
+        "apos" => '\'',
+        "trade" => '™',
+        "copy" => '©',
+        "reg" => '®',
+        "ndash" => '–',
+        "mdash" => '—',
+        "hellip" => '…',
+        "bull" => '•',
+        "middot" => '·',
+        "lsquo" => '\u{2018}',
+        "rsquo" => '\u{2019}',
+        "sbquo" => '\u{201a}',
+        "ldquo" => '\u{201c}',
+        "rdquo" => '\u{201d}',
+        "bdquo" => '\u{201e}',
+        "laquo" => '«',
+        "raquo" => '»',
+        "dagger" => '†',
+        "Dagger" => '‡',
+        "permil" => '‰',
+        "prime" => '′',
+        "Prime" => '″',
+        // Symbols and units.
+        "deg" => '°',
+        "plusmn" => '±',
+        "times" => '×',
+        "divide" => '÷',
+        "minus" => '−',
+        "ne" => '≠',
+        "le" => '≤',
+        "ge" => '≥',
+        "sup2" => '²',
+        "sup3" => '³',
+        "frac12" => '½',
+        "frac14" => '¼',
+        "frac34" => '¾',
+        "micro" => 'µ',
+        "euro" => '€',
+        "pound" => '£',
+        "yen" => '¥',
+        "cent" => '¢',
+        "sect" => '§',
+        "para" => '¶',
+        // Accented Latin, including the Hungarian double acutes.
+        "aacute" => 'á', "Aacute" => 'Á',
+        "eacute" => 'é', "Eacute" => 'É',
+        "iacute" => 'í', "Iacute" => 'Í',
+        "oacute" => 'ó', "Oacute" => 'Ó',
+        "uacute" => 'ú', "Uacute" => 'Ú',
+        "ouml" => 'ö', "Ouml" => 'Ö',
+        "uuml" => 'ü', "Uuml" => 'Ü',
+        "auml" => 'ä', "Auml" => 'Ä',
+        "odblac" => 'ő', "Odblac" => 'Ő',
+        "udblac" => 'ű', "Udblac" => 'Ű',
+        "agrave" => 'à', "egrave" => 'è',
+        "acirc" => 'â', "ecirc" => 'ê', "ocirc" => 'ô', "ucirc" => 'û',
+        "ntilde" => 'ñ', "ccedil" => 'ç',
+        "szlig" => 'ß',
+        "oslash" => 'ø', "aring" => 'å', "aelig" => 'æ',
+        _ => return None
+    })
+}
+
+
+/// Replaces HTML entities with the characters they stand for.
+///
+/// One left-to-right pass, deliberately: decoding is not re-applied to its own
+/// output, so an escaped `&amp;trade;` stays the literal text `&trade;` instead
+/// of turning into `™`. Chained `str::replace` calls cannot get that right,
+/// because whichever runs last sees the output of the others.
+fn decode_entities(text: &str) -> String {
+    if !text.contains('&') {
+        return text.to_string()
+    }
+
+    let mut decoded = String::with_capacity(text.len());
+    let mut rest = text;
+
+    while let Some(start) = rest.find('&') {
+        decoded.push_str(&rest[..start]);
+        let candidate = &rest[start + 1..];
+
+        // Bounded search: an unterminated `&` is prose, not an entity.
+        let terminator = candidate.char_indices()
+            .take(MAX_ENTITY_LEN + 1)
+            .find(|(_, c)| *c == ';')
+            .map(|(index, _)| index);
+
+        match terminator.and_then(|end| resolve_entity(&candidate[..end]).map(|c| (c, end))) {
+            Some((character, end)) => {
+                decoded.push(character);
+                rest = &candidate[end + 1..];
+            }
+            None => {
+                decoded.push('&');
+                rest = candidate;
+            }
+        }
+    }
+
+    decoded.push_str(rest);
+    decoded
+}
+
+
 /// Flattens an HTML description to plain text.
 ///
 /// Descriptions arrive as HTML and the markup is roughly a third of the
@@ -291,7 +429,11 @@ pub fn strip_html(html: &str) -> Option<String> {
         return None
     }
 
-    let mut text = html.to_string();
+    // Normalize line endings first. Octopus descriptions mix `\n`, `\r\n` and
+    // runs of `\n\r`, and the blank-line collapse below only recognizes `\n` —
+    // without this, `\n\r\n\r\n\r` survives untouched into the tool output.
+    let mut text = html.replace("\r\n", "\n").replace('\r', "\n");
+
     if let Some(regex) = TAG_BR.as_ref() {
         text = regex.replace_all(&text, "\n").into_owned();
     }
@@ -302,12 +444,9 @@ pub fn strip_html(html: &str) -> Option<String> {
         text = regex.replace_all(&text, "").into_owned();
     }
 
-    text = text
-        .replace("&nbsp;", " ")
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"");
+    // After tag removal, so an escaped `&lt;b&gt;` becomes the literal text
+    // `<b>` rather than a tag the stripper would have eaten.
+    text = decode_entities(&text);
 
     if let Some(regex) = SPACES.as_ref() {
         text = regex.replace_all(&text, " ").into_owned();
@@ -1064,6 +1203,70 @@ mod tests {
         let stripped = strip_html("<p>Blue&nbsp;pen</p><br/><b>2 mm</b>");
         assert_eq!(stripped.as_deref(), Some("Blue pen\n\n2 mm"));
         assert_eq!(strip_html("   "), None);
+    }
+
+    #[test]
+    fn entities_beyond_the_common_five_are_decoded() {
+        // All of these were surviving verbatim into tool output.
+        assert_eq!(strip_html("PEFC&trade;").as_deref(), Some("PEFC™"));
+        assert_eq!(strip_html("&bdquo;quoted&rdquo;").as_deref(), Some("„quoted”"));
+        assert_eq!(strip_html("talaj &ndash; a v&iacute;z").as_deref(), Some("talaj – a víz"));
+        assert_eq!(strip_html("&copy; 2026 &reg;").as_deref(), Some("© 2026 ®"));
+        assert_eq!(strip_html("20&deg;C &plusmn;2").as_deref(), Some("20°C ±2"));
+    }
+
+    #[test]
+    fn hungarian_letters_written_as_entities_survive_a_round_trip() {
+        // The umlaut and the double acute are different letters in Hungarian
+        // (`ö`/`ő`, `ü`/`ű`) and must decode to different characters.
+        assert_eq!(
+            strip_html("s&ouml;t&eacute;t z&ouml;ld, &udblac;rlap, els&odblac;").as_deref(),
+            Some("sötét zöld, űrlap, első")
+        );
+        // And the decoded form is still reachable by an unaccented search term.
+        assert_eq!(fold(&strip_html("Sz&ouml;vegkiemel&odblac;").unwrap()), "szovegkiemelo");
+    }
+
+    #[test]
+    fn numeric_entities_are_decoded_in_both_bases() {
+        assert_eq!(strip_html("&#8482; and &#x2122;").as_deref(), Some("™ and ™"));
+        assert_eq!(strip_html("&#233;").as_deref(), Some("é"));
+    }
+
+    #[test]
+    fn unknown_and_malformed_entities_are_left_verbatim() {
+        // Dropping them silently would lose real text; leaving them is the safe
+        // failure.
+        assert_eq!(strip_html("R&D &notareal; x").as_deref(), Some("R&D &notareal; x"));
+        assert_eq!(strip_html("a & b").as_deref(), Some("a & b"));
+        // An unterminated `&` must not send the scanner to the end of the text.
+        assert_eq!(strip_html("100 & 200 rest").as_deref(), Some("100 & 200 rest"));
+        assert_eq!(strip_html("&#99999999;").as_deref(), Some("&#99999999;"));
+    }
+
+    #[test]
+    fn decoding_is_not_applied_to_its_own_output() {
+        // `&amp;trade;` is an escaped ampersand followed by literal text, not a
+        // trademark sign. Chained replaces get this wrong; one pass does not.
+        assert_eq!(strip_html("&amp;trade;").as_deref(), Some("&trade;"));
+    }
+
+    #[test]
+    fn mixed_line_endings_collapse_to_blank_lines() {
+        // The exact shape Octopus sends: `\n\r` pairs the old `\n{3,}` rule
+        // could not see.
+        assert_eq!(
+            strip_html("Tan&uacute;s&iacute;tv&aacute;ny:\n\r\n\r\nPEFC\n\r\n\r\nEU").as_deref(),
+            Some("Tanúsítvány:\n\nPEFC\n\nEU")
+        );
+        assert_eq!(strip_html("a\r\n\r\n\r\n\r\nb").as_deref(), Some("a\n\nb"));
+    }
+
+    #[test]
+    fn escaped_markup_survives_tag_stripping_as_text() {
+        // Decoding after tag removal keeps escaped markup as readable text
+        // rather than feeding it back to the stripper.
+        assert_eq!(strip_html("use &lt;b&gt; for bold").as_deref(), Some("use <b> for bold"));
     }
 
     #[test]
