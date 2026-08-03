@@ -157,14 +157,31 @@ pub fn get_url(request_name: &str, ip_address: &str, uuid: &str, params: &Reques
 }
 
 
-/// Tries to get xmlns from parameter, if not found, then using url parameter
-pub fn get_xmlns(params: &RequestParameters, url: &str) -> String {
+/// Derives the xmlns from a url by truncating it after `/services/`.
+/// Split out of [`get_xmlns`] so callers without `RequestParameters` — the MCP
+/// snapshot builder, which has no HTTP query to read — share the same rule.
+pub fn derive_xmlns(url: &str) -> String {
     let serv_str = "/services/";
-    let mut xmlns = params.xmlns.clone().unwrap_or_default();
-    if xmlns.trim().is_empty() && url.contains(serv_str) 
+    if url.contains(serv_str)
         && let Some(pos) = url.find(serv_str) {
             let end = pos + serv_str.len();
-            xmlns = url[..end].to_string();
+            return url[..end].to_string()
+    }
+    String::new()
+}
+
+
+/// Tries to get xmlns from parameter, if not found, then using url parameter
+pub fn get_xmlns(params: &RequestParameters, url: &str) -> String {
+    let xmlns = params.xmlns.clone().unwrap_or_default();
+    if xmlns.trim().is_empty() {
+        let derived = derive_xmlns(url);
+        // Only a successful derivation replaces the parameter. Falling through
+        // keeps a blank-but-not-empty parameter verbatim, which is what this
+        // function did before `derive_xmlns` was split out of it.
+        if !derived.is_empty() {
+            return derived
+        }
     }
     xmlns
 }
@@ -208,4 +225,76 @@ pub fn get_i64(request_name: &str, ip_address: &str, uuid: &str, param: Option<i
 /// `Something went wrong` response
 pub fn return_internal_server_error() -> HttpResponse {
     HttpResponse::InternalServerError().body("Something went wrong...")
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn params(xmlns: Option<&str>) -> RequestParameters {
+        RequestParameters {
+            authcode: None,
+            auth: None,
+            url: None,
+            xmlns: xmlns.map(str::to_string),
+            pid: None,
+            type_mod: None,
+            from_date: None,
+            to_date: None,
+            unpaid: None,
+            language: None,
+            data_type: None
+        }
+    }
+
+    /// The behaviour `get_xmlns` had before `derive_xmlns` was split out of it,
+    /// kept here verbatim so the two can be compared case by case.
+    fn get_xmlns_original(params: &RequestParameters, url: &str) -> String {
+        let serv_str = "/services/";
+        let mut xmlns = params.xmlns.clone().unwrap_or_default();
+        if xmlns.trim().is_empty() && url.contains(serv_str)
+            && let Some(pos) = url.find(serv_str) {
+                let end = pos + serv_str.len();
+                xmlns = url[..end].to_string();
+        }
+        xmlns
+    }
+
+    #[test]
+    fn xmlns_derivation_matches_the_pre_split_behaviour() {
+        let urls = [
+            "https://orink.hu/services/vision.asmx",
+            "https://example.test/api/vision.asmx",
+            "https://example.test/services/",
+            "",
+            "/services/"
+        ];
+        let supplied = [None, Some(""), Some("   "), Some("https://given.test/services/")];
+
+        for url in urls {
+            for xmlns in supplied {
+                let params = params(xmlns);
+                assert_eq!(
+                    get_xmlns(&params, url),
+                    get_xmlns_original(&params, url),
+                    "diverged for url {:?} and xmlns {:?}",
+                    url,
+                    xmlns
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn xmlns_is_truncated_after_the_services_segment() {
+        assert_eq!(derive_xmlns("https://orink.hu/services/vision.asmx"), "https://orink.hu/services/");
+        assert_eq!(derive_xmlns("https://example.test/api/vision.asmx"), "");
+    }
+
+    #[test]
+    fn a_supplied_xmlns_wins_over_the_url() {
+        let params = params(Some("https://given.test/services/"));
+        assert_eq!(get_xmlns(&params, "https://orink.hu/services/vision.asmx"), "https://given.test/services/");
+    }
 }

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Rustopus MCP — precache admin</title>
+    <link rel="icon" href="/docs/favicon-32x32.png" sizes="32x32">
+    <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<header>
+    <h1>MCP precache</h1>
+    <p class="sub">Combinations kept warm so nobody's question waits for a cold catalog.</p>
+</header>
+
+<main>
+    <section class="panel" id="usage-panel">
+        <h2>Cache usage</h2>
+        <p class="note">
+            Snapshots live in memory and are mirrored to disk. Memory answers queries;
+            disk is what a snapshot falls back to when it is evicted or the server restarts,
+            which costs well under a second instead of a full rebuild from the ERP.
+        </p>
+        <div class="usage">
+            <p class="usage-label">Memory</p>
+            <div class="bar"><div class="fill" id="usage-fill"></div></div>
+            <p class="usage-text" id="usage-text">Loading…</p>
+        </div>
+        <div class="usage">
+            <p class="usage-label">Disk</p>
+            <div class="bar"><div class="fill" id="disk-fill"></div></div>
+            <p class="usage-text" id="disk-text">Loading…</p>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2>Entries</h2>
+            <button type="button" id="reload">Reload</button>
+        </div>
+        <div class="table-scroll">
+            <table id="entries">
+                <thead>
+                <tr>
+                    <th>Label</th>
+                    <th>Authcode</th>
+                    <th>PID</th>
+                    <th>Last run</th>
+                    <th>Duration</th>
+                    <th>Size</th>
+                    <th>Products</th>
+                    <th>Hit rate</th>
+                    <th>On disk</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="entries-body">
+                <tr><td colspan="11" class="empty">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Add an entry</h2>
+        <p class="note">
+            The authcode is stored on the server so the refresh job can run unattended.
+            It is never sent back to this page — entries are shown masked, and editing an
+            authcode means adding a new entry and deleting the old one.
+        </p>
+        <form id="add-form">
+            <label>Label
+                <input type="text" name="label" required placeholder="Sales team" autocomplete="off">
+            </label>
+            <label>Authcode
+                <input type="password" name="authcode" required placeholder="Octopus authcode" autocomplete="off">
+            </label>
+            <label>Partner ID
+                <input type="number" name="pid" required placeholder="42">
+            </label>
+            <label>URL <span class="optional">(optional — defaults to soap.json)</span>
+                <input type="url" name="url" placeholder="https://…/services/vision.asmx" autocomplete="off">
+            </label>
+            <button type="submit">Add entry</button>
+        </form>
+    </section>
+</main>
+
+<p class="status" id="status" role="status"></p>
+
+<script src="/admin/admin.js"></script>
+</body>
+</html>

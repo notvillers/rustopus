@@ -12,7 +12,7 @@ mod language;
 
 use crate::{
     routes::{barcode, bulk, image, index, invoice, mat, order, price, product, stock, test}, service::{
-        log::{elogger, logger}, soap_config::{
+        log::{elogger, logger}, mcp, soap_config::{
             SOAP_URL, SoapConfig, check_soap_config, get_soap_path
         }
     }
@@ -82,8 +82,48 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
+    // MCP endpoint. Off by default: with `[mcp] enabled = false` nothing below
+    // is built, no route is registered and no background task is spawned, so
+    // the REST service keeps its original startup and memory profile.
+    let mcp_config = service::config::get_mcp_settings();
+    let mcp_service = if mcp_config.is_enabled() {
+        // Built once, outside the `HttpServer::new` closure, so every actix
+        // worker shares one session manager (see `mcp::tools::build_service`).
+        logger("MCP enabled: serving /mcp");
+        mcp::precache::spawn(mcp_config.precache_interval_secs());
+        Some(mcp::tools::build_service())
+    } else {
+        None
+    };
+
+    // Admin dashboard. Registered only when MCP is on *and* a token is set, so
+    // the credential store behind it is never reachable unauthenticated.
+    let admin_token = mcp_config.is_enabled().then(|| mcp_config.admin_token()).flatten();
+    match (&admin_token, mcp_config.is_enabled()) {
+        (Some(_), _) => logger("MCP admin dashboard enabled: serving /admin"),
+        (None, true) => logger("MCP admin dashboard not served: no admin token set (RUSTOPUS_ADMIN_TOKEN or [mcp] admin_token)"),
+        (None, false) => ()
+    }
+
+    let admin_dir = match env::current_dir() {
+        Ok(dir) => dir.join("src").join("static").join("admin"),
+        Err(e) => {
+            elogger(format!("Failed to get current directory: '{}'", e));
+            return Err(std::io::Error::other(e));
+        }
+    };
+
     let server = HttpServer::new(move || {
-        App::new()
+        // `rmcp-actix-web` mounts a service scope rather than a `get`/`get_alias`
+        // pair. That is deliberate and not a convention slip: /mcp is a protocol
+        // transport (POST/GET/DELETE on one path, session-managed), not a
+        // fetcher route, so the singular/plural alias pattern does not apply.
+        let mcp_scope = mcp_service.clone().map(|service| service.scope_with_path("/mcp"));
+        let admin_scope = admin_token.clone().map(|token| {
+            mcp::admin::scope(mcp::admin::AdminState::new(token, admin_dir.clone()))
+        });
+
+        let app = App::new()
             .wrap(Compress::default())
             .wrap(security_headers())
             .default_service(web::to(not_found))
@@ -103,7 +143,17 @@ async fn main() -> std::io::Result<()> {
             .service(invoice::get).service(invoice::get_alias)
             .service(mat::get).service(mat::get_alias)
             .service(order::post).service(order::post_alias)
-            .service(test::get_handler)
+            .service(test::get_handler);
+
+        let app = match admin_scope {
+            Some(scope) => app.service(scope),
+            None => app
+        };
+
+        match mcp_scope {
+            Some(scope) => app.service(scope),
+            None => app
+        }
     })
         .client_request_timeout(std::time::Duration::from_secs(1200))
         .keep_alive(std::time::Duration::from_secs(1200))

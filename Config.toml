@@ -5,3 +5,40 @@ timeout = 1200
 workers = 2
 # Max concurrent outbound SOAP calls; extra requests wait. Optional, default 4.
 soap_concurrency = 4
+
+# MCP endpoint (/mcp) + admin dashboard (/admin). Every key is optional, and
+# `enabled` defaults to false: with it off, no MCP route is registered, no
+# precache task is spawned and no cache memory is held. Turn it on only in the
+# dedicated MCP instance — a large cache inside the process serving the live API
+# would let an OOM take down /get-product for every existing consumer.
+[mcp]
+enabled = true
+# In-MEMORY cache budget in bytes.
+#
+# 0 disables the memory tier entirely: every query loads from the disk store
+# below. Measured on the real catalog (24,344 products, release build), that
+# costs ~90 ms per tool call and keeps the process at ~12 MB idle instead of
+# ~103 MB — the right trade on a 1-1.5 GB host, where a predictable footprint
+# beats shaving a tenth of a second off a chat response.
+#
+# Raise it to hold snapshots resident instead. Budget for one snapshot per ~46 MB,
+# and leave room for the actix server, for the peak of a build (the raw ~46 MB XML
+# plus the structures parsed from it, alive at once), and for moka's asynchronous
+# eviction, which lets the cache briefly overshoot its cap. Nothing is ever lost
+# past this budget — snapshots fall through to disk.
+max_bytes = 0
+# Where snapshots are mirrored on disk. Relative paths resolve against the
+# working directory, like soap.json and log/. SECRET-GRADE: these files hold a
+# partner's own negotiated prices, so they are written 0600 in a 0700 directory.
+disk_path = "mcp_cache"
+# On-disk budget in bytes. Stored snapshots are gzipped, so this holds far more
+# combinations than the figure suggests.
+disk_max_bytes = 5_000_000_000
+# How long a catalog snapshot stays valid. Default 21600 (6 hours).
+ttl_secs = 21600
+# How often the precache sweep runs. Default 3600 (1 hour).
+precache_interval_secs = 3600
+# Admin dashboard token. Prefer the RUSTOPUS_ADMIN_TOKEN environment variable —
+# this file is tracked in git, so a token written here gets committed. With
+# neither set, /admin is not registered at all.
+admin_token = ""

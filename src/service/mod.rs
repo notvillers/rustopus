@@ -9,3 +9,4 @@ pub mod soap_config;
 pub mod slave;
 pub mod get_data;
 pub mod dates;
+pub mod mcp;

@@ -26,8 +26,14 @@ flexi_logger = "0.27"
 once_cell = "1.18"
 lazy_static = "1.4"
 futures = "0.3"
-tokio = { version = "1", features = ["sync"] }
+tokio = { version = "1", features = ["sync", "time", "rt"] }
 csv = "1.4.0"
 regex = "1.12.3"
 macro_rules_attribute = "0.2.2"
 rust_xlsxwriter = { version = "0.96.0", features = ["serde"] }
+rmcp-actix-web = "0.12"
+rmcp = { version = "1", features = ["server", "macros"] }
+moka = { version = "0.12", features = ["future"] }
+sha2 = "0.10"
+toml = "0.8"
+flate2 = "1"

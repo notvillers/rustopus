@@ -1,0 +1,154 @@
+/* Rustopus MCP admin dashboard.
+   Deliberately plain: this is an internal tool behind a token, and every byte
+   here is served by the Rust binary itself. No external fonts or CDNs — the
+   CSP in main.rs is `default-src 'self'`. */
+
+:root {
+    --bg: #f4f6f8;
+    --panel: #ffffff;
+    --ink: #16222c;
+    --muted: #5c6b76;
+    --line: #dde4ea;
+    --accent: #0b5fa5;
+    --ok: #1b7f4b;
+    --warn: #a8620a;
+    --bad: #b3261e;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 0 1.5rem 3rem;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+header {
+    padding: 2rem 0 1.25rem;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 1.5rem;
+}
+
+h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.01em; }
+h2 { margin: 0; font-size: 1.05rem; }
+
+.sub, .note { color: var(--muted); margin: 0.35rem 0 0; }
+.note { font-size: 0.9rem; max-width: 60ch; margin-bottom: 1rem; }
+.optional { color: var(--muted); font-weight: 400; }
+
+main { max-width: 1200px; margin: 0 auto; display: grid; gap: 1.5rem; }
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.25rem;
+}
+
+.panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Usage bars — one per tier */
+.usage { margin-top: 0.85rem; }
+.usage-label {
+    margin: 0 0 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+}
+.bar {
+    height: 10px;
+    background: var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.fill {
+    height: 100%;
+    width: 0;
+    background: var(--accent);
+    transition: width 0.3s ease;
+}
+.fill.warn { background: var(--warn); }
+.fill.bad { background: var(--bad); }
+.usage-text { margin: 0.5rem 0 0; color: var(--muted); font-size: 0.9rem; }
+
+/* Table — scrolls inside its own container so the page never scrolls sideways */
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-weight: 600; color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+tbody tr:last-child td { border-bottom: none; }
+td.empty { text-align: center; color: var(--muted); padding: 2rem; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; }
+
+.state-ok { color: var(--ok); }
+.state-warn { color: var(--warn); }
+.state-bad { color: var(--bad); }
+.state-idle { color: var(--muted); }
+
+/* Form */
+form { display: grid; gap: 0.85rem; max-width: 32rem; }
+label { display: grid; gap: 0.3rem; font-weight: 600; font-size: 0.85rem; }
+input {
+    font: inherit;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: #fff;
+    color: var(--ink);
+}
+input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+button {
+    font: inherit;
+    font-size: 0.85rem;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: #fff;
+    color: var(--ink);
+    cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: default; }
+button[type="submit"] { justify-self: start; background: var(--accent); border-color: var(--accent); color: #fff; }
+button[type="submit"]:hover:not(:disabled) { background: #094c84; color: #fff; }
+button.danger:hover:not(:disabled) { border-color: var(--bad); color: var(--bad); }
+
+td .actions { display: flex; gap: 0.4rem; }
+
+.status {
+    max-width: 1200px;
+    margin: 1.25rem auto 0;
+    min-height: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+.status.error { color: var(--bad); }
+.status.success { color: var(--ok); }
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #12181d;
+        --panel: #1a2229;
+        --ink: #e6edf3;
+        --muted: #9aa8b4;
+        --line: #2b363f;
+        --accent: #4f9ee0;
+        --ok: #4cc38a;
+        --warn: #e0a04f;
+        --bad: #f0776c;
+    }
+    input, button { background: #131a20; }
+    button[type="submit"] { background: var(--accent); color: #0d1216; }
+    button[type="submit"]:hover:not(:disabled) { background: #6cb3ee; color: #0d1216; }
+}

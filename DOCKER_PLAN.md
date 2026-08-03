@@ -30,13 +30,34 @@ Baked into the image (these are source assets, not config):
 /app/rustopus                       # the release binary
 /app/src/errors/errors.json
 /app/src/static/docs/...            # served at /docs/
+/app/src/static/admin/...           # served at /admin (MCP instance only)
 ```
 Mounted at runtime (volumes):
 ```
-/app/Config.toml   (ro)
-/app/soap.json     (ro)
-/app/log/          (rw, persisted)
+/app/Config.toml         (ro)
+/app/soap.json           (ro)
+/app/log/                (rw, persisted)
+/app/mcp_precache.toml   (rw, SECRET — MCP instance only, see below)
+/app/mcp_cache/          (rw, SECRET, persisted — MCP instance only)
 ```
+
+`mcp_cache/` is the snapshot store's disk tier. Persist it: without it, every
+restart costs a full multi-minute rebuild per configured combination, which is
+exactly what this design exists to avoid. Size it from `[mcp] disk_max_bytes`
+(default 5 GB); each stored snapshot is ~5.6 MB gzipped. It must be writable by
+uid 10001, and the service creates it `0700` with `0600` files.
+
+It is **secret-grade too**: the files contain a partner's own negotiated prices
+and stock levels. Not credentials, but not scratch data either — provision it
+like the file below, not like a cache volume you would happily expose.
+
+`mcp_precache.toml` is **not an ordinary config volume**. Every entry in it holds
+a live Octopus authcode in plain text, because the precache job runs with no user
+present to supply one. Provision it as a secret: `0600`, owned by the container's
+uid (10001), never baked into the image, never in the build context. It is
+mounted read-write because `/admin` rewrites it when an entry is added or edited
+— the file is written to a temporary path and renamed, so a crash mid-write
+cannot leave a half-written credential file behind.
 
 ## Files to create (repo root)
 
@@ -65,7 +86,8 @@ Runtime stage:
 
 Exclude from build context: `target/`, `client/target/` if any, `example/`, `test/`, `ping/`,
 `*.log`, `*.csv`, `*.xml`, `.git/`, `.github/`, `.claude/`, `.vscode/`, and the runtime config
-`Config.toml` / `soap.json` (those are mounted, not baked).
+`Config.toml` / `soap.json` / **`mcp_precache.toml`** (those are mounted, not baked — and the
+last one is a credential file that must never enter a build context or an image layer).
 
 ### 3. (Optional) `compose.yaml` — convenience run
 
@@ -73,12 +95,67 @@ Single `rustopus` service: builds the Dockerfile, maps host port → container `
 `./Config.toml`, `./soap.json` read-only plus `./log` read-write. Lets the user `docker compose up`
 without remembering the `-v` flags. Include only if the user wants it.
 
+## Two instances from one image
+
+The MCP endpoint holds a multi-gigabyte catalog cache. Running it inside the
+process that serves the live API would let one OOM take `/get-product` down for
+every existing consumer, so the same image is run **twice** with different
+mounted `Config.toml` files:
+
+| Host | Instance | `[mcp] enabled` | Memory limit | RAM budget | Disk budget |
+| --- | --- | --- | --- | --- | --- |
+| `api.orinkhungary.hu` | A — public REST API | `false` | unchanged (small heap) | n/a | n/a |
+| `mcp.orinkhungary.hu` | B — MCP + admin | `true` | 1–1.5 GB | **0** (`max_bytes`, disk-only) | 5 GB (`disk_max_bytes`) |
+
+One binary, one pipeline, two instances. Nothing about container A changes: with
+the flag off, no MCP route is registered, no precache task is spawned and the
+cache is never constructed.
+
+Sizing rule for container B — `max_bytes` governs **memory only**. Measured on the
+real catalog (24,344 products, release build):
+
+| `max_bytes` | Idle RSS | Cost per tool call |
+| --- | --- | --- |
+| `0` (disk-only) | **12.2 MB** | ~90 ms to load from disk |
+| `300_000_000` | **102.9 MB** with one snapshot resident | 0 |
+
+Container B ships with **`max_bytes = 0`**. On a 1–1.5 GB host a flat 12 MB
+footprint that does not grow with the number of configured combinations is worth
+far more than a tenth of a second per call, and an OOM kill would take the MCP
+service down entirely.
+
+If you do raise it, budget ~46 MB per resident snapshot **plus** room for three
+things alive at the same time:
+
+1. the actix server and its workers (~12 MB idle);
+2. the peak of a snapshot build — the raw ~46 MB XML response *plus* the parsed
+   structures derived from it, before the intermediates are dropped;
+3. moka's asynchronous eviction, which lets the cache briefly overshoot its cap.
+
+Note that even in disk-only mode a query still materializes one snapshot (~46 MB)
+in memory for the duration of the call, so peak memory scales with *concurrent*
+queries, not with the number of combinations.
+
+Container B's extra runtime inputs:
+
+- `/app/mcp_precache.toml` and `/app/mcp_cache/` — the secret mounts described above.
+- `RUSTOPUS_ADMIN_TOKEN` — the `/admin` password, supplied as an environment
+  variable (or a Docker/K8s secret) rather than through the tracked
+  `Config.toml`. With neither set, `/admin` is not registered at all.
+- Publish `/admin` only on an internal interface or behind the VPN. The token is
+  the last line of defence for a credential store, not the only one it deserves.
+
+Note that container B's precache job makes outbound SOAP calls on a timer, so it
+needs the same egress to Octopus as container A, and its `soap_concurrency`
+budget is shared between the sweep and live MCP traffic.
+
 ## Notes / decisions
 
 - **Port** stays driven by the mounted `Config.toml` (`host=0.0.0.0`, `port=1140`). Keep
   `host = "0.0.0.0"` so the container is reachable; document that.
 - **errors.json & docs are baked, not mounted** — they're versioned source, so they travel with
-  the image and stay in sync with the binary.
+  the image and stay in sync with the binary. The same goes for `src/static/admin/`, which is
+  the dashboard's own HTML/CSS/JS.
 - **No code changes required.** This is purely additive packaging; the CWD-relative layout is
   satisfied by `WORKDIR /app` + the copied tree. (CLAUDE.md's "cargo check after code edits"
   rule doesn't apply — no `.rs`/source edits.)
@@ -102,5 +179,11 @@ Then check:
 3. `curl http://localhost:1140/test` → exercises `routes::test::get_handler` without needing a live Octopus backend.
 4. A `log/<YYYY.MM.DD>.log` file is written into the mounted host `log/` dir (confirms volume + C FFI append work, and the non-root user can write).
 5. (If reachable) hit `/products` or `/bulk` against the configured SOAP url to confirm outbound rustls TLS works from inside the container.
+6. On container A only (`[mcp] enabled = false`): `curl -i http://localhost:1140/mcp` and
+   `.../admin` both return **404**, and the startup log contains no `MCP` line. That is the
+   check that the public API instance is genuinely unchanged.
+7. On container B (`[mcp] enabled = true`, `RUSTOPUS_ADMIN_TOKEN` set): `/admin` returns 401
+   without credentials and 200 with them, and `stat -c %a /app/mcp_precache.toml` reports `600`
+   after the first entry is saved.
 
 Image size sanity check: `docker images rustopus:local` should be in the low tens of MB (static binary + Alpine + docs).

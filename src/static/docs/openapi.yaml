@@ -417,6 +417,91 @@ paths:
         '500':
           description: Failed to parse Octopus response
     
+  # The two entries below are NOT REST endpoints and are documented here only so
+  # this file stays a complete map of what the binary serves. Both exist only in
+  # an instance started with `[mcp] enabled = true`; on the public API instance
+  # they return 404.
+  /mcp:
+    post:
+      summary: Model Context Protocol endpoint
+      description: |
+        **Not a REST endpoint.** A Streamable HTTP MCP transport (JSON-RPC 2.0 over
+        POST, with GET for the SSE stream and DELETE to close a session), intended
+        for AI assistants rather than for direct calls. Add it to a client as a
+        custom connector; do not try it from this page.
+
+        Credentials travel as request headers, not query parameters, so an
+        authcode never lands in an access log. Both are required by every tool:
+
+        - `X-Authcode` — the caller's Octopus authentication code
+        - `X-Pid` — the caller's partner id, fixed per user
+
+        Four tools are exposed: `search_products`, `get_product`,
+        `list_categories` and `catalog_status`. Answers come from a cached
+        catalog snapshot refreshed by a background job, so they are fast but not
+        live; `catalog_status` reports the snapshot's age.
+      tags:
+        - MCP
+      parameters:
+        - name: X-Authcode
+          in: header
+          required: true
+          description: Octopus authentication code
+          schema:
+            type: string
+        - name: X-Pid
+          in: header
+          required: true
+          description: Partner ID
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: A JSON-RPC 2.0 request, as defined by the MCP specification
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: JSON-RPC response, as JSON or as an SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '404':
+          description: MCP is disabled on this instance
+
+  /admin:
+    get:
+      summary: Precache administration dashboard
+      description: |
+        **Not a REST endpoint.** A small internal web application for managing
+        which `(authcode, pid)` combinations the background job keeps warm, and
+        for inspecting cache usage.
+
+        It has its own authentication — an admin token supplied as HTTP Basic
+        credentials or an `X-Admin-Token` header, never a SOAP authcode — and is
+        not registered at all when no token is configured. Because the entries
+        behind it hold authcodes at rest, bind it to an internal interface or put
+        it behind the VPN rather than exposing it on a public hostname. The JSON
+        API under `/admin/api/` never returns a full authcode.
+      tags:
+        - MCP
+      responses:
+        '200':
+          description: The dashboard
+          content:
+            text/html:
+              schema:
+                type: string
+        '401':
+          description: Missing or invalid admin token
+        '404':
+          description: MCP is disabled, or no admin token is configured
+
+
 components:
   schemas:
     ProductResponse:

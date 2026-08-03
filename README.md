@@ -49,6 +49,20 @@ Manages the defaults of the webserver.
 | `workers` | Worker count — the higher, the faster | `std::thread::available_parallelism()` |
 | `soap_concurrency` | Max concurrent outbound SOAP calls — extra requests wait in a queue | `4` |
 
+The optional `[mcp]` table switches on the MCP endpoint (see [#3](#3-ask)). Every
+key is optional and every default is applied in code, so leaving the table out
+entirely is the same as `enabled = false`.
+
+| KEY | WHAT IT DOES | DEFAULT |
+| :-- | :-- | :-- |
+| `enabled` | Serve `/mcp` and `/admin`, and start the precache job | `false` |
+| `max_bytes` | **In-memory** snapshot budget in bytes. **`0` disables the memory tier**, serving every query from disk: ~90 ms per call, ~12 MB idle. Above 0, budget ~46 MB per resident snapshot plus room for the server and a build's peak | `300_000_000` |
+| `disk_path` | Where snapshots are mirrored on disk (relative paths resolve against the working directory) | `"mcp_cache"` |
+| `disk_max_bytes` | **On-disk** budget in bytes. Stored snapshots are gzipped (~5.6 MB each) | `5_000_000_000` |
+| `ttl_secs` | How long a cached catalog snapshot stays valid | `21600` (6 h) |
+| `precache_interval_secs` | How often the refresh sweep runs | `3600` (1 h) |
+| `admin_token` | `/admin` password. Prefer the `RUSTOPUS_ADMIN_TOKEN` environment variable — this file is tracked in git | unset (`/admin` not served) |
+
 ### `soap.json`
 
 Manages the defaults of the XML handling. If the file exists in the repository
@@ -79,3 +93,66 @@ Ready-to-run request examples in shell, Python, JavaScript, C# and PowerShell:
 docs landing page and `/docs/swagger.html` the live Swagger UI, rendered
 from [`openapi.yaml`](./src/static/docs/openapi.yaml) — a new endpoint only
 needs an `openapi.yaml` entry to show up there.
+
+<br>
+
+## #3 ASK
+
+<samp>THE SAME CATALOG, ANSWERABLE BY AN AI ASSISTANT.</samp>
+
+With `[mcp] enabled = true`, Rustopus also serves `/mcp` — a
+[Model Context Protocol](https://modelcontextprotocol.io) endpoint over Streamable
+HTTP. It exists because a full `/get-product` pull is ~46 MB and ~28 seconds,
+which is unusable in a chat: MCP callers are answered from a cached catalog
+snapshot instead, in milliseconds.
+
+**The cache is MCP-only.** The nine endpoints above are untouched and still read
+live on every call.
+
+Snapshots are held in two tiers, because the host has limited RAM and one
+snapshot is ~46 MB:
+
+| TIER | COST OF A LOOKUP | HOLDS |
+| :-- | :-- | :-- |
+| Memory | microseconds | as many snapshots as `max_bytes` allows — **off when it is `0`** |
+| Disk (`mcp_cache/`) | ~90 ms | everything, gzipped to ~5.6 MB each, surviving restarts |
+| Octopus | minutes | the source of truth |
+
+Measured on the real catalog — 24,344 products, release build:
+
+| | Cold from Octopus | From disk |
+| :-- | :-- | :-- |
+| Load time | **262 s** | **0.09 s** |
+| Idle process memory | — | **12.2 MB** disk-only vs **102.9 MB** holding one snapshot |
+
+The shipped configuration sets `max_bytes = 0`, so nothing is held resident and
+memory stays flat however many combinations exist. Raise it if you would rather
+trade ~90 MB of RAM for those 90 ms.
+
+Those files hold a partner's **own negotiated prices**, so the directory is
+written `0700` with `0600` files and should be treated as sensitive.
+
+| TOOL | ANSWERS |
+| :-- | :-- |
+| `search_products` | Find products by name, article number, brand or manufacturer part number — accent-insensitive, with price and stock inline |
+| `get_product` | Full master data for one article number, with a "did you mean" list when it misses |
+| `list_categories` | Brands, main groups and product groups, with counts |
+| `catalog_status` | Snapshot age and product count, so the assistant can state how fresh an answer is |
+
+Credentials travel as request headers — never in the URL, where they would land
+in access logs. Configure both on the connector:
+
+| HEADER | VALUE |
+| :-- | :-- |
+| `X-Authcode` | The user's own Octopus authentication code |
+| `X-Pid` | The user's partner id — prices and stock are specific to it |
+
+`/admin` manages which `(authcode, pid)` combinations a background job keeps
+warm. It holds **live authcodes at rest**, because the job runs with nobody
+present to supply one, so it has its own token (`RUSTOPUS_ADMIN_TOKEN`), never
+returns a full authcode, writes `mcp_precache.toml` as `0600`, and should be
+bound to an internal interface or put behind the VPN.
+
+Run the MCP instance as a **separate container** from the public API — see
+[`DOCKER_PLAN.md`](DOCKER_PLAN.md). A multi-gigabyte cache in the process serving
+`/get-product` would let one OOM take the API down for every existing consumer.
