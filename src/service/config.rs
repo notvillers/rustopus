@@ -39,7 +39,10 @@ ConfigModelDerive! {
         pub precache_interval_secs: Option<u64>,
         pub admin_token: Option<String>,
         pub disk_path: Option<String>,
-        pub disk_max_bytes: Option<u64>
+        pub disk_max_bytes: Option<u64>,
+        pub export_path: Option<String>,
+        pub export_ttl_secs: Option<u64>,
+        pub public_url: Option<String>
     }
 
 }
@@ -66,6 +69,21 @@ const DEFAULT_MCP_DISK_PATH: &str = "mcp_cache";
 /// snapshots are gzipped, so this holds far more combinations than the number
 /// suggests.
 const DEFAULT_MCP_DISK_MAX_BYTES: u64 = 5_000_000_000;
+
+/// Directory generated exports are written to when `[mcp] export_path` is unset.
+const DEFAULT_MCP_EXPORT_PATH: &str = "mcp_exports";
+
+/// How long a download link stays valid when `[mcp] export_ttl_secs` is unset:
+/// 1 hour. Long enough for someone to notice the message and click; short enough
+/// that a leaked link is not a standing exposure of a partner's prices.
+const DEFAULT_MCP_EXPORT_TTL_SECS: u64 = 3_600;
+
+/// Base URL used to build download links when `[mcp] public_url` is unset.
+///
+/// The local default only works for local testing; a deployment **must** set
+/// this to the hostname colleagues' browsers can actually reach, because the MCP
+/// transport gives a tool no view of the request's `Host` header.
+const DEFAULT_MCP_PUBLIC_URL: &str = "http://localhost:1140";
 
 /// Snapshot lifetime when `[mcp] ttl_secs` is unset: 6 hours.
 const DEFAULT_MCP_TTL_SECS: u64 = 21_600;
@@ -105,6 +123,27 @@ impl McpConfig {
         self.disk_max_bytes.unwrap_or(DEFAULT_MCP_DISK_MAX_BYTES)
     }
 
+    pub fn export_path(&self) -> String {
+        self.export_path.as_ref()
+            .filter(|path| !path.trim().is_empty())
+            .cloned()
+            .unwrap_or_else(|| DEFAULT_MCP_EXPORT_PATH.to_string())
+    }
+
+    pub fn export_ttl_secs(&self) -> u64 {
+        self.export_ttl_secs.unwrap_or(DEFAULT_MCP_EXPORT_TTL_SECS)
+    }
+
+    /// Base URL for generated download links, with any trailing slash removed so
+    /// callers can append a path without doubling the separator.
+    pub fn public_url(&self) -> String {
+        let configured = self.public_url.as_ref()
+            .map(|url| url.trim())
+            .filter(|url| !url.is_empty())
+            .unwrap_or(DEFAULT_MCP_PUBLIC_URL);
+        configured.trim_end_matches('/').to_string()
+    }
+
     /// Admin dashboard token: `RUSTOPUS_ADMIN_TOKEN` wins over `Config.toml`.
     /// `None` (or blank in both places) means `/admin` is not registered at all
     /// — the dashboard is never served unauthenticated.
@@ -129,7 +168,10 @@ pub fn get_mcp_settings() -> McpConfig {
         precache_interval_secs: None,
         admin_token: None,
         disk_path: None,
-        disk_max_bytes: None
+        disk_max_bytes: None,
+        export_path: None,
+        export_ttl_secs: None,
+        public_url: None
     })
 }
 

@@ -34,6 +34,16 @@ disk_path = "mcp_cache"
 # On-disk budget in bytes. Stored snapshots are gzipped, so this holds far more
 # combinations than the figure suggests.
 disk_max_bytes = 5_000_000_000
+# Where generated Excel/CSV exports are written before download. SECRET-GRADE
+# for the same reason as mcp_cache: an export holds a partner's own prices.
+export_path = "mcp_exports"
+# How long a download link stays valid, in seconds. Default 3600 (1 hour).
+export_ttl_secs = 3600
+# Base URL used to build export download links. MUST be set to the hostname
+# colleagues' browsers can reach — the MCP transport gives a tool no view of the
+# request's Host header, so it cannot be derived. The default below only works
+# for local testing.
+public_url = "http://localhost:1140"
 # How long a catalog snapshot stays valid. Default 21600 (6 hours).
 ttl_secs = 21600
 # How often the precache sweep runs. Default 3600 (1 hour).

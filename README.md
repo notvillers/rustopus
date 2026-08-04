@@ -59,6 +59,9 @@ entirely is the same as `enabled = false`.
 | `max_bytes` | **In-memory** snapshot budget in bytes. **`0` disables the memory tier**, serving every query from disk: ~90 ms per call, ~12 MB idle. Above 0, budget ~46 MB per resident snapshot plus room for the server and a build's peak | `300_000_000` |
 | `disk_path` | Where snapshots are mirrored on disk (relative paths resolve against the working directory) | `"mcp_cache"` |
 | `disk_max_bytes` | **On-disk** budget in bytes. Stored snapshots are gzipped (~5.6 MB each) | `5_000_000_000` |
+| `export_path` | Where generated Excel/CSV exports are written before download | `"mcp_exports"` |
+| `export_ttl_secs` | How long an export download link stays valid | `3600` (1 h) |
+| `public_url` | Base URL download links are built from. **Set this in any real deployment** | `"http://localhost:1140"` |
 | `ttl_secs` | How long a cached catalog snapshot stays valid | `21600` (6 h) |
 | `precache_interval_secs` | How often the refresh sweep runs | `3600` (1 h) |
 | `admin_token` | `/admin` password. Prefer the `RUSTOPUS_ADMIN_TOKEN` environment variable — this file is tracked in git | unset (`/admin` not served) |
@@ -134,10 +137,22 @@ written `0700` with `0600` files and should be treated as sensitive.
 
 | TOOL | ANSWERS |
 | :-- | :-- |
-| `search_products` | Find products by name, article number, brand or manufacturer part number — accent-insensitive, with price and stock inline |
+| `search_products` | Find products by name, article number, brand or manufacturer part number — accent-insensitive, with price and stock inline. Pages with `offset` |
 | `get_product` | Full master data for one article number, with a "did you mean" list when it misses |
 | `list_categories` | Brands, main groups and product groups, with counts |
 | `catalog_status` | Snapshot age and product count, so the assistant can state how fresh an answer is |
+| `export_products` | **Excel or CSV of the whole catalog** (or any filtered slice), returned as a download link |
+
+`export_products` exists because paging is not a bulk mechanism: ~24,000 products
+cannot cross a model's context at any page size. The rows are written to a file
+server-side and only a link comes back, so a full-catalog export is one call and
+costs no context. Measured: **24,349 rows → 2.25 MB .xlsx**, prices and stock
+written as numbers so they can be summed in Excel without retyping.
+
+The link carries an unguessable token rather than an authcode — an authcode in a
+URL would land in every access log on the way — and both the link and the file
+expire (`export_ttl_secs`, default 1 hour). Set **`public_url`** to the hostname
+colleagues' browsers can reach, or the links will point at localhost.
 
 Credentials travel as request headers — never in the URL, where they would land
 in access logs. Configure both on the connector:

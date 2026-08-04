@@ -98,6 +98,9 @@ async fn main() -> std::io::Result<()> {
         // Built once, outside the `HttpServer::new` closure, so every actix
         // worker shares one session manager (see `mcp::tools::build_service`).
         logger("MCP enabled: serving /mcp");
+        // Download tokens live in memory, so any export file left by a previous
+        // run is unreachable — and holds partner prices. Clear them at startup.
+        mcp::export::purge_orphans();
         mcp::precache::spawn(mcp_config.precache_interval_secs());
         Some(mcp::tools::build_service())
     } else {
@@ -127,6 +130,10 @@ async fn main() -> std::io::Result<()> {
         // transport (POST/GET/DELETE on one path, session-managed), not a
         // fetcher route, so the singular/plural alias pattern does not apply.
         let mcp_scope = mcp_service.clone().map(|service| service.scope_with_path("/mcp"));
+        // `/export` is the third scope-rather-than-route-pair mount, for the same
+        // reason as the other two: it is a token-authenticated file download with
+        // a path parameter, not a fetcher, so there is no plural alias to add.
+        let export_scope = mcp_service.as_ref().map(|_| mcp::export::scope());
         let admin_scope = admin_token.clone().map(|token| {
             mcp::admin::scope(mcp::admin::AdminState::new(token, admin_dir.clone()))
         });
@@ -154,6 +161,11 @@ async fn main() -> std::io::Result<()> {
             .service(test::get_handler);
 
         let app = match admin_scope {
+            Some(scope) => app.service(scope),
+            None => app
+        };
+
+        let app = match export_scope {
             Some(scope) => app.service(scope),
             None => app
         };

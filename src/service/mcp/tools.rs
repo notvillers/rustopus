@@ -35,6 +35,7 @@ use crate::{
         mcp::{
             AUTHCODE_HEADER, McpAuth, PID_HEADER,
             cache::cache,
+            export,
             index::{CatalogSnapshot, SearchFilters, fold},
             mask_authcode
         },
@@ -48,9 +49,11 @@ const SSE_KEEP_ALIVE_SECS: u64 = 30;
 /// Results returned when a search does not ask for a specific count.
 const DEFAULT_SEARCH_LIMIT: usize = 20;
 
-/// Hard ceiling on results, applied server-side whatever the caller asks for.
-/// A larger page buries the answer and burns the context window.
-const MAX_SEARCH_LIMIT: usize = 50;
+/// Hard ceiling on results per page, applied server-side whatever the caller
+/// asks for. A larger page buries the answer and burns the context window; to
+/// get past it, page with `offset` or — for anything bulk — use
+/// `export_products`, which does not go through the context at all.
+const MAX_SEARCH_LIMIT: usize = 100;
 
 /// Categories listed per kind before the list is truncated.
 const DEFAULT_CATEGORY_LIMIT: usize = 40;
@@ -70,6 +73,44 @@ fn caller_identity(context: &RequestContext<RoleServer>) -> String {
 }
 
 
+/// Deserializes a count that may arrive as a number *or* as a numeric string.
+///
+/// The published schema says `integer`, and that stays correct — this only makes
+/// parsing tolerant. Bridges between a client and this server (`mcp-remote`, and
+/// anything that reserializes arguments) can lose the schema's type information,
+/// after which a caller sends `"20"` and gets
+/// `invalid type: string "20", expected u32` — a message that reads like a server
+/// bug and blocks the call entirely. Accepting both costs nothing and is the
+/// difference between a working tool and a dead end for the person asking.
+fn lenient_count<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+where
+    D: serde::Deserializer<'de>
+{
+    use serde::Deserialize;
+
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Count {
+        Number(u32),
+        Text(String)
+    }
+
+    match Option::<Count>::deserialize(deserializer)? {
+        None => Ok(None),
+        Some(Count::Number(value)) => Ok(Some(value)),
+        Some(Count::Text(text)) => {
+            let trimmed = text.trim();
+            if trimmed.is_empty() {
+                return Ok(None)
+            }
+            trimmed.parse::<u32>()
+                .map(Some)
+                .map_err(|_| serde::de::Error::custom(format!("'{}' is not a whole number", trimmed)))
+        }
+    }
+}
+
+
 McpToolArgs! {
     pub struct SearchProductsArgs {
         /// Words to search for. Accent- and case-insensitive: `szovegkiemelo`
@@ -81,8 +122,15 @@ McpToolArgs! {
         pub category: Option<String>,
         /// Restrict to a main group, by code or name.
         pub main_category: Option<String>,
-        /// How many results to return. Clamped to 50.
-        pub limit: Option<u32>
+        /// How many results to return. Clamped to 100.
+        #[serde(default, deserialize_with = "lenient_count")]
+        pub limit: Option<u32>,
+        /// How many results to skip, for walking a large result set. Use the
+        /// `next_offset` from the previous response. To export a whole category
+        /// or the whole catalog, use `export_products` instead — paging a
+        /// catalog of 24,000 products through chat is not workable.
+        #[serde(default, deserialize_with = "lenient_count")]
+        pub offset: Option<u32>
     }
 
     pub struct GetProductArgs {
@@ -96,7 +144,22 @@ McpToolArgs! {
         /// `all` (the default).
         pub kind: Option<String>,
         /// How many entries per grouping. Clamped to 200.
+        #[serde(default, deserialize_with = "lenient_count")]
         pub limit: Option<u32>
+    }
+
+    pub struct ExportProductsArgs {
+        /// `xlsx` (default, for Excel) or `csv` (semicolon-delimited, as the
+        /// REST endpoints produce).
+        pub format: Option<String>,
+        /// Optional words to narrow the export. Omit to export everything.
+        pub query: Option<String>,
+        /// Restrict to a brand / manufacturer.
+        pub brand: Option<String>,
+        /// Restrict to a product group, by code or name.
+        pub category: Option<String>,
+        /// Restrict to a main group, by code or name.
+        pub main_category: Option<String>
     }
 }
 
@@ -149,18 +212,19 @@ impl RustopusMcp {
         }
 
         let limit = clamp(args.limit, DEFAULT_SEARCH_LIMIT, MAX_SEARCH_LIMIT);
+        let offset = args.offset.unwrap_or(0) as usize;
         let filters = SearchFilters {
             brand: args.brand.as_deref().map(fold),
             category: args.category.as_deref().map(fold),
             main_category: args.main_category.as_deref().map(fold)
         };
 
-        let outcome = snapshot.search(&args.query, &filters, limit);
+        let outcome = snapshot.search_page(&args.query, &filters, offset, limit);
 
         logger(format!(
-            "MCP tool 'search_products' by {}: query='{}' brand={:?} category={:?} main_category={:?} limit={} -> matched={} returned={}",
+            "MCP tool 'search_products' by {}: query='{}' brand={:?} category={:?} main_category={:?} offset={} limit={} -> matched={} returned={}",
             caller_identity(&context), args.query, args.brand, args.category, args.main_category,
-            limit, outcome.matched, outcome.results.len()
+            offset, limit, outcome.matched, outcome.results.len()
         ));
 
         if outcome.matched == 0 {
@@ -174,12 +238,118 @@ impl RustopusMcp {
             ))]))
         }
 
-        Ok(json_result(json!({
+        let next_offset = offset + outcome.results.len();
+        let has_more = next_offset < outcome.matched;
+
+        let mut payload = json!({
             "matched": outcome.matched,
             "returned": outcome.results.len(),
-            "truncated": outcome.matched > outcome.results.len(),
+            "offset": offset,
+            "has_more": has_more,
             "catalog_age_seconds": snapshot.age_secs(),
             "results": outcome.results
+        });
+
+        if has_more && let Some(object) = payload.as_object_mut() {
+            object.insert("next_offset".into(), json!(next_offset));
+            // Steer the model away from paging its way through thousands of
+            // rows: that is what export_products exists for.
+            object.insert("hint".into(), json!(format!(
+                "{} more match. Call again with offset={} for the next page, or use \
+                 export_products to get all {} rows as a spreadsheet in one step.",
+                outcome.matched - next_offset, next_offset, outcome.matched
+            )));
+        }
+
+        Ok(json_result(payload))
+    }
+
+    /// Bulk export. The answer to "I need this in Excel", and the reason
+    /// `search_products` does not need to page through 24,000 products: the rows
+    /// go to a file, never through the model's context.
+    #[tool(description = "Export Orink products to an Excel (.xlsx) or CSV file and return a download link. \
+        Use this whenever more than a page of products is needed — a whole category, a whole brand, or the \
+        entire catalog. Filters are optional; with none, every product is exported. The rows are written to \
+        a file, so this works for the full catalog and costs no context.")]
+    async fn export_products(
+        &self,
+        context: RequestContext<RoleServer>,
+        Parameters(args): Parameters<ExportProductsArgs>
+    ) -> Result<CallToolResult, McpError> {
+        let snapshot = match self.snapshot(&context).await {
+            Ok(snapshot) => snapshot,
+            Err(result) => return Ok(result)
+        };
+
+        let format = match export::Format::parse(args.format.as_deref()) {
+            Some(format) => format,
+            None => return Ok(CallToolResult::error(vec![Content::text(
+                "format must be 'xlsx' or 'csv'."
+            )]))
+        };
+
+        let filters = SearchFilters {
+            brand: args.brand.as_deref().map(fold),
+            category: args.category.as_deref().map(fold),
+            main_category: args.main_category.as_deref().map(fold)
+        };
+
+        // An empty query means "everything that passes the filters", which is the
+        // common case here — unlike search, where a query is required.
+        let query = args.query.clone().unwrap_or_default();
+        let count = snapshot.count_matching(&query, &filters);
+
+        if count == 0 {
+            return Ok(CallToolResult::error(vec![Content::text(format!(
+                "Nothing to export{}{}. Use list_categories to see the available brands and groups.",
+                args.query.as_deref().map(|q| format!(" for '{}'", q)).unwrap_or_default(),
+                describe_export_filters(&args)
+            ))]))
+        }
+
+        // Writing a 24,000-row workbook is CPU-bound; keep it off the async
+        // workers that also serve the REST endpoints. The snapshot goes in as an
+        // `Arc` and the rows are selected inside — copying them out first would
+        // put a second catalog in memory on a host that has little to spare.
+        let for_export = Arc::clone(&snapshot);
+        let filters_for_export = filters.clone();
+        let built = actix_web::web::block(move || {
+            let rows = for_export.select(&query, &filters_for_export);
+            export::write(rows, format)
+        }).await;
+
+        let prepared = match built {
+            Ok(Ok(prepared)) => prepared,
+            Ok(Err(error)) => {
+                elogger(format!("MCP export failed for {}: {}", caller_identity(&context), error));
+                return Ok(CallToolResult::error(vec![Content::text(format!(
+                    "The export could not be written: {}", error
+                ))]))
+            }
+            Err(error) => {
+                elogger(format!("MCP export failed to run for {}: {}", caller_identity(&context), error));
+                return Ok(CallToolResult::error(vec![Content::text(
+                    "The export could not be started. This is a server-side problem."
+                )]))
+            }
+        };
+
+        logger(format!(
+            "MCP tool 'export_products' by {}: format={} rows={} -> {} ({:.1} MB)",
+            caller_identity(&context), format.extension(), count,
+            prepared.file_name, prepared.bytes as f64 / 1_048_576.0
+        ));
+
+        Ok(json_result(json!({
+            "rows": count,
+            "format": format.extension(),
+            "file_name": prepared.file_name,
+            "size_bytes": prepared.bytes,
+            "download_url": prepared.url,
+            "expires_in_seconds": export::ttl_secs(),
+            "catalog_age_seconds": snapshot.age_secs(),
+            "note": "Give the user this download_url. The link expires, needs no login, \
+                     and the file holds this partner's own prices — do not post it anywhere public."
         })))
     }
 
@@ -388,14 +558,23 @@ fn clamp(requested: Option<u32>, default: usize, max: usize) -> usize {
 /// Renders the active filters for a "nothing matched" message, so the model can
 /// see whether a filter, rather than the query, was the problem.
 fn describe_filters(args: &SearchProductsArgs) -> String {
+    render_filters(args.brand.as_deref(), args.category.as_deref(), args.main_category.as_deref())
+}
+
+/// The same, for the export tool's own argument shape.
+fn describe_export_filters(args: &ExportProductsArgs) -> String {
+    render_filters(args.brand.as_deref(), args.category.as_deref(), args.main_category.as_deref())
+}
+
+fn render_filters(brand: Option<&str>, category: Option<&str>, main_category: Option<&str>) -> String {
     let mut parts = Vec::new();
-    if let Some(brand) = &args.brand {
+    if let Some(brand) = brand {
         parts.push(format!("brand '{}'", brand));
     }
-    if let Some(category) = &args.category {
+    if let Some(category) = category {
         parts.push(format!("category '{}'", category));
     }
-    if let Some(main_category) = &args.main_category {
+    if let Some(main_category) = main_category {
         parts.push(format!("main category '{}'", main_category));
     }
     if parts.is_empty() {
@@ -481,7 +660,8 @@ mod tests {
             brand: Some("Orink".into()),
             category: None,
             main_category: None,
-            limit: None
+            limit: None,
+            offset: None
         };
         assert_eq!(describe_filters(&args), " with brand 'Orink'");
 
@@ -490,7 +670,8 @@ mod tests {
             brand: None,
             category: None,
             main_category: None,
-            limit: None
+            limit: None,
+            offset: None
         };
         assert_eq!(describe_filters(&bare), "");
     }

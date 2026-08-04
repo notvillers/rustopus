@@ -39,7 +39,20 @@ Mounted at runtime (volumes):
 /app/log/                (rw, persisted)
 /app/mcp_precache.toml   (rw, SECRET — MCP instance only, see below)
 /app/mcp_cache/          (rw, SECRET, persisted — MCP instance only)
+/app/mcp_exports/        (rw, SECRET, ephemeral — MCP instance only)
 ```
+
+`mcp_exports/` holds generated Excel/CSV files waiting to be downloaded. Unlike
+the cache it does **not** need persisting — download tokens live in memory, so
+the service wipes the directory at startup anyway — but it does need to be
+writable by uid 10001, and it is secret-grade: an export is a partner's price
+list in the most readable form there is. A `tmpfs` mount suits it well.
+
+Container B must also set **`[mcp] public_url`** to the externally reachable
+hostname (`https://mcp.orinkhungary.hu`). Download links are built from it, and
+the MCP transport gives a tool no view of the request's `Host` header, so it
+cannot be derived — left unset, every export link points at localhost and is
+useless to the colleague who asked for it.
 
 `mcp_cache/` is the snapshot store's disk tier. Persist it: without it, every
 restart costs a full multi-minute rebuild per configured combination, which is

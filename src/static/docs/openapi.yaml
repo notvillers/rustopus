@@ -436,10 +436,14 @@ paths:
         - `X-Authcode` — the caller's Octopus authentication code
         - `X-Pid` — the caller's partner id, fixed per user
 
-        Four tools are exposed: `search_products`, `get_product`,
-        `list_categories` and `catalog_status`. Answers come from a cached
-        catalog snapshot refreshed by a background job, so they are fast but not
-        live; `catalog_status` reports the snapshot's age.
+        Five tools are exposed: `search_products`, `get_product`,
+        `list_categories`, `catalog_status` and `export_products`. Answers come
+        from a cached catalog snapshot refreshed by a background job, so they are
+        fast but not live; `catalog_status` reports the snapshot's age.
+
+        `export_products` writes an Excel or CSV file and returns a link to
+        `/export/{token}` rather than the rows themselves — a catalog of ~24,000
+        products cannot be delivered through a chat at any page size.
       tags:
         - MCP
       parameters:
@@ -472,6 +476,46 @@ paths:
                 type: string
         '404':
           description: MCP is disabled on this instance
+
+  /export/{token}:
+    get:
+      summary: Download a generated product export
+      description: |
+        **Not a REST endpoint in the usual sense.** Serves an Excel or CSV export
+        produced by the MCP `export_products` tool. Exists because ~24,000
+        product rows cannot be delivered through a chat: the tool writes a file
+        and returns a link to it.
+
+        The token in the path is the only credential — unguessable, single-purpose
+        and short-lived (`[mcp] export_ttl_secs`, default one hour). An authcode
+        is deliberately **not** used here: it would appear in every access log
+        between the browser and this service. An unknown or expired token returns
+        404 with no hint about whether it ever existed.
+
+        The file holds the requesting partner's own negotiated prices and stock,
+        so treat the link as confidential for as long as it lives.
+      tags:
+        - MCP
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: Download token returned by `export_products`
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The export, as a file attachment
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+        '404':
+          description: Unknown or expired token, or MCP is disabled on this instance
 
   /admin:
     get:

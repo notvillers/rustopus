@@ -543,6 +543,56 @@ impl CatalogSnapshot {
     /// an exact manufacturer code, which beats a name hit, which beats a brand or
     /// category hit. Changing them changes answers people already trust.
     pub fn search(&self, query: &str, filters: &SearchFilters, limit: usize) -> SearchOutcome {
+        self.search_page(query, filters, 0, limit)
+    }
+
+    /// [`search`](Self::search) with an offset, so a caller can walk a result set
+    /// larger than one page.
+    ///
+    /// Paging is for *browsing* — reviewing a category of a couple of hundred
+    /// products. It is not a bulk-export mechanism: a catalog of 24,000 rows
+    /// cannot be carried through a model's context at any page size, which is
+    /// what `export_products` is for.
+    pub fn search_page(
+        &self,
+        query: &str,
+        filters: &SearchFilters,
+        offset: usize,
+        limit: usize
+    ) -> SearchOutcome {
+        let scored = self.ranked(query, filters);
+        let matched = scored.len();
+
+        let results = scored.iter()
+            .skip(offset)
+            .take(limit)
+            .filter_map(|(_, position)| self.products.get(*position))
+            .map(ProductSummary::from)
+            .collect();
+
+        SearchOutcome { results, matched }
+    }
+
+    /// How many products a query and filter combination matches, without
+    /// building any output. Used to answer "is there anything to export?"
+    /// before committing to writing a file.
+    pub fn count_matching(&self, query: &str, filters: &SearchFilters) -> usize {
+        self.ranked(query, filters).len()
+    }
+
+    /// Every matching product in rank order, borrowed rather than copied.
+    ///
+    /// The export path uses this: 24,000 owned records would be a second copy of
+    /// the whole catalog in memory, on a host that has ~1–1.5 GB.
+    pub fn select(&self, query: &str, filters: &SearchFilters) -> Vec<&IndexedProduct> {
+        self.ranked(query, filters).iter()
+            .filter_map(|(_, position)| self.products.get(*position))
+            .collect()
+    }
+
+    /// The shared ranking pass: every product that passes the filters and
+    /// matches every query term, sorted best first.
+    fn ranked(&self, query: &str, filters: &SearchFilters) -> Vec<(f64, usize)> {
         let folded_query = fold(query);
         let terms: Vec<&str> = folded_query.split_whitespace().collect();
 
@@ -591,7 +641,6 @@ impl CatalogSnapshot {
             scored.push((score - entry.name.len() as f64 / 1000.0, position));
         }
 
-        let matched = scored.len();
         scored.sort_by(|a, b| {
             b.0.partial_cmp(&a.0)
                 .unwrap_or(std::cmp::Ordering::Equal)
@@ -602,13 +651,7 @@ impl CatalogSnapshot {
                 })
         });
 
-        let results = scored.iter()
-            .take(limit)
-            .filter_map(|(_, position)| self.products.get(*position))
-            .map(ProductSummary::from)
-            .collect();
-
-        SearchOutcome { results, matched }
+        scored
     }
 
     /// The `limit` closest article numbers to a miss, so a failed `get_product`
@@ -1064,9 +1107,39 @@ pub fn test_snapshot(bytes: u64) -> CatalogSnapshot {
 #[cfg(test)]
 pub fn test_snapshot_with_products(count: usize) -> CatalogSnapshot {
     let products = (0..count)
-        .map(|index| tests::product(&format!("A-{}", index), "Szövegkiemelő", "Orink", ""))
+        .map(|index| test_product(&format!("A-{}", index), "Szövegkiemelő", "Orink", ""))
         .collect();
     assemble(products)
+}
+
+
+/// A synthetic product, shared by this module's tests and the export module's.
+#[cfg(test)]
+pub fn test_product(no: &str, name: &str, brand: &str, oem: &str) -> IndexedProduct {
+    IndexedProduct {
+        id: 1,
+        no: no.into(),
+        name: name.into(),
+        brand: non_empty(brand.into()),
+        oem_code: non_empty(oem.into()),
+        unit: None,
+        base_unit: None,
+        base_unit_qty: None,
+        category_code: None,
+        category_name: None,
+        main_category_code: None,
+        main_category_name: None,
+        description: None,
+        weight: None,
+        size: None,
+        sell_unit: None,
+        origin_country: None,
+        price: None,
+        list_price: None,
+        sale_price: None,
+        currency: None,
+        stock: None
+    }
 }
 
 
