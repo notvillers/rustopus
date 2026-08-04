@@ -47,6 +47,14 @@ fn security_headers() -> DefaultHeaders {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Loads .env (or .ENV, seen in the wild on this deploy) from the working
+    // directory into the process env if present; a no-op when neither exists,
+    // so RUSTOPUS_ADMIN_TOKEN etc. can be set there instead of the git-tracked
+    // Config.toml.
+    if dotenv::dotenv().is_err() {
+        dotenv::from_filename(".ENV").ok();
+    }
+
     panic::set_hook(Box::new(|info| {
         elogger(format!("Panic: {:?}", info));
     }));

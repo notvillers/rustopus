@@ -16,3 +16,5 @@ crons.toml
 mcp_precache.toml
 mcp_precache.toml.tmp
 mcp_cache/
+.env
+.ENV
