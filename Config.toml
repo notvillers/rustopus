@@ -51,4 +51,4 @@ precache_interval_secs = 3600
 # Admin dashboard token. Prefer the RUSTOPUS_ADMIN_TOKEN environment variable —
 # this file is tracked in git, so a token written here gets committed. With
 # neither set, /admin is not registered at all.
-admin_token = "1"
+admin_token = ""
