@@ -37,3 +37,11 @@ moka = { version = "0.12", features = ["future"] }
 sha2 = "0.10"
 toml = "0.8"
 flate2 = "1"
+
+# Optimize dependencies even in dev builds, while our own crate stays at
+# opt-level 0 so it compiles fast and debugs cleanly. Without this, the pure-Rust
+# deflate backend behind `flate2` (miniz_oxide) and `serde_json` run unoptimized,
+# and writing one ~46 MB catalog snapshot to `mcp_cache/` takes minutes instead
+# of seconds — slow enough to look like a hang rather than a slow build.
+[profile.dev.package."*"]
+opt-level = 3

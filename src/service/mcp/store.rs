@@ -13,7 +13,7 @@
 //! who the entry belongs to. Provision the directory like `mcp_precache.toml`,
 //! not like a scratch volume.
 
-use std::io::{Read, Write};
+use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 
 use flate2::Compression;
@@ -25,13 +25,19 @@ use crate::service::{
     log::{elogger, logger},
     mcp::{
         cache::{CacheKey, fingerprint},
-        index::{CatalogSnapshot, PersistedSnapshot}
+        index::{CatalogSnapshot, PersistedSnapshot, SNAPSHOT_VERSION}
     },
     path::get_current_or_root_dir
 };
 
 /// Extension marking a stored snapshot: gzipped JSON.
 const SNAPSHOT_EXTENSION: &str = "json.gz";
+
+/// Buffer size for the compressed streams, both ways.
+///
+/// A snapshot is tens of megabytes written a JSON token at a time, so the cost
+/// here is entirely in the number of calls, not in the size of any one of them.
+const BUFFER_BYTES: usize = 256 * 1024;
 
 
 /// The cache directory, resolved against the working directory like every other
@@ -129,9 +135,19 @@ fn write_to(dir: &Path, key: &CacheKey, snapshot: &CatalogSnapshot) -> Result<u6
 
     // Fast compression rather than best: this runs on every refresh, and the
     // difference in size is small next to the difference in CPU time.
-    let mut encoder = GzEncoder::new(file, Compression::fast());
-    serde_json::to_writer(&mut encoder, &persisted)
+    //
+    // Both buffers matter. `serde_json` emits one write per token — per field
+    // name, per string, per comma — so writing straight into the encoder means
+    // tens of millions of deflate calls for a 45 MB catalog; the outer
+    // `BufWriter` batches those into 256 KB blocks. The inner one does the same
+    // for the encoder's output against the file, turning a syscall per
+    // compressed chunk into one per block.
+    let encoder = GzEncoder::new(BufWriter::with_capacity(BUFFER_BYTES, file), Compression::fast());
+    let mut writer = BufWriter::with_capacity(BUFFER_BYTES, encoder);
+    serde_json::to_writer(&mut writer, &persisted)
         .map_err(|error| format!("cannot serialize snapshot: {}", error))?;
+    let encoder = writer.into_inner()
+        .map_err(|error| format!("cannot flush '{:?}': {}", temporary, error))?;
     let mut file = encoder.finish().map_err(|error| format!("cannot finish '{:?}': {}", temporary, error))?;
     file.flush().map_err(|error| format!("cannot flush '{:?}': {}", temporary, error))?;
     drop(file);
@@ -165,7 +181,7 @@ fn read_from(dir: &Path, key: &CacheKey) -> Option<CatalogSnapshot> {
     let outcome = std::fs::File::open(&path)
         .map_err(|error| error.to_string())
         .and_then(|file| {
-            let mut decoder = GzDecoder::new(file);
+            let mut decoder = GzDecoder::new(BufReader::with_capacity(BUFFER_BYTES, file));
             let mut buffer = String::new();
             decoder.read_to_string(&mut buffer)
                 .map_err(|error| error.to_string())
@@ -173,6 +189,18 @@ fn read_from(dir: &Path, key: &CacheKey) -> Option<CatalogSnapshot> {
         })
         .and_then(|buffer| {
             serde_json::from_str::<PersistedSnapshot>(&buffer).map_err(|error| error.to_string())
+        })
+        .and_then(|persisted| {
+            // A file from an older layout parses cleanly but means something
+            // different — see `SNAPSHOT_VERSION`. Treat it like corruption: the
+            // error arm below removes it and the caller rebuilds from Octopus.
+            if persisted.version != SNAPSHOT_VERSION {
+                return Err(format!(
+                    "written by snapshot layout v{}, this build reads v{}",
+                    persisted.version, SNAPSHOT_VERSION
+                ))
+            }
+            Ok(persisted)
         });
 
     match outcome {
@@ -346,6 +374,30 @@ mod tests {
         assert!(restored.bytes > 0);
         // And the reloaded snapshot is actually searchable.
         assert_eq!(restored.get_by_no("A-7").map(|p| p.no.as_str()), Some("A-7"));
+    }
+
+    #[test]
+    fn a_snapshot_from_an_older_layout_is_discarded_rather_than_served() {
+        let dir = TempDir::new("version");
+        let key = key("AAAA1111BBBB2222", 1);
+        ensure_dir(&dir.0).expect("creates dir");
+
+        // Hand-written at the previous layout: parses fine, but its `price` held
+        // Octopus's `ar` rather than `akcios_ar`, so serving it would quote a
+        // retail figure as the partner's own.
+        let stale = PersistedSnapshot {
+            version: SNAPSHOT_VERSION - 1,
+            products: test_snapshot_with_products(3).products,
+            fetched_at: chrono::Utc::now()
+        };
+        let path = dir.0.join(file_name(&key));
+        let file = std::fs::File::create(&path).expect("creates file");
+        let mut encoder = flate2::write::GzEncoder::new(file, Compression::fast());
+        serde_json::to_writer(&mut encoder, &stale).expect("writes");
+        encoder.finish().expect("finishes");
+
+        assert!(read_from(&dir.0, &key).is_none(), "a stale layout was served");
+        assert!(!path.exists(), "the stale file was left to fail every future load");
     }
 
     #[test]

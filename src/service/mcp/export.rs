@@ -38,7 +38,7 @@ use crate::service::{
 /// Column order for both formats. Fixed rather than derived from the struct so
 /// the spreadsheet stays stable for people building their own sheets on top of
 /// it, and so the header row can be human-readable.
-const COLUMNS: [(&str, &str); 17] = [
+const COLUMNS: [(&str, &str); 16] = [
     ("no", "Article number"),
     ("name", "Name"),
     ("brand", "Brand"),
@@ -51,7 +51,6 @@ const COLUMNS: [(&str, &str); 17] = [
     ("base_unit", "Base unit"),
     ("base_unit_qty", "Base units per unit"),
     ("price", "Price"),
-    ("list_price", "List price"),
     ("currency", "Currency"),
     ("stock", "Stock"),
     ("weight", "Weight (kg)"),
@@ -176,7 +175,6 @@ fn field_text(product: &IndexedProduct, key: &str) -> String {
         "origin_country" => product.origin_country.clone().unwrap_or_default(),
         "base_unit_qty" => product.base_unit_qty.map(|v| v.to_string()).unwrap_or_default(),
         "price" => product.price.map(|v| v.to_string()).unwrap_or_default(),
-        "list_price" => product.list_price.map(|v| v.to_string()).unwrap_or_default(),
         "stock" => product.stock.map(|v| v.to_string()).unwrap_or_default(),
         "weight" => product.weight.map(|v| v.to_string()).unwrap_or_default(),
         _ => String::new()
@@ -189,7 +187,6 @@ fn field_number(product: &IndexedProduct, key: &str) -> Option<f64> {
     match key {
         "base_unit_qty" => product.base_unit_qty,
         "price" => product.price,
-        "list_price" => product.list_price,
         "stock" => product.stock,
         "weight" => product.weight,
         _ => None
@@ -461,5 +458,21 @@ mod tests {
         assert_eq!(field_number(&product, "stock"), Some(43.0));
         // Text columns never claim to be numeric.
         assert_eq!(field_number(&product, "name"), None);
+    }
+
+    #[test]
+    fn the_sheet_carries_exactly_one_price_column() {
+        // Three price columns made a recipient guess which one to quote. The
+        // export publishes only the partner's own figure, so there is nothing to
+        // pick between.
+        let price_columns: Vec<&str> = COLUMNS.iter()
+            .map(|(_, header)| *header)
+            .filter(|header| header.to_lowercase().contains("price"))
+            .collect();
+        assert_eq!(price_columns, vec!["Price"], "the sheet must offer one price and no choice");
+
+        let mut product = crate::service::mcp::index::test_product("A-1", "Pen", "Orink", "");
+        product.price = Some(1495.0);
+        assert_eq!(field_number(&product, "price"), Some(1495.0));
     }
 }

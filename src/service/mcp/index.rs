@@ -108,13 +108,16 @@ pub struct IndexedProduct {
     pub sell_unit: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub origin_country: Option<String>,
-    /// The caller's own net price, not a list price.
+    /// What this partner pays, taken from Octopus's `akcios_ar`.
+    ///
+    /// Octopus sends three figures per product (`listaar`, `ar`, `akcios_ar`)
+    /// and their relationship shifts with the partner's category agreements —
+    /// for one pid `ar` is the retail price, for another it is already the net
+    /// one. Publishing all three left a consumer guessing which to quote, so the
+    /// MCP layer keeps only the figure that is always the partner's own. The
+    /// REST endpoints still expose all three for callers that need them.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub price: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub list_price: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sale_price: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub currency: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -135,6 +138,8 @@ pub struct ProductSummary {
     pub unit: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub oem_code: Option<String>,
+    /// What this partner pays. Same figure and same meaning as
+    /// [`IndexedProduct::price`].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub price: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -198,13 +203,29 @@ pub struct CatalogSnapshot {
 /// file for data [`assemble`] regenerates in a single pass on load.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct PersistedSnapshot {
+    /// Layout marker, checked on load. Bumped whenever a stored field changes
+    /// **meaning** rather than merely appearing or disappearing: serde happily
+    /// ignores fields it no longer knows, so without this a file written when
+    /// `price` held Octopus's `ar` would load into a build where `price` means
+    /// `akcios_ar`, and the caller would be quoted a retail price as their own.
+    /// A mismatch discards the file and rebuilds, which costs minutes once.
+    #[serde(default)]
+    pub version: u32,
     pub products: Vec<IndexedProduct>,
     pub fetched_at: DateTime<Utc>
 }
 
+/// Current [`PersistedSnapshot`] layout.
+///
+/// 0 — implicit, pre-versioning: `price` carried Octopus's `ar`, with
+///     `list_price` and `sale_price` stored beside it.
+/// 1 — one price only, carrying `akcios_ar`.
+pub const SNAPSHOT_VERSION: u32 = 1;
+
 impl From<&CatalogSnapshot> for PersistedSnapshot {
     fn from(snapshot: &CatalogSnapshot) -> Self {
         Self {
+            version: SNAPSHOT_VERSION,
             products: snapshot.products.clone(),
             fetched_at: snapshot.fetched_at
         }
@@ -959,9 +980,7 @@ pub async fn refresh_snapshot(
     if !parts.prices.is_empty() {
         for product in products.iter_mut() {
             let price = parts.prices.get(&product.no);
-            product.price = price.and_then(|entry| entry.price);
-            product.list_price = price.and_then(|entry| entry.list_price);
-            product.sale_price = price.and_then(|entry| entry.sale_price);
+            product.price = price.and_then(|entry| entry.sale_price);
             product.currency = price.and_then(|entry| non_empty(entry.currency.clone()));
         }
     }
@@ -1037,9 +1056,10 @@ fn to_indexed(product: Product, price: Option<&Price>, stock: Option<f64>) -> In
         size: product.size.map(Dimensions::from),
         sell_unit: product.sell_unit,
         origin_country: non_empty(product.origin_country),
-        price: price.and_then(|p| p.price),
-        list_price: price.and_then(|p| p.list_price),
-        sale_price: price.and_then(|p| p.sale_price),
+        // `akcios_ar` only, with no fallback to `ar` or `listaar`: those two mean
+        // different things for different partners, so falling back would quote a
+        // retail price as if it were the caller's own.
+        price: price.and_then(|p| p.sale_price),
         currency: price.and_then(|p| non_empty(p.currency.clone())),
         stock
     }
@@ -1135,8 +1155,6 @@ pub fn test_product(no: &str, name: &str, brand: &str, oem: &str) -> IndexedProd
         sell_unit: None,
         origin_country: None,
         price: None,
-        list_price: None,
-        sale_price: None,
         currency: None,
         stock: None
     }
@@ -1167,11 +1185,84 @@ mod tests {
             sell_unit: None,
             origin_country: None,
             price: None,
-            list_price: None,
-            sale_price: None,
             currency: None,
             stock: None
         }
+    }
+
+    #[test]
+    fn the_single_price_is_the_partners_own_not_the_retail_one() {
+        let source = Price {
+            id: 1,
+            no: "A-1".into(),
+            list_price: Some(1882.0),
+            price: Some(1882.0),
+            sale_price: Some(1495.0),
+            currency: "HUF".into()
+        };
+        let product = Product {
+            id: 1,
+            no: "A-1".into(),
+            name: "Pen".into(),
+            unit: String::new(),
+            base_unit: String::new(),
+            base_unit_qty: None,
+            brand: "Orink".into(),
+            category_code: String::new(),
+            category_name: String::new(),
+            description: String::new(),
+            weight: None,
+            size: None,
+            oem_code: String::new(),
+            main_category_code: String::new(),
+            main_category_name: String::new(),
+            sell_unit: None,
+            origin_country: String::new()
+        };
+
+        // Octopus's `ar` (1882) is the wrong figure to publish — it is the retail
+        // price for some partners and the net one for others. Only `akcios_ar`
+        // means the same thing for everyone, so that is the one `price` carries.
+        let indexed = to_indexed(product, Some(&source), None);
+        assert_eq!(indexed.price, Some(1495.0));
+        assert_eq!(ProductSummary::from(&indexed).price, Some(1495.0));
+    }
+
+    #[test]
+    fn a_product_without_a_partner_price_has_no_price_at_all() {
+        let source = Price {
+            id: 2,
+            no: "A-2".into(),
+            list_price: Some(999.0),
+            price: Some(999.0),
+            // No agreed figure for this partner.
+            sale_price: None,
+            currency: "HUF".into()
+        };
+        let product = product("A-2", "Pad", "Orink", "");
+        let full = Product {
+            id: 2,
+            no: product.no.clone(),
+            name: product.name.clone(),
+            unit: String::new(),
+            base_unit: String::new(),
+            base_unit_qty: None,
+            brand: String::new(),
+            category_code: String::new(),
+            category_name: String::new(),
+            description: String::new(),
+            weight: None,
+            size: None,
+            oem_code: String::new(),
+            main_category_code: String::new(),
+            main_category_name: String::new(),
+            sell_unit: None,
+            origin_country: String::new()
+        };
+
+        // Falling back to `ar` here would quote 999 as if the partner had agreed
+        // to it. Better to show no price than the wrong one.
+        assert_eq!(to_indexed(full, Some(&source), None).price, None);
     }
 
     fn snapshot(rows: Vec<IndexedProduct>) -> CatalogSnapshot {

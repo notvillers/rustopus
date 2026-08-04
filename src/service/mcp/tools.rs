@@ -194,7 +194,7 @@ impl RustopusMcp {
     /// manufacturer part number in one ranked pass, with the caller's own price
     /// and stock inline so a follow-up call is not needed to answer "how much".
     #[tool(description = "Search Orink products by name, article number, brand or manufacturer part number. \
-        Accent-insensitive. Returns the caller's own price and current stock inline.")]
+        Accent-insensitive. Returns this partner's own price and current stock inline.")]
     async fn search_products(
         &self,
         context: RequestContext<RoleServer>,
@@ -355,8 +355,8 @@ impl RustopusMcp {
 
     /// Everything known about one product, for when a search result needs
     /// following up.
-    #[tool(description = "Full master data for one Orink product by article number, \
-        including the caller's own price and current stock.")]
+    #[tool(description = "Full master data for one Orink product by article number, including \
+        current stock. `price` is what this partner pays.")]
     async fn get_product(
         &self,
         context: RequestContext<RoleServer>,
@@ -521,10 +521,11 @@ impl ServerHandler for RustopusMcp {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
             .with_server_info(Implementation::new("rustopus-mcp", env!("CARGO_PKG_VERSION")))
             .with_instructions(
-                "Orink product data from the Octopus 8 ERP. Prices and stock are specific to the \
-                 partner id configured on this connector, so figures are the caller's own, not list \
-                 prices. Data comes from a periodically refreshed snapshot — call catalog_status \
-                 when the freshness of an answer matters."
+                "Orink product data from the Octopus 8 ERP. Stock and pricing are specific to the \
+                 partner id configured on this connector: `price` is what this partner actually \
+                 pays, not a list or retail price, so it can be quoted as-is. Data comes from a \
+                 periodically refreshed snapshot — call catalog_status when the freshness of an \
+                 answer matters."
             )
     }
 }
