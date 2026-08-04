@@ -59,6 +59,17 @@ const DEFAULT_CATEGORY_LIMIT: usize = 40;
 const DID_YOU_MEAN_LIMIT: usize = 5;
 
 
+/// The caller's masked identity for a tool-call log line. `extract_auth` already
+/// logs (or complains about) the credentials on every HTTP request that reaches
+/// the transport; this is the per-tool-call counterpart, so a log line also says
+/// *which* tool ran and with *what* outcome.
+fn caller_identity(context: &RequestContext<RoleServer>) -> String {
+    context.extensions.get::<McpAuth>()
+        .map(McpAuth::masked)
+        .unwrap_or_else(|| "no-auth".to_string())
+}
+
+
 McpToolArgs! {
     pub struct SearchProductsArgs {
         /// Words to search for. Accent- and case-insensitive: `szovegkiemelo`
@@ -146,6 +157,12 @@ impl RustopusMcp {
 
         let outcome = snapshot.search(&args.query, &filters, limit);
 
+        logger(format!(
+            "MCP tool 'search_products' by {}: query='{}' brand={:?} category={:?} main_category={:?} limit={} -> matched={} returned={}",
+            caller_identity(&context), args.query, args.brand, args.category, args.main_category,
+            limit, outcome.matched, outcome.results.len()
+        ));
+
         if outcome.matched == 0 {
             // An empty result set is actionable, not exceptional: the model can
             // retry with fewer words or a different spelling.
@@ -181,11 +198,21 @@ impl RustopusMcp {
         };
 
         match snapshot.get_by_no(&args.no) {
-            Some(product) => Ok(json_result(json!({
-                "catalog_age_seconds": snapshot.age_secs(),
-                "product": product
-            }))),
+            Some(product) => {
+                logger(format!(
+                    "MCP tool 'get_product' by {}: no='{}' -> found",
+                    caller_identity(&context), args.no
+                ));
+                Ok(json_result(json!({
+                    "catalog_age_seconds": snapshot.age_secs(),
+                    "product": product
+                })))
+            }
             None => {
+                logger(format!(
+                    "MCP tool 'get_product' by {}: no='{}' -> not found",
+                    caller_identity(&context), args.no
+                ));
                 // Offer near matches rather than dead-ending: an article number
                 // is usually mistyped, not absent.
                 let suggestions = snapshot.did_you_mean(&args.no, DID_YOU_MEAN_LIMIT);
@@ -223,6 +250,12 @@ impl RustopusMcp {
         let categories = snapshot.categories();
         let kind = args.kind.as_deref().unwrap_or("all").to_lowercase();
 
+        logger(format!(
+            "MCP tool 'list_categories' by {}: kind='{}' limit={} -> brands={} main_categories={} categories={}",
+            caller_identity(&context), kind, limit,
+            categories.brands.len(), categories.main_categories.len(), categories.categories.len()
+        ));
+
         let mut payload = json!({ "catalog_age_seconds": snapshot.age_secs() });
         let mut include = |name: &str, all: &[crate::service::mcp::index::CategoryCount]| {
             if let Some(object) = payload.as_object_mut() {
@@ -255,6 +288,11 @@ impl RustopusMcp {
             Ok(snapshot) => snapshot,
             Err(result) => return Ok(result)
         };
+
+        logger(format!(
+            "MCP tool 'catalog_status' by {}: products={} age_seconds={}",
+            caller_identity(&context), snapshot.products.len(), snapshot.age_secs()
+        ));
 
         Ok(json_result(json!({
             "products": snapshot.products.len(),
