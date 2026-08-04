@@ -48,11 +48,18 @@ O8ModelDeriveOnly! {
     pub struct Valasz {
         #[serde(rename = "@verzio")]
         pub verzio: String,
+        /// Absent whenever Octopus answers with `<hiba>` instead of data — a
+        /// rate limit, a bad authcode, maintenance. Without the default this
+        /// field is mandatory, deserialization fails with `missing field
+        /// 'arak'`, and `hiba` below is never read: the caller gets a generic
+        /// parse error instead of the real reason, untranslated.
+        #[serde(default)]
         pub arak: Arak,
         #[serde(rename = "hiba")]
         pub hiba: Option<o8_defaults::Hiba>
     }
-    
+
+    #[derive(Default)]
     pub struct Arak {
         pub ar: Vec<Ar>
     }

@@ -60,11 +60,16 @@ O8ModelDeriveOnly! {
     pub struct Valasz {
         #[serde(rename = "@verzio")]
         pub verzio: String,
+        /// Absent when Octopus answers with `<hiba>` instead of data. See the
+        /// note on `Valasz::arak` in `prices.rs` — without the default, the
+        /// error response fails to parse and its reason never reaches the caller.
+        #[serde(default)]
         pub cikkek: Cikkek,
         #[serde(rename = "hiba")]
         pub hiba: Option<o8_defaults::Hiba>
     }
 
+    #[derive(Default)]
     pub struct Cikkek {
         pub cikk: Vec<Cikk>
     }

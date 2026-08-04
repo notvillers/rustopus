@@ -146,3 +146,41 @@ pub fn error_struct(code: u64, description: &str) -> Envelope {
 pub fn error_struct_xml(code: u64, description: &str) -> String {
     quick_xml::se::to_string(&error_struct(code, description)).unwrap_or("<Envelope></Envelope>".into())
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Verbatim from a production log: Octopus refusing a call because the
+    /// partner exceeded its rate limit. Note there is **no** `<arak>` element —
+    /// an error response carries the error and nothing else.
+    const RATE_LIMITED: &str = r#"<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body><GetArlistaAuthResponse xmlns="https://orink.hu/services/"><GetArlistaAuthResult><valasz verzio="1.0" xmlns=""><hiba><kod>3</kod><leiras>Túl sok kérés</leiras></hiba></valasz></GetArlistaAuthResult></GetArlistaAuthResponse></soap:Body></soap:Envelope>"#;
+
+    #[test]
+    fn an_error_only_response_parses_instead_of_failing_on_the_missing_data_element() {
+        // `arak` used to be a required field, so this envelope died with
+        // `missing field 'arak'` before `hiba` was ever read — and the caller got
+        // a generic parse error rather than the reason Octopus gave.
+        let envelope: o8_prices::Envelope = quick_xml::de::from_str(RATE_LIMITED)
+            .expect("an error-only response must still deserialize");
+
+        let answer = envelope.body.get_arlista_auth_response.get_arlista_auth_result.valasz;
+        let error = answer.hiba.expect("the error must survive parsing");
+        assert_eq!(error.kod, 3);
+        assert_eq!(error.leiras, "Túl sok kérés");
+        assert!(answer.arak.ar.is_empty(), "no prices came with the error");
+    }
+
+    #[test]
+    fn the_hungarian_reason_reaches_the_caller_translated() {
+        let envelope: o8_prices::Envelope = quick_xml::de::from_str(RATE_LIMITED).expect("parses");
+
+        // The whole point of errors.json: an English-facing caller gets a
+        // sentence they can act on, not Hungarian they cannot read.
+        let translated: Envelope = envelope.into();
+        let error = translated.body.response.result.answer.error.expect("error survives conversion");
+        assert_eq!(error.code, 3);
+        assert_eq!(error.description, "Request limit exceeded");
+    }
+}

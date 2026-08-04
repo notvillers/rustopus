@@ -49,11 +49,15 @@ O8ModelLowercase! {
     pub struct Valasz {
         #[serde(rename = "@verzio")]
         pub verzio: String,
-        #[serde(rename = "vonalkodok")]
+        /// Absent when Octopus answers with `<hiba>` instead of data. See the
+        /// note on `Valasz::arak` in `prices.rs` — without the default, the
+        /// error response fails to parse and its reason never reaches the caller.
+        #[serde(rename = "vonalkodok", default)]
         pub vonalkodok: Vonalkodok,
         pub hiba: Option<o8_defaults::Hiba>
     }
-    
+
+    #[derive(Default)]
     pub struct Vonalkodok {
         #[serde(rename = "vonalkod")]
         pub vonalkod: Vec<Vonalkod>
