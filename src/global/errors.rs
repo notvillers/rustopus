@@ -32,6 +32,14 @@ pub const GLOBAL_PID_ERROR: RustopusError = RustopusError {
     description: "Missing PID"
 };
 
+/// Returned by the blocklist middleware, before a request reaches any route.
+/// Deliberately says nothing about *which* rule matched: that is the operator's
+/// business, and it is in the log.
+pub const GLOBAL_BLOCKED_ERROR: RustopusError = RustopusError {
+    code: 204,
+    description: "Access blocked"
+};
+
 pub const GLOBAL_MISSING_ERROR: RustopusError = RustopusError {
     code: 299,
     description: "Missing value"

@@ -20,3 +20,5 @@ mcp_cache/
 .env
 .ENV
 mcp_exports/
+blocklist.toml
+blocklist.toml.tmp

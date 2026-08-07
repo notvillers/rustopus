@@ -4,18 +4,80 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
-    <title>Rustopus MCP — precache admin</title>
+    <title>Rustopus admin</title>
     <link rel="icon" href="/docs/assets/octo.ico">
     <link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
 <header>
-    <h1>MCP precache</h1>
-    <p class="sub">Combinations kept warm so nobody's question waits for a cold catalog.</p>
+    <h1>Rustopus admin</h1>
+    <p class="sub">The MCP precache, and who is refused at the door.</p>
 </header>
 
 <main>
-    <section class="panel" id="usage-panel">
+    <section class="panel" id="blocklist-panel">
+        <div class="panel-head">
+            <h2>Blocked callers</h2>
+            <button type="button" id="reload">Reload</button>
+        </div>
+        <p class="note">
+            Matching requests are refused with <code>403</code> before they reach any
+            endpoint — no SOAP call, no cache lookup. <strong>/admin is never blocked</strong>,
+            so a rule matching your own address cannot lock you out of this page.
+        </p>
+        <div class="table-scroll">
+            <table id="blocks">
+                <thead>
+                <tr>
+                    <th>Kind</th>
+                    <th>Value</th>
+                    <th>Applies to</th>
+                    <th>Reason</th>
+                    <th>Blocked</th>
+                    <th>Last hit</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="blocks-body">
+                <tr><td colspan="8" class="empty">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Add a block</h3>
+        <p class="note">
+            An IP value takes a single address or a CIDR range (<code>203.0.113.0/24</code>)
+            when an abuser rotates within one network; both the proxy's
+            <code>X-Forwarded-For</code> address and the connecting socket are checked, so a
+            forged header does not walk past a block. An authcode is stored hashed — it is
+            never written to disk or shown again, only its <code>FFD3…0E37</code> mask.
+        </p>
+        <form id="block-form">
+            <label>Kind
+                <select name="kind" id="block-kind">
+                    <option value="ip">IP address or range</option>
+                    <option value="authcode">Authcode</option>
+                </select>
+            </label>
+            <label>Value
+                <input type="text" name="value" id="block-value" required placeholder="203.0.113.7" autocomplete="off">
+            </label>
+            <label>Applies to
+                <select name="scope">
+                    <option value="all">Everything (REST + MCP)</option>
+                    <option value="rest">REST endpoints only</option>
+                    <option value="mcp">MCP + exports only</option>
+                </select>
+            </label>
+            <label>Reason <span class="optional">(optional)</span>
+                <input type="text" name="note" placeholder="scraping /get-bulk every 2s" autocomplete="off">
+            </label>
+            <button type="submit">Block</button>
+        </form>
+    </section>
+
+    <section class="panel mcp-only" id="usage-panel">
         <h2>Cache usage</h2>
         <p class="note">
             Snapshots live in memory and are mirrored to disk. Memory answers queries;
@@ -34,10 +96,9 @@
         </div>
     </section>
 
-    <section class="panel">
+    <section class="panel mcp-only">
         <div class="panel-head">
-            <h2>Entries</h2>
-            <button type="button" id="reload">Reload</button>
+            <h2>Precache entries</h2>
         </div>
         <div class="table-scroll">
             <table id="entries">
@@ -63,7 +124,7 @@
         </div>
     </section>
 
-    <section class="panel">
+    <section class="panel mcp-only">
         <h2>Add an entry</h2>
         <p class="note">
             The authcode is stored on the server so the refresh job can run unattended.

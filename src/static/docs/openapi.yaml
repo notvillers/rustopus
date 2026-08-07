@@ -519,11 +519,18 @@ paths:
 
   /admin:
     get:
-      summary: Precache administration dashboard
+      summary: Administration dashboard
       description: |
         **Not a REST endpoint.** A small internal web application for managing
-        which `(authcode, pid)` combinations the background job keeps warm, and
-        for inspecting cache usage.
+        the access blocklist, and — on an instance with MCP enabled — which
+        `(authcode, pid)` combinations the background job keeps warm, plus cache
+        usage.
+
+        The blocklist refuses matching callers with `403` and error code `204`
+        before they reach any endpoint. Rules match on an IP address or CIDR
+        range, or on an authcode (held hashed, never in the clear), and each
+        applies to everything, to the REST endpoints only, or to `/mcp` and its
+        exports only. `/admin` itself is never blocked.
 
         It has its own authentication — an admin token supplied as HTTP Basic
         credentials or an `X-Admin-Token` header, never a SOAP authcode — and is
@@ -543,7 +550,7 @@ paths:
         '401':
           description: Missing or invalid admin token
         '404':
-          description: MCP is disabled, or no admin token is configured
+          description: No admin token is configured
 
 
 components:

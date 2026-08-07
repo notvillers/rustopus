@@ -30,17 +30,26 @@ Baked into the image (these are source assets, not config):
 /app/rustopus                       # the release binary
 /app/src/errors/errors.json
 /app/src/static/docs/...            # served at /docs/
-/app/src/static/admin/...           # served at /admin (MCP instance only)
+/app/src/static/admin/...           # served at /admin (any instance with an admin token)
 ```
 Mounted at runtime (volumes):
 ```
 /app/Config.toml         (ro)
 /app/soap.json           (ro)
 /app/log/                (rw, persisted)
+/app/blocklist.toml      (rw — the access blocklist, both instances, see below)
 /app/mcp_precache.toml   (rw, SECRET — MCP instance only, see below)
 /app/mcp_cache/          (rw, SECRET, persisted — MCP instance only)
 /app/mcp_exports/        (rw, SECRET, ephemeral — MCP instance only)
 ```
+
+`blocklist.toml` holds the IP/authcode rules that refuse abusive callers, and is
+needed on **both** containers — an abuser hits `/get-bulk` and `/mcp` alike. It
+must be read-write (the `/admin` dashboard rewrites it) and persisted, or every
+restart lets everyone back in. It is *not* secret-grade: authcode rules store the
+code's hash, never the code. Blocking is only managed through `/admin`, so
+container A needs `RUSTOPUS_ADMIN_TOKEN` set too if its blocklist is to be
+editable — with no token the file is still enforced, just not editable there.
 
 `mcp_exports/` holds generated Excel/CSV files waiting to be downloaded. Unlike
 the cache it does **not** need persisting — download tokens live in memory, so
@@ -154,7 +163,10 @@ Container B's extra runtime inputs:
 - `/app/mcp_precache.toml` and `/app/mcp_cache/` — the secret mounts described above.
 - `RUSTOPUS_ADMIN_TOKEN` — the `/admin` password, supplied as an environment
   variable (or a Docker/K8s secret) rather than through the tracked
-  `Config.toml`. With neither set, `/admin` is not registered at all.
+  `Config.toml`. With neither set, `/admin` is not registered at all. The token is
+  read independently of `[mcp] enabled`, so setting it on container A serves the
+  dashboard there as well — cut down to the blocklist, since that instance has no
+  cache or precache to show.
 - Publish `/admin` only on an internal interface or behind the VPN. The token is
   the last line of defence for a credential store, not the only one it deserves.
 
@@ -169,7 +181,7 @@ budget is shared between the sweep and live MCP traffic.
 - **errors.json & docs are baked, not mounted** — they're versioned source, so they travel with
   the image and stay in sync with the binary. The same goes for `src/static/admin/`, which is
   the dashboard's own HTML/CSS/JS.
-- **No code changes required.** This is purely additive packaging; the CWD-relative layout is
+- **No code changes required for packaging.** The layout below is purely additive; the CWD-relative layout is
   satisfied by `WORKDIR /app` + the copied tree. (CLAUDE.md's "cargo check after code edits"
   rule doesn't apply — no `.rs`/source edits.)
 
@@ -192,11 +204,16 @@ Then check:
 3. `curl http://localhost:1140/test` → exercises `routes::test::get_handler` without needing a live Octopus backend.
 4. A `log/<YYYY.MM.DD>.log` file is written into the mounted host `log/` dir (confirms volume + C FFI append work, and the non-root user can write).
 5. (If reachable) hit `/products` or `/bulk` against the configured SOAP url to confirm outbound rustls TLS works from inside the container.
-6. On container A only (`[mcp] enabled = false`): `curl -i http://localhost:1140/mcp` and
-   `.../admin` both return **404**, and the startup log contains no `MCP` line. That is the
-   check that the public API instance is genuinely unchanged.
+6. On container A only (`[mcp] enabled = false`, no `RUSTOPUS_ADMIN_TOKEN`): `curl -i
+   http://localhost:1140/mcp` and `.../admin` both return **404**, and the startup log
+   contains no `MCP` line. That is the check that the public API instance is genuinely
+   unchanged. With a token set, `/admin` serves the blocklist only: `/admin/api/state`
+   reports `"mcp_enabled": false` and the precache routes refuse with a 400.
 7. On container B (`[mcp] enabled = true`, `RUSTOPUS_ADMIN_TOKEN` set): `/admin` returns 401
    without credentials and 200 with them, and `stat -c %a /app/mcp_precache.toml` reports `600`
    after the first entry is saved.
+8. On either container, after adding a rule through `/admin`: the blocked address gets
+   **403** with `<code>204</code>` from `/get-test`, `/admin` stays reachable from that
+   same address, and `stat -c %a /app/blocklist.toml` reports `600`.
 
 Image size sanity check: `docker images rustopus:local` should be in the low tens of MB (static binary + Alpine + docs).

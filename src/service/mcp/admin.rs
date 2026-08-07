@@ -17,6 +17,15 @@
 //!
 //! Bind `/admin` to an internal interface or put it behind the VPN. The token is
 //! the last line of defence, not the only one it deserves.
+//!
+//! ## It also manages the access blocklist
+//!
+//! `main.rs` registers this scope whenever an admin token is set, **not** only
+//! when MCP is enabled, because the blocklist (`service/blocklist.rs`) applies to
+//! the REST endpoints too and has to be manageable on the instance serving them.
+//! On such an instance `AdminState::mcp_enabled` is false and every handler that
+//! would touch the snapshot cache or the precache is skipped — reading them would
+//! construct a cache on a process that is meant to hold none.
 
 use std::path::PathBuf;
 
@@ -28,6 +37,7 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::service::{
+    blocklist::{self, BlockRule, BlockScope},
     log::{elog_with_ip, log_with_ip},
     ipv4::log_ip,
     mcp::{
@@ -45,12 +55,15 @@ const ADMIN_TOKEN_HEADER: &str = "X-Admin-Token";
 #[derive(Clone)]
 pub struct AdminState {
     token: String,
-    static_dir: PathBuf
+    static_dir: PathBuf,
+    /// False on an instance running with `[mcp] enabled = false`, where the
+    /// dashboard manages the blocklist and nothing else.
+    mcp_enabled: bool
 }
 
 impl AdminState {
-    pub fn new(token: String, static_dir: PathBuf) -> Self {
-        Self { token, static_dir }
+    pub fn new(token: String, static_dir: PathBuf, mcp_enabled: bool) -> Self {
+        Self { token, static_dir, mcp_enabled }
     }
 }
 
@@ -168,10 +181,60 @@ pub struct EntryPatch {
 }
 
 
-/// Cache usage plus one row per configured entry, all authcodes masked.
+/// Refuses a precache/cache operation on an instance where MCP is off. Those
+/// handlers would otherwise build the snapshot cache in a process configured to
+/// hold none.
+fn require_mcp(state: &AdminState) -> Option<HttpResponse> {
+    if state.mcp_enabled {
+        return None
+    }
+    Some(HttpResponse::BadRequest().json(json!({
+        "error": "MCP is disabled on this instance ([mcp] enabled = false); only the blocklist is manageable here"
+    })))
+}
+
+
+/// One row per blocking rule, with its in-memory hit counters.
+fn blocks_payload() -> Vec<serde_json::Value> {
+    let hits = blocklist::hits();
+    blocklist::rules().iter().map(|rule| {
+        let id = rule.id();
+        let hit = hits.get(&id).cloned().unwrap_or_default();
+        json!({
+            "id": id,
+            "kind": rule.kind.as_str(),
+            // For an authcode rule this is the mask, never the code — the hash
+            // behind it is not published either, since it is a working offline
+            // guess target and the dashboard has no use for it.
+            "label": rule.label,
+            "note": rule.note,
+            "scope": rule.scope().as_str(),
+            "enabled": rule.is_enabled(),
+            "created_at": rule.created_at.map(|at| at.to_rfc3339()),
+            "hits": hit.count,
+            "last_hit": hit.last_at.map(|at| at.to_rfc3339()),
+            "last_ip": hit.last_ip
+        })
+    }).collect()
+}
+
+
+/// Cache usage plus one row per configured entry, all authcodes masked, plus the
+/// blocklist. On a non-MCP instance the cache and precache sections are `null`
+/// and only `blocks` is populated.
 async fn state_handler(request: HttpRequest, state: web::Data<AdminState>) -> impl Responder {
     if let Some(denied) = guard(&request, &state).await {
         return denied
+    }
+
+    if !state.mcp_enabled {
+        return HttpResponse::Ok().json(json!({
+            "mcp_enabled": false,
+            "cache": null,
+            "disk": null,
+            "entries": [],
+            "blocks": blocks_payload()
+        }))
     }
 
     // Settle moka's deferred maintenance so the usage figure reflects reality
@@ -214,6 +277,8 @@ async fn state_handler(request: HttpRequest, state: web::Data<AdminState>) -> im
     let disk_budget = crate::service::config::get_mcp_settings().disk_max_bytes();
 
     HttpResponse::Ok().json(json!({
+        "mcp_enabled": true,
+        "blocks": blocks_payload(),
         "cache": {
             "used_bytes": used,
             "budget_bytes": budget,
@@ -239,6 +304,9 @@ async fn create_handler(
     body: web::Json<NewEntry>
 ) -> impl Responder {
     if let Some(denied) = guard(&request, &state).await {
+        return denied
+    }
+    if let Some(denied) = require_mcp(&state) {
         return denied
     }
 
@@ -281,6 +349,9 @@ async fn patch_handler(
     if let Some(denied) = guard(&request, &state).await {
         return denied
     }
+    if let Some(denied) = require_mcp(&state) {
+        return denied
+    }
 
     let id = path.into_inner();
     let Some(mut entry) = precache::find(&id) else {
@@ -319,6 +390,9 @@ async fn delete_handler(
     if let Some(denied) = guard(&request, &state).await {
         return denied
     }
+    if let Some(denied) = require_mcp(&state) {
+        return denied
+    }
 
     let id = path.into_inner();
     let Some(entry) = precache::find(&id) else {
@@ -354,6 +428,9 @@ async fn refresh_handler(
     if let Some(denied) = guard(&request, &state).await {
         return denied
     }
+    if let Some(denied) = require_mcp(&state) {
+        return denied
+    }
 
     let id = path.into_inner();
     let Some(entry) = precache::find(&id) else {
@@ -379,6 +456,9 @@ async fn evict_handler(
     if let Some(denied) = guard(&request, &state).await {
         return denied
     }
+    if let Some(denied) = require_mcp(&state) {
+        return denied
+    }
 
     let id = path.into_inner();
     let Some(entry) = precache::find(&id) else {
@@ -393,6 +473,166 @@ async fn evict_handler(
             HttpResponse::Ok().json(json!({ "evicted": true }))
         }
         None => HttpResponse::BadRequest().json(json!({ "error": "entry has no configured url" }))
+    }
+}
+
+
+/// Body for adding a blocking rule.
+///
+/// `value` is an IP address or CIDR range for `kind = "ip"`, and the **full**
+/// authcode for `kind = "authcode"` — the only direction a code travels here.
+/// It is hashed on arrival and not retained; the rule that comes back is
+/// identified by its mask.
+#[derive(Debug, Deserialize)]
+pub struct NewBlock {
+    pub kind: String,
+    pub value: String,
+    pub note: Option<String>,
+    pub scope: Option<String>
+}
+
+/// Body for editing a rule. No `value`: what a rule matches on defines its id,
+/// so changing it means adding a rule and removing the old one.
+#[derive(Debug, Deserialize)]
+pub struct BlockPatch {
+    pub note: Option<String>,
+    pub scope: Option<String>,
+    pub enabled: Option<bool>
+}
+
+
+/// Parses the scope name, defaulting to "everything" when it is absent.
+fn parse_scope(scope: &Option<String>) -> Result<Option<BlockScope>, String> {
+    let Some(scope) = scope.as_ref().map(|scope| scope.trim().to_lowercase()) else {
+        return Ok(None)
+    };
+    match scope.as_str() {
+        "" | "all" => Ok(Some(BlockScope::All)),
+        "rest" => Ok(Some(BlockScope::Rest)),
+        "mcp" => Ok(Some(BlockScope::Mcp)),
+        other => Err(format!("unknown scope '{}' — use all, rest or mcp", other))
+    }
+}
+
+
+/// Adds a blocking rule, or replaces the one matching the same thing.
+async fn block_create_handler(
+    request: HttpRequest,
+    state: web::Data<AdminState>,
+    body: web::Json<NewBlock>
+) -> impl Responder {
+    if let Some(denied) = guard(&request, &state).await {
+        return denied
+    }
+
+    let body = body.into_inner();
+    let scope = match parse_scope(&body.scope) {
+        Ok(scope) => scope,
+        Err(error) => return HttpResponse::BadRequest().json(json!({ "error": error }))
+    };
+    let note = body.note
+        .map(|note| note.trim().to_string())
+        .filter(|note| !note.is_empty());
+
+    let rule = match body.kind.trim().to_lowercase().as_str() {
+        "ip" => BlockRule::ip(&body.value, note, scope),
+        "authcode" => BlockRule::authcode(&body.value, note, scope),
+        other => Err(format!("unknown kind '{}' — use ip or authcode", other))
+    };
+    let rule = match rule {
+        Ok(rule) => rule,
+        Err(error) => return HttpResponse::BadRequest().json(json!({ "error": error }))
+    };
+
+    let id = rule.id();
+    // The label, not the value: for an authcode rule the value is a hash and
+    // for an IP rule the two are the same thing.
+    let described = format!("{} '{}' ({})", rule.kind.as_str(), rule.label, rule.scope().as_str());
+
+    match blocklist::upsert(rule) {
+        Ok(()) => {
+            let ip_address = log_ip(request.clone()).await.to_string();
+            log_with_ip(&ip_address, format!("ADMIN: block rule added [{}]", described));
+            HttpResponse::Ok().json(json!({ "id": id }))
+        }
+        Err(error) => HttpResponse::InternalServerError().json(json!({ "error": error }))
+    }
+}
+
+
+/// Edits a rule's note, scope or enabled flag.
+async fn block_patch_handler(
+    request: HttpRequest,
+    state: web::Data<AdminState>,
+    path: web::Path<String>,
+    body: web::Json<BlockPatch>
+) -> impl Responder {
+    if let Some(denied) = guard(&request, &state).await {
+        return denied
+    }
+
+    let id = path.into_inner();
+    let Some(mut rule) = blocklist::find(&id) else {
+        return HttpResponse::NotFound().json(json!({ "error": "no such rule" }))
+    };
+
+    let body = body.into_inner();
+    if body.scope.is_some() {
+        match parse_scope(&body.scope) {
+            Ok(scope) => rule.scope = scope,
+            Err(error) => return HttpResponse::BadRequest().json(json!({ "error": error }))
+        }
+    }
+    if let Some(note) = body.note {
+        let note = note.trim().to_string();
+        rule.note = if note.is_empty() { None } else { Some(note) };
+    }
+    if let Some(enabled) = body.enabled {
+        rule.enabled = Some(enabled);
+    }
+
+    let described = format!(
+        "{} '{}' ({}, {})",
+        rule.kind.as_str(),
+        rule.label,
+        rule.scope().as_str(),
+        if rule.is_enabled() { "enforced" } else { "paused" }
+    );
+
+    match blocklist::upsert(rule) {
+        Ok(()) => {
+            let ip_address = log_ip(request.clone()).await.to_string();
+            log_with_ip(&ip_address, format!("ADMIN: block rule updated [{}]", described));
+            HttpResponse::Ok().json(json!({ "id": id }))
+        }
+        Err(error) => HttpResponse::InternalServerError().json(json!({ "error": error }))
+    }
+}
+
+
+/// Removes a rule, letting whoever it matched back in.
+async fn block_delete_handler(
+    request: HttpRequest,
+    state: web::Data<AdminState>,
+    path: web::Path<String>
+) -> impl Responder {
+    if let Some(denied) = guard(&request, &state).await {
+        return denied
+    }
+
+    let id = path.into_inner();
+    let Some(rule) = blocklist::find(&id) else {
+        return HttpResponse::NotFound().json(json!({ "error": "no such rule" }))
+    };
+    let described = format!("{} '{}'", rule.kind.as_str(), rule.label);
+
+    match blocklist::remove(&id) {
+        Ok(_) => {
+            let ip_address = log_ip(request.clone()).await.to_string();
+            log_with_ip(&ip_address, format!("ADMIN: block rule removed [{}]", described));
+            HttpResponse::Ok().json(json!({ "removed": true }))
+        }
+        Err(error) => HttpResponse::InternalServerError().json(json!({ "error": error }))
     }
 }
 
@@ -441,6 +681,11 @@ pub fn scope(state: AdminState) -> Scope {
         .route("/api/entries/{id}", web::delete().to(delete_handler))
         .route("/api/entries/{id}/refresh", web::post().to(refresh_handler))
         .route("/api/entries/{id}/evict", web::post().to(evict_handler))
+        // Blocklist. Unlike the routes above these work with MCP disabled — the
+        // rules they manage protect the REST endpoints too.
+        .route("/api/blocks", web::post().to(block_create_handler))
+        .route("/api/blocks/{id}", web::patch().to(block_patch_handler))
+        .route("/api/blocks/{id}", web::delete().to(block_delete_handler))
 }
 
 

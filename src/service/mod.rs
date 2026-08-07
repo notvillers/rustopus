@@ -1,5 +1,6 @@
 pub mod get;
 pub mod log;
+pub mod blocklist;
 pub mod config;
 pub mod ipv4;
 pub mod soap;

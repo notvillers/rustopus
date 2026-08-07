@@ -18,6 +18,10 @@
     var diskTextEl = document.getElementById('disk-text');
     var formEl = document.getElementById('add-form');
     var reloadEl = document.getElementById('reload');
+    var blocksBodyEl = document.getElementById('blocks-body');
+    var blockFormEl = document.getElementById('block-form');
+    var blockKindEl = document.getElementById('block-kind');
+    var blockValueEl = document.getElementById('block-value');
 
     function setStatus(message, kind) {
         statusEl.textContent = message || '';
@@ -187,11 +191,89 @@
         });
     }
 
+    var SCOPE_LABELS = {
+        all: 'REST + MCP',
+        rest: 'REST only',
+        mcp: 'MCP + exports'
+    };
+
+    function renderBlocks(blocks) {
+        blocksBodyEl.textContent = '';
+
+        if (!blocks || !blocks.length) {
+            var empty = document.createElement('tr');
+            var td = document.createElement('td');
+            td.colSpan = 8;
+            td.className = 'empty';
+            td.textContent = 'Nobody is blocked. Add a rule below to refuse an address or an authcode.';
+            empty.appendChild(td);
+            blocksBodyEl.appendChild(empty);
+            return;
+        }
+
+        blocks.forEach(function (block) {
+            var row = document.createElement('tr');
+            cell(row, block.kind === 'ip' ? 'IP' : 'Authcode');
+
+            /* An authcode value is already the FFD3…0E37 mask server-side; the
+             * code itself never reaches this page. */
+            var valueCell = document.createElement('td');
+            var code = document.createElement('code');
+            code.textContent = block.label;
+            valueCell.appendChild(code);
+            row.appendChild(valueCell);
+
+            cell(row, SCOPE_LABELS[block.scope] || block.scope);
+            cell(row, block.note || '—', block.note ? null : 'state-idle');
+            cell(row, block.hits ? String(block.hits) : '—', block.hits ? null : 'state-idle');
+            cell(row, block.last_hit ? formatTime(block.last_hit) + (block.last_ip ? ' — ' + block.last_ip : '') : '—');
+            cell(row,
+                block.enabled ? 'enforced' : 'paused',
+                block.enabled ? 'state-bad' : 'state-idle');
+
+            var actions = document.createElement('td');
+            var wrapper = document.createElement('div');
+            wrapper.className = 'actions';
+
+            wrapper.appendChild(actionButton(block.enabled ? 'Pause' : 'Enforce', null, function () {
+                request('PATCH', '/admin/api/blocks/' + encodeURIComponent(block.id), { enabled: !block.enabled })
+                    .then(function () { load(); })
+                    .catch(function (error) { setStatus(error.message, 'error'); });
+            }));
+
+            wrapper.appendChild(actionButton('Unblock', 'danger', function () {
+                if (!window.confirm('Unblock "' + block.label + '"?')) { return; }
+                request('DELETE', '/admin/api/blocks/' + encodeURIComponent(block.id))
+                    .then(function () { setStatus('Unblocked "' + block.label + '".', 'success'); load(); })
+                    .catch(function (error) { setStatus(error.message, 'error'); });
+            }));
+
+            actions.appendChild(wrapper);
+            row.appendChild(actions);
+            blocksBodyEl.appendChild(row);
+        });
+    }
+
+    /* On an instance running with [mcp] enabled = false the dashboard exists only
+     * to manage the blocklist, and the server sends no cache or precache figures
+     * at all — hide those panels rather than render empty ones. */
+    function applyMcpVisibility(enabled) {
+        var panels = document.querySelectorAll('.mcp-only');
+        var index;
+        for (index = 0; index < panels.length; index += 1) {
+            panels[index].hidden = !enabled;
+        }
+    }
+
     function load() {
         return request('GET', '/admin/api/state')
             .then(function (payload) {
-                renderUsage(payload.cache, payload.disk);
-                renderEntries(payload.entries);
+                applyMcpVisibility(payload.mcp_enabled !== false);
+                renderBlocks(payload.blocks);
+                if (payload.cache) {
+                    renderUsage(payload.cache, payload.disk);
+                    renderEntries(payload.entries || []);
+                }
             })
             .catch(function (error) {
                 setStatus(error.message, 'error');
@@ -216,6 +298,40 @@
             .then(function () {
                 formEl.reset();
                 setStatus('Entry added. It will be warmed on the next sweep, or use Refresh to do it now.', 'success');
+                load();
+            })
+            .catch(function (error) { setStatus(error.message, 'error'); });
+    });
+
+    /* An authcode is a live credential, so it is typed masked — an IP is not,
+     * and hiding it would only make typos harder to spot. */
+    blockKindEl.addEventListener('change', function () {
+        var isAuthcode = blockKindEl.value === 'authcode';
+        blockValueEl.type = isAuthcode ? 'password' : 'text';
+        blockValueEl.placeholder = isAuthcode ? 'Full Octopus authcode' : '203.0.113.7';
+        blockValueEl.value = '';
+    });
+
+    blockFormEl.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var data = new FormData(blockFormEl);
+        var body = {
+            kind: data.get('kind'),
+            value: (data.get('value') || '').trim(),
+            scope: data.get('scope'),
+            note: (data.get('note') || '').trim() || null
+        };
+        if (!body.value) {
+            setStatus('A value is required.', 'error');
+            return;
+        }
+
+        request('POST', '/admin/api/blocks', body)
+            .then(function () {
+                blockFormEl.reset();
+                blockValueEl.type = 'text';
+                blockValueEl.placeholder = '203.0.113.7';
+                setStatus('Block added. It takes effect on the next request.', 'success');
                 load();
             })
             .catch(function (error) { setStatus(error.message, 'error'); });

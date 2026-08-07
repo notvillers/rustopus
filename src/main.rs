@@ -1,5 +1,5 @@
 use std::{env, panic};
-use actix_web::{App, HttpResponse, HttpServer, Responder, web, middleware::{Compress, DefaultHeaders}};
+use actix_web::{App, HttpResponse, HttpServer, Responder, web, middleware::{Compress, DefaultHeaders, from_fn}};
 use actix_files::Files;
 
 mod macros;
@@ -12,7 +12,7 @@ mod language;
 
 use crate::{
     routes::{barcode, bulk, image, index, invoice, mat, order, price, product, stock, test}, service::{
-        log::{elogger, logger}, mcp, soap_config::{
+        blocklist, log::{elogger, logger}, mcp, soap_config::{
             SOAP_URL, SoapConfig, check_soap_config, get_soap_path
         }
     }
@@ -107,13 +107,24 @@ async fn main() -> std::io::Result<()> {
         None
     };
 
-    // Admin dashboard. Registered only when MCP is on *and* a token is set, so
-    // the credential store behind it is never reachable unauthenticated.
-    let admin_token = mcp_config.is_enabled().then(|| mcp_config.admin_token()).flatten();
-    match (&admin_token, mcp_config.is_enabled()) {
-        (Some(_), _) => logger("MCP admin dashboard enabled: serving /admin"),
-        (None, true) => logger("MCP admin dashboard not served: no admin token set (RUSTOPUS_ADMIN_TOKEN or [mcp] admin_token)"),
-        (None, false) => ()
+    // Access blocklist. Loaded on every instance, MCP or not: an abusive client
+    // hits `/get-bulk` and `/mcp` with equal enthusiasm. With no rules on file
+    // the middleware below costs one atomic load per request.
+    blocklist::init();
+
+    // Admin dashboard. Registered whenever a token is set — *not* only when MCP
+    // is on, because it now also manages the blocklist, which the REST-only
+    // instance needs as much as the MCP one. Without a token it is not
+    // registered at all, so the credential store behind it is never reachable
+    // unauthenticated.
+    let admin_token = mcp_config.admin_token();
+    // Whether the dashboard should show its cache/precache sections at all. With
+    // MCP off they would be meaningless, and asking for them would construct the
+    // snapshot cache on an instance that is supposed to hold none.
+    let mcp_enabled = mcp_config.is_enabled();
+    match &admin_token {
+        Some(_) => logger("Admin dashboard enabled: serving /admin"),
+        None => logger("Admin dashboard not served: no admin token set (RUSTOPUS_ADMIN_TOKEN or [mcp] admin_token)")
     }
 
     let admin_dir = match env::current_dir() {
@@ -135,10 +146,15 @@ async fn main() -> std::io::Result<()> {
         // a path parameter, not a fetcher, so there is no plural alias to add.
         let export_scope = mcp_service.as_ref().map(|_| mcp::export::scope());
         let admin_scope = admin_token.clone().map(|token| {
-            mcp::admin::scope(mcp::admin::AdminState::new(token, admin_dir.clone()))
+            mcp::admin::scope(mcp::admin::AdminState::new(token, admin_dir.clone(), mcp_enabled))
         });
 
         let app = App::new()
+            // Innermost of the three, so a blocked caller's 403 still carries the
+            // security headers and is still compressed like any other response.
+            // Wrapping the whole app rather than each route is the point: one
+            // rule set covers the REST fetchers, /mcp and /export alike.
+            .wrap(from_fn(blocklist::guard))
             .wrap(Compress::default())
             .wrap(security_headers())
             .default_service(web::to(not_found))
