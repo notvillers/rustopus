@@ -10,6 +10,7 @@ log/
 *.csv
 *.xml
 *.env
+connector.txt
 rustopus
 soap.json
 client_config.toml
