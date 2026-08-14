@@ -526,10 +526,10 @@ paths:
         this server supports. Also served at
         `/.well-known/oauth-authorization-server/mcp`.
 
-        No `registration_endpoint` is published: clients are created by hand in
-        `/admin` (RFC 7591 dynamic registration is deliberately not implemented),
-        which is what the connector dialog's Client ID / Client Secret fields are
-        for.
+        No `registration_endpoint` is published: RFC 7591 dynamic registration is
+        deliberately not implemented, and a client is registered out of band by
+        whoever runs this server. That is what the connector dialog's Client ID /
+        Client Secret fields are for — ask for a pair.
       tags:
         - MCP
       responses:
@@ -663,44 +663,6 @@ paths:
                 type: string
         '404':
           description: Unknown or expired token, or MCP is disabled on this instance
-
-  /admin:
-    get:
-      summary: Administration dashboard
-      description: |
-        **Not a REST endpoint.** A small internal web application for managing
-        the access blocklist, and — on an instance with MCP enabled — which
-        `(authcode, pid)` combinations the background job keeps warm, plus cache
-        usage. With OAuth enabled it also registers the connectors that may sign
-        partners in, and lists (and revokes) the sign-ins they hold; creating a
-        connector is the one response in this service that ever carries a client
-        secret, and it is shown exactly once.
-
-        The blocklist refuses matching callers with `403` and error code `204`
-        before they reach any endpoint. Rules match on an IP address or CIDR
-        range, or on an authcode (held hashed, never in the clear), and each
-        applies to everything, to the REST endpoints only, or to `/mcp` and its
-        exports only. `/admin` itself is never blocked.
-
-        It has its own authentication — an admin token supplied as HTTP Basic
-        credentials or an `X-Admin-Token` header, never a SOAP authcode — and is
-        not registered at all when no token is configured. Because the entries
-        behind it hold authcodes at rest, bind it to an internal interface or put
-        it behind the VPN rather than exposing it on a public hostname. The JSON
-        API under `/admin/api/` never returns a full authcode.
-      tags:
-        - MCP
-      responses:
-        '200':
-          description: The dashboard
-          content:
-            text/html:
-              schema:
-                type: string
-        '401':
-          description: Missing or invalid admin token
-        '404':
-          description: No admin token is configured
 
 
 components:
