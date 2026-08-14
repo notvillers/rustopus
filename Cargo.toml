@@ -35,6 +35,9 @@ rmcp-actix-web = "0.12"
 rmcp = { version = "1", features = ["server", "macros"] }
 moka = { version = "0.12", features = ["future"] }
 sha2 = "0.10"
+# base64url for the OAuth PKCE comparison. A security boundary is the wrong
+# place to reuse the hand-rolled standard-alphabet decoder in mcp/admin.rs.
+base64 = "0.22"
 toml = "0.8"
 flate2 = "1"
 

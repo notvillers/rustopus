@@ -22,6 +22,13 @@
     var blockFormEl = document.getElementById('block-form');
     var blockKindEl = document.getElementById('block-kind');
     var blockValueEl = document.getElementById('block-value');
+    var clientsBodyEl = document.getElementById('clients-body');
+    var sessionsBodyEl = document.getElementById('sessions-body');
+    var clientFormEl = document.getElementById('client-form');
+    var secretEl = document.getElementById('client-secret');
+    var secretIdEl = document.getElementById('client-secret-id');
+    var secretValueEl = document.getElementById('client-secret-value');
+    var secretDismissEl = document.getElementById('client-secret-dismiss');
 
     function setStatus(message, kind) {
         statusEl.textContent = message || '';
@@ -254,6 +261,117 @@
         });
     }
 
+    function emptyRow(body, columns, text) {
+        var row = document.createElement('tr');
+        var td = document.createElement('td');
+        td.colSpan = columns;
+        td.className = 'empty';
+        td.textContent = text;
+        row.appendChild(td);
+        body.appendChild(row);
+    }
+
+    /* A cell holding a value meant to be read or copied verbatim: an id, a
+     * masked authcode, a redirect URI. textContent, like everywhere else. */
+    function codeCell(row, text) {
+        var td = document.createElement('td');
+        var code = document.createElement('code');
+        code.textContent = text;
+        td.appendChild(code);
+        row.appendChild(td);
+        return td;
+    }
+
+    function renderClients(clients) {
+        clientsBodyEl.textContent = '';
+
+        if (!clients || !clients.length) {
+            emptyRow(clientsBodyEl, 6, 'No connectors registered. Register one below, then paste its id and secret into the claude.ai connector.');
+            return;
+        }
+
+        clients.forEach(function (client) {
+            var row = document.createElement('tr');
+            cell(row, client.name);
+            codeCell(row, client.client_id);
+
+            /* Redirect URIs are operator input and there may be several, so they
+             * are built as separate text nodes rather than joined into markup. */
+            var uris = document.createElement('td');
+            (client.redirect_uris || []).forEach(function (uri) {
+                var line = document.createElement('div');
+                line.textContent = uri;
+                uris.appendChild(line);
+            });
+            row.appendChild(uris);
+
+            cell(row, formatTime(client.created_at));
+            cell(row,
+                client.enabled ? 'enabled' : 'disabled',
+                client.enabled ? 'state-ok' : 'state-idle');
+
+            var actions = document.createElement('td');
+            var wrapper = document.createElement('div');
+            wrapper.className = 'actions';
+
+            wrapper.appendChild(actionButton(client.enabled ? 'Disable' : 'Enable', null, function () {
+                request('PATCH', '/admin/api/oauth/clients/' + encodeURIComponent(client.client_id), { enabled: !client.enabled })
+                    .then(function () { load(); })
+                    .catch(function (error) { setStatus(error.message, 'error'); });
+            }));
+
+            wrapper.appendChild(actionButton('Remove', 'danger', function () {
+                if (!window.confirm('Remove "' + client.name + '"? Every sign-in it holds is revoked too.')) { return; }
+                request('DELETE', '/admin/api/oauth/clients/' + encodeURIComponent(client.client_id))
+                    .then(function () { setStatus('Removed "' + client.name + '".', 'success'); load(); })
+                    .catch(function (error) { setStatus(error.message, 'error'); });
+            }));
+
+            actions.appendChild(wrapper);
+            row.appendChild(actions);
+            clientsBodyEl.appendChild(row);
+        });
+    }
+
+    function renderSessions(sessions) {
+        sessionsBodyEl.textContent = '';
+
+        if (!sessions || !sessions.length) {
+            emptyRow(sessionsBodyEl, 8, 'Nobody has signed in yet.');
+            return;
+        }
+
+        sessions.forEach(function (session) {
+            var row = document.createElement('tr');
+            cell(row, session.client);
+            /* Already masked server-side (FFD3…0E37); the full code never
+             * reaches this page. */
+            codeCell(row, session.authcode);
+            cell(row, String(session.pid));
+            cell(row, formatTime(session.created_at));
+            cell(row, session.last_used ? formatTime(session.last_used) : 'never', session.last_used ? null : 'state-idle');
+            cell(row, formatTime(session.expires_at));
+            cell(row,
+                session.precached ? 'yes' : 'no',
+                session.precached ? 'state-ok' : 'state-warn');
+
+            var actions = document.createElement('td');
+            var wrapper = document.createElement('div');
+            wrapper.className = 'actions';
+
+            wrapper.appendChild(actionButton('Revoke', 'danger', function () {
+                if (!window.confirm('Revoke this sign-in? The connector will ask the partner to sign in again.')) { return; }
+                request('DELETE', '/admin/api/oauth/sessions/' + encodeURIComponent(session.id))
+                    .then(function () { setStatus('Sign-in revoked.', 'success'); load(); })
+                    .catch(function (error) { setStatus(error.message, 'error'); });
+            }));
+
+            actions.appendChild(wrapper);
+            row.appendChild(actions);
+            sessionsBodyEl.appendChild(row);
+        });
+    }
+
     /* On an instance running with [mcp] enabled = false the dashboard exists only
      * to manage the blocklist, and the server sends no cache or precache figures
      * at all — hide those panels rather than render empty ones. */
@@ -265,11 +383,26 @@
         }
     }
 
+    /* The OAuth panels describe state that only exists with [mcp] oauth_enabled
+     * on; the server sends `oauth: null` otherwise. */
+    function applyOauthVisibility(enabled) {
+        var panels = document.querySelectorAll('.oauth-only');
+        var index;
+        for (index = 0; index < panels.length; index += 1) {
+            panels[index].hidden = !enabled;
+        }
+    }
+
     function load() {
         return request('GET', '/admin/api/state')
             .then(function (payload) {
                 applyMcpVisibility(payload.mcp_enabled !== false);
+                applyOauthVisibility(!!payload.oauth);
                 renderBlocks(payload.blocks);
+                if (payload.oauth) {
+                    renderClients(payload.oauth.clients);
+                    renderSessions(payload.oauth.sessions);
+                }
                 if (payload.cache) {
                     renderUsage(payload.cache, payload.disk);
                     renderEntries(payload.entries || []);
@@ -335,6 +468,35 @@
                 load();
             })
             .catch(function (error) { setStatus(error.message, 'error'); });
+    });
+
+    clientFormEl.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var data = new FormData(clientFormEl);
+        var uris = (data.get('redirect_uris') || '').split('\n')
+            .map(function (uri) { return uri.trim(); })
+            .filter(function (uri) { return uri.length > 0; });
+
+        request('POST', '/admin/api/oauth/clients', {
+            name: (data.get('name') || '').trim(),
+            redirect_uris: uris
+        })
+            .then(function (payload) {
+                clientFormEl.reset();
+                /* Shown once and never again — the server keeps only the hash. */
+                secretIdEl.textContent = payload.client_id;
+                secretValueEl.textContent = payload.client_secret;
+                secretEl.hidden = false;
+                setStatus('Connector registered. Copy the secret below now — it is not shown again.', 'success');
+                load();
+            })
+            .catch(function (error) { setStatus(error.message, 'error'); });
+    });
+
+    secretDismissEl.addEventListener('click', function () {
+        secretIdEl.textContent = '';
+        secretValueEl.textContent = '';
+        secretEl.hidden = true;
     });
 
     reloadEl.addEventListener('click', function () {

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Sign in to Rustopus</title>
+    <link rel="icon" href="/docs/assets/octo.ico">
+    <link rel="stylesheet" href="/oauth/login.css">
+</head>
+<body>
+<!-- Served as a template by service/mcp/oauth/endpoints.rs, which substitutes the
+     three double-brace placeholders below, each HTML-escaped first. Do not name
+     them in prose anywhere in this file: the substitution is a plain string
+     replace and would rewrite the mention too. There is no inline script here
+     and there cannot be — the CSP is `script-src 'self'`. -->
+<main class="card">
+    <h1>Sign in</h1>
+    <p class="sub">
+        <strong>{{CLIENT_NAME}}</strong> is asking to read the Orink product catalog
+        as you: your own prices, your own stock. Nothing else on this server is reachable
+        with what you enter here.
+    </p>
+
+    {{ERROR}}
+
+    <form method="post" action="/oauth/login" autocomplete="off">
+        <input type="hidden" name="request_id" value="{{REQUEST_ID}}">
+
+        <label for="authcode">Authcode</label>
+        <input type="password" id="authcode" name="authcode" required autocomplete="off"
+               autocapitalize="off" spellcheck="false" autofocus
+               placeholder="Your Octopus authentication code">
+
+        <label for="pid">Partner ID</label>
+        <input type="number" id="pid" name="pid" required placeholder="e.g. 1234">
+
+        <button type="submit" id="submit">Sign in</button>
+    </form>
+
+    <p class="note">
+        These are the Octopus credentials you already have — this server issues no
+        separate password. Your authcode is stored so the connector can keep reading
+        the catalog for you; sign-ins can be revoked at any time by whoever runs this
+        server.
+    </p>
+</main>
+<script src="/oauth/login.js"></script>
+</body>
+</html>

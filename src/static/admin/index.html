@@ -11,7 +11,7 @@
 <body>
 <header>
     <h1>Rustopus admin</h1>
-    <p class="sub">The MCP precache, and who is refused at the door.</p>
+    <p class="sub">The MCP precache, who signs in through a connector, and who is refused at the door.</p>
 </header>
 
 <main>
@@ -119,6 +119,86 @@
                 </thead>
                 <tbody id="entries-body">
                 <tr><td colspan="11" class="empty">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel mcp-only oauth-only">
+        <div class="panel-head">
+            <h2>OAuth connectors</h2>
+        </div>
+        <p class="note">
+            One entry per organization's connector. The claude.ai dialog has no field for a
+            custom header, so a connector signs in through OAuth instead: paste the id and
+            secret below into <em>Advanced settings</em>. The secret is stored hashed and
+            <strong>shown only once</strong> — if it is lost, register another connector.
+        </p>
+        <div class="table-scroll">
+            <table id="clients">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Client ID</th>
+                    <th>Redirect URIs</th>
+                    <th>Added</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="clients-body">
+                <tr><td colspan="6" class="empty">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="client-secret" class="secret" hidden>
+            <h3>New connector credentials</h3>
+            <p class="note">This is the only time the secret is shown. Copy both values now.</p>
+            <p>Client ID <code id="client-secret-id"></code></p>
+            <p>Client secret <code id="client-secret-value"></code></p>
+            <button type="button" id="client-secret-dismiss">Done, hide these</button>
+        </div>
+
+        <h3>Register a connector</h3>
+        <form id="client-form">
+            <label>Name
+                <input type="text" name="name" required placeholder="Orink Hungary (claude.ai)" autocomplete="off">
+            </label>
+            <label>Redirect URIs <span class="optional">(one per line)</span>
+                <textarea name="redirect_uris" rows="3" required
+                          placeholder="https://claude.ai/api/mcp/auth_callback&#10;https://claude.com/api/mcp/auth_callback"></textarea>
+            </label>
+            <button type="submit">Register</button>
+        </form>
+    </section>
+
+    <section class="panel mcp-only oauth-only">
+        <div class="panel-head">
+            <h2>Signed-in partners</h2>
+        </div>
+        <p class="note">
+            One row per sign-in through a connector. Each holds the partner's authcode so the
+            tools can query Octopus for them — revoking a row invalidates its tokens
+            immediately. A row that is <strong>not precached</strong> pays a full catalog build
+            on its first question; add that authcode below to keep it warm.
+        </p>
+        <div class="table-scroll">
+            <table id="sessions">
+                <thead>
+                <tr>
+                    <th>Connector</th>
+                    <th>Authcode</th>
+                    <th>PID</th>
+                    <th>Signed in</th>
+                    <th>Last used</th>
+                    <th>Expires</th>
+                    <th>Precached</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="sessions-body">
+                <tr><td colspan="8" class="empty">Loading…</td></tr>
                 </tbody>
             </table>
         </div>

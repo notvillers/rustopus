@@ -42,7 +42,14 @@ ConfigModelDerive! {
         pub disk_max_bytes: Option<u64>,
         pub export_path: Option<String>,
         pub export_ttl_secs: Option<u64>,
-        pub public_url: Option<String>
+        pub public_url: Option<String>,
+        pub oauth_enabled: Option<bool>,
+        pub oauth_allow_headers: Option<bool>,
+        pub oauth_clients_path: Option<String>,
+        pub oauth_sessions_path: Option<String>,
+        pub oauth_access_ttl_secs: Option<u64>,
+        pub oauth_refresh_ttl_secs: Option<u64>,
+        pub oauth_login_rate_limit: Option<u32>
     }
 
 }
@@ -94,6 +101,27 @@ const DEFAULT_MCP_PRECACHE_INTERVAL_SECS: u64 = 3_600;
 /// Environment variable checked before `[mcp] admin_token`. Preferred, because
 /// `Config.toml` is tracked in git and a token written there gets committed.
 const ADMIN_TOKEN_ENV: &str = "RUSTOPUS_ADMIN_TOKEN";
+
+/// Registered OAuth clients when `[mcp] oauth_clients_path` is unset. Holds
+/// hashed secrets only, so it is not a credential file — see `service/mcp/oauth`.
+const DEFAULT_OAUTH_CLIENTS_PATH: &str = "oauth_clients.toml";
+
+/// Issued OAuth grants when `[mcp] oauth_sessions_path` is unset. **Secret-grade**:
+/// each grant holds the partner's Octopus authcode in plain text.
+const DEFAULT_OAUTH_SESSIONS_PATH: &str = "oauth_sessions.toml";
+
+/// Access-token lifetime when `[mcp] oauth_access_ttl_secs` is unset: 1 hour.
+/// Access tokens live in memory only, so this costs no disk write.
+const DEFAULT_OAUTH_ACCESS_TTL_SECS: u64 = 3_600;
+
+/// Refresh-token lifetime when `[mcp] oauth_refresh_ttl_secs` is unset: 30 days.
+/// Past this the partner signs in again through the connector.
+const DEFAULT_OAUTH_REFRESH_TTL_SECS: u64 = 2_592_000;
+
+/// Failed sign-ins allowed per IP per 10 minutes when
+/// `[mcp] oauth_login_rate_limit` is unset. Without a limit the sign-in form is
+/// an oracle for guessing authcodes against the ERP.
+const DEFAULT_OAUTH_LOGIN_RATE_LIMIT: u32 = 10;
 
 impl McpConfig {
     pub fn is_enabled(&self) -> bool {
@@ -156,6 +184,50 @@ impl McpConfig {
             .filter(|token| !token.trim().is_empty())
             .cloned()
     }
+
+    /// Whether `/mcp` is an OAuth-protected resource: the metadata documents and
+    /// the `/oauth` scope are registered, and `/mcp` refuses an unauthenticated
+    /// caller with the `401` that starts a connector's sign-in flow.
+    ///
+    /// Off by default, and only ever consulted on an instance where MCP itself
+    /// is enabled — there is nothing to protect otherwise.
+    pub fn oauth_enabled(&self) -> bool {
+        self.oauth_enabled.unwrap_or(false)
+    }
+
+    /// Whether `X-Authcode` / `X-Pid` callers are still served once OAuth is on.
+    /// On by default, so `mcp-remote`, `curl` and existing integrations keep
+    /// working through the transition; a request with *no* credentials still gets
+    /// the `401`, which is what the connector needs.
+    pub fn oauth_allow_headers(&self) -> bool {
+        self.oauth_allow_headers.unwrap_or(true)
+    }
+
+    pub fn oauth_clients_path(&self) -> String {
+        self.oauth_clients_path.as_ref()
+            .filter(|path| !path.trim().is_empty())
+            .cloned()
+            .unwrap_or_else(|| DEFAULT_OAUTH_CLIENTS_PATH.to_string())
+    }
+
+    pub fn oauth_sessions_path(&self) -> String {
+        self.oauth_sessions_path.as_ref()
+            .filter(|path| !path.trim().is_empty())
+            .cloned()
+            .unwrap_or_else(|| DEFAULT_OAUTH_SESSIONS_PATH.to_string())
+    }
+
+    pub fn oauth_access_ttl_secs(&self) -> u64 {
+        self.oauth_access_ttl_secs.unwrap_or(DEFAULT_OAUTH_ACCESS_TTL_SECS)
+    }
+
+    pub fn oauth_refresh_ttl_secs(&self) -> u64 {
+        self.oauth_refresh_ttl_secs.unwrap_or(DEFAULT_OAUTH_REFRESH_TTL_SECS)
+    }
+
+    pub fn oauth_login_rate_limit(&self) -> u32 {
+        self.oauth_login_rate_limit.unwrap_or(DEFAULT_OAUTH_LOGIN_RATE_LIMIT)
+    }
 }
 
 
@@ -171,7 +243,14 @@ pub fn get_mcp_settings() -> McpConfig {
         disk_max_bytes: None,
         export_path: None,
         export_ttl_secs: None,
-        public_url: None
+        public_url: None,
+        oauth_enabled: None,
+        oauth_allow_headers: None,
+        oauth_clients_path: None,
+        oauth_sessions_path: None,
+        oauth_access_ttl_secs: None,
+        oauth_refresh_ttl_secs: None,
+        oauth_login_rate_limit: None
     })
 }
 

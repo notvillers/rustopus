@@ -647,6 +647,35 @@ fn forbidden() -> HttpResponse {
 }
 
 
+/// Applies the authcode rules to an identity that only became known **after**
+/// the middleware below ran, and returns the refusal to send.
+///
+/// One caller: the OAuth guard on `/mcp`. A caller presenting a bearer token
+/// sends no `X-Authcode`, so [`request_authcode`] finds nothing and every
+/// authcode rule would silently stop matching on that surface. Hit counting and
+/// the log line stay here rather than being reimplemented there, so a rule's
+/// counter means the same thing however the caller was identified.
+pub fn refuse_if_blocked(authcode: &str, address: Option<&str>, surface: Surface) -> Option<HttpResponse> {
+    if ARMED.load(Ordering::Relaxed) == 0 {
+        return None
+    }
+    let hit = check(&[], Some(authcode), surface)?;
+    record_hit(&hit.id, address);
+    elog_with_ip(address.unwrap_or("unknown IP address"), format!(
+        "{}: {} — blocked by {} rule '{}' on an authenticated {} request",
+        GLOBAL_BLOCKED_ERROR.code,
+        GLOBAL_BLOCKED_ERROR.description,
+        hit.kind.as_str(),
+        hit.label,
+        match surface {
+            Surface::Mcp => "MCP",
+            Surface::Rest => "REST"
+        }
+    ));
+    Some(forbidden())
+}
+
+
 /// The middleware. Wraps the whole app, so it covers the REST fetchers, `/mcp`,
 /// `/export/{token}` and the docs alike — everything but `/admin`.
 pub async fn guard(

@@ -65,6 +65,13 @@ entirely is the same as `enabled = false`.
 | `ttl_secs` | How long a cached catalog snapshot stays valid | `21600` (6 h) |
 | `precache_interval_secs` | How often the refresh sweep runs | `3600` (1 h) |
 | `admin_token` | `/admin` password. Prefer the `RUSTOPUS_ADMIN_TOKEN` environment variable — this file is tracked in git | unset (`/admin` not served) |
+| `oauth_enabled` | Make `/mcp` an OAuth 2.1 protected resource, and serve `/oauth` plus the `.well-known` documents. Needed for the claude.ai connector, which cannot send custom headers | `false` |
+| `oauth_allow_headers` | Keep serving `X-Authcode` / `X-Pid` callers once OAuth is on | `true` |
+| `oauth_clients_path` | Registered connectors. Secrets stored hashed, so not a credential file | `"oauth_clients.toml"` |
+| `oauth_sessions_path` | Issued sign-ins. **Secret-grade** — holds partners' authcodes in plain text | `"oauth_sessions.toml"` |
+| `oauth_access_ttl_secs` | Access-token lifetime. Tokens live in memory only | `3600` (1 h) |
+| `oauth_refresh_ttl_secs` | Refresh-token lifetime, after which the partner signs in again | `2592000` (30 d) |
+| `oauth_login_rate_limit` | Failed sign-ins allowed per IP per 10 minutes | `10` |
 
 ### `soap.json`
 
@@ -161,6 +168,43 @@ in access logs. Configure both on the connector:
 | :-- | :-- |
 | `X-Authcode` | The user's own Octopus authentication code |
 | `X-Pid` | The user's partner id — prices and stock are specific to it |
+
+### Signing in without headers (OAuth)
+
+The claude.ai **custom connector** dialog has no field for a custom header — it
+offers *no auth* or *OAuth*. Added with headers as the only identity, such a
+connector looks like it works (`initialize` and `tools/list` need no credentials)
+and then fails every tool call.
+
+With `[mcp] oauth_enabled = true`, Rustopus becomes the authorization server for
+its own MCP endpoint. An unauthenticated `/mcp` request is refused with `401` and
+a `WWW-Authenticate: Bearer resource_metadata="…"` challenge; the client
+discovers `/.well-known/oauth-protected-resource`, sends the user to
+`/oauth/authorize`, and the sign-in page asks for **the Octopus authcode and
+partner id they already have** — this server issues no separate password. The
+authorization code is exchanged at `/oauth/token` with PKCE (S256) and the client
+secret. Signing in also warms that partner's catalog in the background, so their
+first question does not wait out a cold build.
+
+To set it up:
+
+1. Set `oauth_enabled = true` and a `public_url` the connector can reach over
+   `https` — every URL in the metadata documents is built from it.
+2. In `/admin`, register a connector with the redirect URIs
+   `https://claude.ai/api/mcp/auth_callback` and
+   `https://claude.com/api/mcp/auth_callback`. **The secret is shown once.**
+3. On claude.ai, add the custom connector with the `/mcp` URL, then paste the
+   Client ID and Client Secret under *Advanced settings*. Organization-wide
+   connectors are added by an owner.
+4. Leave `oauth_allow_headers = true` until every header-based caller has
+   migrated, then turn it off.
+
+There is deliberately no dynamic client registration (RFC 7591): an
+unauthenticated writing endpoint on the public internet needs rate limiting, a
+cap and a sweeper; two fields pasted once per organization do not. `/admin` lists
+every sign-in, shows whether its catalog is precached, and revokes it — which
+invalidates its tokens in the same call. The design and its reasoning are in
+[`MCP_OAUTH_PLAN.md`](MCP_OAUTH_PLAN.md).
 
 `/admin` manages which `(authcode, pid)` combinations a background job keeps
 warm. It holds **live authcodes at rest**, because the job runs with nobody

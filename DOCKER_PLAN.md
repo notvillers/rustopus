@@ -41,6 +41,8 @@ Mounted at runtime (volumes):
 /app/mcp_precache.toml   (rw, SECRET — MCP instance only, see below)
 /app/mcp_cache/          (rw, SECRET, persisted — MCP instance only)
 /app/mcp_exports/        (rw, SECRET, ephemeral — MCP instance only)
+/app/oauth_clients.toml  (rw, persisted — MCP instance with OAuth on)
+/app/oauth_sessions.toml (rw, SECRET, persisted — MCP instance with OAuth on)
 ```
 
 `blocklist.toml` holds the IP/authcode rules that refuse abusive callers, and is
@@ -72,6 +74,19 @@ uid 10001, and the service creates it `0700` with `0600` files.
 It is **secret-grade too**: the files contain a partner's own negotiated prices
 and stock levels. Not credentials, but not scratch data either — provision it
 like the file below, not like a cache volume you would happily expose.
+
+`oauth_clients.toml` and `oauth_sessions.toml` appear only on container B, and
+only with `[mcp] oauth_enabled = true` (needed for the claude.ai custom
+connector — see `MCP_OAUTH_PLAN.md`). Both must be read-write, since `/admin` and
+the sign-in flow rewrite them, and both must be **persisted**: losing the clients
+file means re-registering every connector, and losing the sessions file signs
+every partner out.
+
+The sessions file is **secret-grade for the same reason as `mcp_precache.toml`** —
+each grant holds a live authcode in plain text, because the tools present it to
+Octopus with no user in the loop. Provision it as a secret: `0600`, owned by uid
+10001, never in the build context. The clients file is not secret-grade (secrets
+are stored hashed) but is written `0600` all the same.
 
 `mcp_precache.toml` is **not an ordinary config volume**. Every entry in it holds
 a live Octopus authcode in plain text, because the precache job runs with no user
@@ -108,8 +123,9 @@ Runtime stage:
 
 Exclude from build context: `target/`, `client/target/` if any, `example/`, `test/`, `ping/`,
 `*.log`, `*.csv`, `*.xml`, `.git/`, `.github/`, `.claude/`, `.vscode/`, and the runtime config
-`Config.toml` / `soap.json` / **`mcp_precache.toml`** (those are mounted, not baked — and the
-last one is a credential file that must never enter a build context or an image layer).
+`Config.toml` / `soap.json` / **`mcp_precache.toml`** / **`oauth_sessions.toml`** /
+`oauth_clients.toml` (those are mounted, not baked — and the two credential files must never
+enter a build context or an image layer).
 
 ### 3. (Optional) `compose.yaml` — convenience run
 

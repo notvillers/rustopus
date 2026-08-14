@@ -48,6 +48,38 @@ public_url = "http://localhost:1140"
 ttl_secs = 21600
 # How often the precache sweep runs. Default 3600 (1 hour).
 precache_interval_secs = 3600
+# OAuth 2.1 for /mcp. Off by default: with it off no metadata document and no
+# /oauth route is registered, and /mcp keeps identifying its caller from the
+# X-Authcode / X-Pid headers exactly as before.
+#
+# Turn it on for the claude.ai custom connector, which has no field for a custom
+# header and can only authenticate through OAuth. See MCP_OAUTH_PLAN.md.
+# Requires [mcp] enabled = true and a public_url the connector can reach over
+# https — every URL in the metadata documents is built from it.
+#
+# NOTE: tests/get_test.rs spawns the real binary against this file, so leave this
+# false in the committed configuration.
+oauth_enabled = true
+# Keep serving X-Authcode / X-Pid callers once OAuth is on. Default true, which
+# is what lets mcp-remote, curl and existing integrations work through the
+# transition; a request with no credentials still gets the 401 the connector
+# needs. Turn it off once every caller has migrated.
+oauth_allow_headers = true
+# Registered connectors. Secrets are stored hashed and shown once, so this is not
+# a credential file — it is still written 0600.
+oauth_clients_path = "oauth_clients.toml"
+# Issued sign-ins. SECRET-GRADE: each grant holds a partner's Octopus authcode in
+# plain text, because the tools present it to Octopus with no user in the loop.
+oauth_sessions_path = "oauth_sessions.toml"
+# Access-token lifetime in seconds. Default 3600. Access tokens live in memory
+# only, so a restart drops them and clients silently refresh.
+oauth_access_ttl_secs = 3600
+# Refresh-token lifetime in seconds. Default 2592000 (30 days). Past this the
+# partner signs in again through the connector.
+oauth_refresh_ttl_secs = 2592000
+# Failed sign-ins allowed per IP per 10 minutes. Default 10. Without a limit the
+# sign-in form is an oracle for guessing authcodes against the ERP.
+oauth_login_rate_limit = 10
 # Admin dashboard token. Prefer the RUSTOPUS_ADMIN_TOKEN environment variable —
 # this file is tracked in git, so a token written here gets committed. With
 # neither set, /admin is not registered at all.

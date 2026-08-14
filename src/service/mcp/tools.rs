@@ -16,7 +16,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use actix_web::HttpRequest;
+use actix_web::{HttpMessage, HttpRequest};
 use rmcp::{
     ErrorData as McpError, RoleServer, ServerHandler,
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
@@ -585,14 +585,26 @@ fn render_filters(brand: Option<&str>, category: Option<&str>, main_category: Op
 }
 
 
-/// Reads `X-Authcode` / `X-Pid` off the HTTP request and hands them to the MCP
-/// layer as a typed extension.
+/// Hands the caller's identity to the MCP layer as a typed extension.
 ///
-/// A request missing either header is not rejected here: the transport also
-/// carries `initialize` and `tools/list`, which need no credentials. Tools that
-/// do need them return an actionable MCP error instead, which the model can act
-/// on, unlike a transport-level rejection.
+/// Two sources, in order. **The request extensions first**: when OAuth is on,
+/// `oauth::guard` has already resolved a bearer token to a grant and put an
+/// [`McpAuth`] there — the middleware→extensions propagation `rmcp-actix-web`
+/// documents for exactly this case. **The headers second**, which is how every
+/// caller that can set them still works.
+///
+/// A request missing both is not rejected here: the transport also carries
+/// `initialize` and `tools/list`, which need no credentials. Tools that do need
+/// them return an actionable MCP error instead, which the model can act on,
+/// unlike a transport-level rejection. (With OAuth on, such a request never
+/// reaches this function at all — the guard answers it with a `401`.)
 fn extract_auth(request: &HttpRequest, extensions: &mut rmcp::model::Extensions) {
+    if let Some(auth) = request.extensions().get::<McpAuth>().cloned() {
+        logger(format!("MCP request: credentials resolved from an access token ({})", auth.masked()));
+        extensions.insert(auth);
+        return
+    }
+
     let authcode = request.headers()
         .get(AUTHCODE_HEADER)
         .and_then(|value| value.to_str().ok())

@@ -13,6 +13,7 @@ pub mod admin;
 pub mod cache;
 pub mod export;
 pub mod index;
+pub mod oauth;
 pub mod precache;
 pub mod store;
 pub mod tools;
@@ -44,6 +45,27 @@ pub fn mask_authcode(authcode: &str) -> String {
 }
 
 
+/// Compares two secrets without leaking their common prefix through timing.
+///
+/// Lives here rather than in one of its callers because there are now two — the
+/// `/admin` token check and the OAuth client-secret check — and a codebase with
+/// two hand-written constant-time comparisons is a codebase where one of them
+/// eventually stops being constant-time.
+pub fn secrets_match(provided: &str, expected: &str) -> bool {
+    let provided = provided.as_bytes();
+    let expected = expected.as_bytes();
+    // Length is not secret; comparing unequal lengths byte-wise would be, so
+    // fold the length check into the same constant-time result.
+    let mut difference = (provided.len() ^ expected.len()) as u8;
+    for index in 0..provided.len().max(expected.len()) {
+        let left = provided.get(index).copied().unwrap_or(0);
+        let right = expected.get(index).copied().unwrap_or(0);
+        difference |= left ^ right;
+    }
+    difference == 0
+}
+
+
 /// Per-request caller identity, lifted out of the HTTP headers by the
 /// `on_request` hook and read back inside the tools through
 /// `RequestContext::extensions`.
@@ -63,7 +85,16 @@ impl McpAuth {
 
 #[cfg(test)]
 mod tests {
-    use super::mask_authcode;
+    use super::{mask_authcode, secrets_match};
+
+    #[test]
+    fn secret_comparison_accepts_only_an_exact_match() {
+        assert!(secrets_match("s3cret-token", "s3cret-token"));
+        assert!(!secrets_match("s3cret-token", "s3cret-toke"));
+        assert!(!secrets_match("s3cret-token", "s3cret-tokenn"));
+        assert!(!secrets_match("", "s3cret-token"));
+        assert!(!secrets_match("s3cret-token", ""));
+    }
 
     #[test]
     fn masks_all_but_first_and_last_four() {

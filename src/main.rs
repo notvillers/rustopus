@@ -94,6 +94,29 @@ async fn main() -> std::io::Result<()> {
     // is built, no route is registered and no background task is spawned, so
     // the REST service keeps its original startup and memory profile.
     let mcp_config = service::config::get_mcp_settings();
+    // OAuth for /mcp. Gated behind MCP itself: with `[mcp] enabled = false` there
+    // is no protected resource to guard, and with `oauth_enabled = false` no
+    // metadata document, no /oauth scope and a guard that returns on its first
+    // line. Both off is the committed configuration.
+    let oauth_enabled = mcp_config.is_enabled() && mcp_config.oauth_enabled();
+    if oauth_enabled {
+        logger("OAuth enabled: /mcp requires a bearer token, serving /oauth and the .well-known documents");
+        // Every URL in the metadata documents is built from `public_url`. A wrong
+        // value produces a connector that fails during discovery with nothing in
+        // the log to explain it, so say so here instead.
+        let issuer = mcp::oauth::issuer();
+        if !issuer.starts_with("https://") {
+            elogger(format!(
+                "OAuth: [mcp] public_url is '{}' — clients require https for a real deployment, and every metadata URL is built from it",
+                issuer
+            ));
+        }
+        if !mcp_config.oauth_allow_headers() {
+            logger("OAuth: header authentication is off — X-Authcode callers on /mcp will be refused");
+        }
+        mcp::oauth::store::init();
+    }
+
     let mcp_service = if mcp_config.is_enabled() {
         // Built once, outside the `HttpServer::new` closure, so every actix
         // worker shares one session manager (see `mcp::tools::build_service`).
@@ -140,7 +163,14 @@ async fn main() -> std::io::Result<()> {
         // pair. That is deliberate and not a convention slip: /mcp is a protocol
         // transport (POST/GET/DELETE on one path, session-managed), not a
         // fetcher route, so the singular/plural alias pattern does not apply.
-        let mcp_scope = mcp_service.clone().map(|service| service.scope_with_path("/mcp"));
+        //
+        // The OAuth guard wraps it unconditionally: `Scope::wrap` changes the
+        // scope's type, so a conditional wrap would not typecheck, and with OAuth
+        // off the guard returns on its first line. It has to be a middleware
+        // rather than the transport's `on_request` hook, which can observe a
+        // request but not reject one.
+        let mcp_scope = mcp_service.clone()
+            .map(|service| service.scope_with_path("/mcp").wrap(from_fn(mcp::oauth::guard::guard)));
         // `/export` is the third scope-rather-than-route-pair mount, for the same
         // reason as the other two: it is a token-authenticated file download with
         // a path parameter, not a fetcher, so there is no plural alias to add.
@@ -148,6 +178,12 @@ async fn main() -> std::io::Result<()> {
         let admin_scope = admin_token.clone().map(|token| {
             mcp::admin::scope(mcp::admin::AdminState::new(token, admin_dir.clone(), mcp_enabled))
         });
+        // The fourth scope-rather-than-route-pair mount: /oauth is a small
+        // internal application with its own authentication model, not a fetcher,
+        // so there is no plural alias. Its metadata documents are a separate
+        // scope because they must sit at the origin root, not under /oauth.
+        let oauth_scope = oauth_enabled.then(mcp::oauth::endpoints::scope);
+        let well_known_scope = oauth_enabled.then(mcp::oauth::endpoints::well_known_scope);
 
         let app = App::new()
             // Innermost of the three, so a blocked caller's 403 still carries the
@@ -182,6 +218,16 @@ async fn main() -> std::io::Result<()> {
         };
 
         let app = match export_scope {
+            Some(scope) => app.service(scope),
+            None => app
+        };
+
+        let app = match well_known_scope {
+            Some(scope) => app.service(scope),
+            None => app
+        };
+
+        let app = match oauth_scope {
             Some(scope) => app.service(scope),
             None => app
         };

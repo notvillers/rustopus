@@ -417,10 +417,10 @@ paths:
         '500':
           description: Failed to parse Octopus response
     
-  # The two entries below are NOT REST endpoints and are documented here only so
-  # this file stays a complete map of what the binary serves. Both exist only in
-  # an instance started with `[mcp] enabled = true`; on the public API instance
-  # they return 404.
+  # The entries below are NOT REST endpoints and are documented here only so this
+  # file stays a complete map of what the binary serves. They exist only in an
+  # instance started with `[mcp] enabled = true` (and, for the OAuth ones, with
+  # `oauth_enabled = true`); on the public API instance they return 404.
   /mcp:
     post:
       summary: Model Context Protocol endpoint
@@ -430,11 +430,17 @@ paths:
         for AI assistants rather than for direct calls. Add it to a client as a
         custom connector; do not try it from this page.
 
-        Credentials travel as request headers, not query parameters, so an
-        authcode never lands in an access log. Both are required by every tool:
+        Credentials travel as request headers or as a bearer token, never as
+        query parameters, so an authcode never lands in an access log.
 
         - `X-Authcode` — the caller's Octopus authentication code
         - `X-Pid` — the caller's partner id, fixed per user
+
+        With `[mcp] oauth_enabled = true` this endpoint is an OAuth 2.1 protected
+        resource instead: an unauthenticated request is refused with `401` and a
+        `WWW-Authenticate: Bearer resource_metadata="…"` challenge, which is what
+        starts a connector's sign-in flow. The headers above keep working while
+        `oauth_allow_headers` is on. See `/oauth/authorize` below.
 
         Five tools are exposed: `search_products`, `get_product`,
         `list_categories`, `catalog_status` and `export_products`. Answers come
@@ -449,17 +455,23 @@ paths:
       parameters:
         - name: X-Authcode
           in: header
-          required: true
-          description: Octopus authentication code
+          required: false
+          description: Octopus authentication code (required unless a bearer token is sent)
           schema:
             type: string
         - name: X-Pid
           in: header
-          required: true
-          description: Partner ID
+          required: false
+          description: Partner ID (required unless a bearer token is sent)
           schema:
             type: integer
             format: int64
+        - name: Authorization
+          in: header
+          required: false
+          description: '`Bearer <access token>`, when OAuth is enabled'
+          schema:
+            type: string
       requestBody:
         required: true
         description: A JSON-RPC 2.0 request, as defined by the MCP specification
@@ -474,8 +486,143 @@ paths:
             text/event-stream:
               schema:
                 type: string
+        '401':
+          description: |
+            No credentials, or an unknown, expired or wrong-audience bearer token.
+            Carries the `WWW-Authenticate` challenge that starts the OAuth flow.
+        '403':
+          description: The caller's authcode is on the access blocklist (error code 204)
         '404':
           description: MCP is disabled on this instance
+
+  /.well-known/oauth-protected-resource:
+    get:
+      summary: OAuth protected-resource metadata (RFC 9728)
+      description: |
+        **Not a REST endpoint.** Tells an MCP client which authorization server
+        guards `/mcp` and what to ask it for. Also served at
+        `/.well-known/oauth-protected-resource/mcp`, because clients disagree
+        about where to look.
+
+        Public and cross-origin readable. Registered only when
+        `[mcp] oauth_enabled = true`.
+      tags:
+        - MCP
+      responses:
+        '200':
+          description: The metadata document
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: OAuth is disabled on this instance
+
+  /.well-known/oauth-authorization-server:
+    get:
+      summary: OAuth authorization-server metadata (RFC 8414)
+      description: |
+        **Not a REST endpoint.** Advertises the endpoints, grants and PKCE method
+        this server supports. Also served at
+        `/.well-known/oauth-authorization-server/mcp`.
+
+        No `registration_endpoint` is published: clients are created by hand in
+        `/admin` (RFC 7591 dynamic registration is deliberately not implemented),
+        which is what the connector dialog's Client ID / Client Secret fields are
+        for.
+      tags:
+        - MCP
+      responses:
+        '200':
+          description: The metadata document
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: OAuth is disabled on this instance
+
+  /oauth/authorize:
+    get:
+      summary: OAuth sign-in page
+      description: |
+        **Not a REST endpoint.** The start of the authorization-code flow, opened
+        in the partner's browser by their MCP client — never called directly.
+
+        Validates `client_id`, an exactly-matching `redirect_uri`,
+        `response_type=code`, `code_challenge` with `code_challenge_method=S256`,
+        the scope (`catalog.read`) and the `resource`, then renders a sign-in page
+        asking for the partner's **existing Octopus authcode and partner id**.
+        This server issues no separate password.
+
+        A failure after the client and redirect URI are known is reported by
+        redirecting back with `error=`; a failure *of* the client or redirect URI
+        renders a plain page instead, because redirecting to an unverified URI is
+        how open redirectors are built.
+
+        The form posts to `/oauth/login`, which proves the authcode against
+        Octopus, records the sign-in and redirects to the client with a
+        single-use authorization code. `/oauth/token` exchanges that code (with
+        the PKCE verifier and the client secret) for a bearer token, and
+        `/oauth/revoke` invalidates one (RFC 7009).
+      tags:
+        - MCP
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: response_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [code]
+        - name: code_challenge
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: code_challenge_method
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [S256]
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: resource
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The sign-in page
+          content:
+            text/html:
+              schema:
+                type: string
+        '303':
+          description: Redirect back to the client with `error=` (RFC 6749 §4.1.2.1)
+        '400':
+          description: Unknown client, or a redirect URI this client has not registered
+        '404':
+          description: OAuth is disabled on this instance
 
   /export/{token}:
     get:
@@ -524,7 +671,10 @@ paths:
         **Not a REST endpoint.** A small internal web application for managing
         the access blocklist, and — on an instance with MCP enabled — which
         `(authcode, pid)` combinations the background job keeps warm, plus cache
-        usage.
+        usage. With OAuth enabled it also registers the connectors that may sign
+        partners in, and lists (and revokes) the sign-ins they hold; creating a
+        connector is the one response in this service that ever carries a client
+        secret, and it is shown exactly once.
 
         The blocklist refuses matching callers with `403` and error code `204`
         before they reach any endpoint. Rules match on an IP address or CIDR

@@ -21,7 +21,10 @@ headers the connector cannot send are the only identity `/mcp` understands.
 
 This document plans the real fix: Rustopus issues its own OAuth 2.1 tokens, and
 `/mcp` becomes an OAuth-protected resource in the sense the MCP specification means.
-It is a **plan, not a changelog** — nothing described here is implemented yet.
+
+**This has since been implemented**, shipped disabled (`[mcp] oauth_enabled = false`).
+The design below is what was built; §12 records where the implementation departed
+from it and why.
 
 Two things are deliberately **not** in scope. Dynamic Client Registration (RFC 7591)
 is not implemented: clients are created by hand in `/admin`, which is what the
@@ -440,3 +443,22 @@ that waits for a cold catalogue.
   - a blocked authcode presented through a valid bearer token still gets `403` / `204`.
 - `cargo test` — `tests/get_test.rs` unaffected.
 - Manual, in the order of §10.
+
+## 12. What the implementation changed
+
+Six departures from the design above, and one question it left open that the
+implementation answered.
+
+**The open question is settled.** §2.2 asked whether the ERP really honours the
+date filter on the sign-in check. It does: against the live Octopus, a wrong
+authcode came back as `Authentication error (8)` in about a second, so
+`index::verify_authcode` stands as designed and needs no fallback call.
+
+| Change | Why |
+| :-- | :-- |
+| The loopback redirect carve-out also accepts **`localhost`**, not only `127.0.0.1` and `::1` | `mcp-remote` — the client this is most often tested with — builds its callback that way. Still loopback-only and `http`-only, so it widens nothing that matters. |
+| The **refresh token is minted at sign-in**, not at the token exchange, and travels to `/oauth/token` inside the in-memory authorization code | §3 wants the credential file written once per sign-in. Minting at the exchange would mean writing the grant at sign-in and again a second later. |
+| A grant's id is keyed on **`client_id` + authcode + pid**, not authcode + pid | Two organizations signing in with the same authcode would otherwise share one record. As a bonus, signing in again through the same connector now *replaces* its grant instead of piling up dead refresh tokens. `Grant::precache_id()` still computes the precache-shaped id for the dashboard's "precached" column. |
+| The guard wraps `/mcp` **unconditionally** and returns on its first line when OAuth is off | `Scope::wrap` changes the scope's type, so `if oauth { scope.wrap(..) } else { scope }` does not typecheck. The cost is one `Lazy<bool>` read per request, the same shape as the blocklist's `ARMED` fast path. |
+| §5.4's re-check is a new `blocklist::refuse_if_blocked` in `service/blocklist.rs`, called by the guard | Hit counting and the log line stay in the blocklist, so a rule's counter means the same thing however the caller was identified. |
+| Two acceptance checks in §11 have no unit test | Authorization-code *expiry* would need a `sleep` (the equivalent access-token expiry **is** tested, through the same clock), and an audience-mismatch `401` needs a booted app. Both were verified by hand against a running server, along with the metadata documents, the PKCE rejection, exact and loopback redirect matching, the `WWW-Authenticate` challenge, the `/oauth` CSP override and the `0600` file mode. |

@@ -22,3 +22,7 @@ mcp_cache/
 mcp_exports/
 blocklist.toml
 blocklist.toml.tmp
+oauth_clients.toml
+oauth_clients.toml.tmp
+oauth_sessions.toml
+oauth_sessions.toml.tmp

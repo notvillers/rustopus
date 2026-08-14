@@ -42,7 +42,9 @@ use crate::service::{
     ipv4::log_ip,
     mcp::{
         cache::cache,
+        oauth,
         precache::{self, PrecacheEntry},
+        secrets_match,
         store
     }
 };
@@ -65,22 +67,6 @@ impl AdminState {
     pub fn new(token: String, static_dir: PathBuf, mcp_enabled: bool) -> Self {
         Self { token, static_dir, mcp_enabled }
     }
-}
-
-
-/// Compares two secrets without leaking their common prefix through timing.
-fn secrets_match(provided: &str, expected: &str) -> bool {
-    let provided = provided.as_bytes();
-    let expected = expected.as_bytes();
-    // Length is not secret; comparing unequal lengths byte-wise would be, so
-    // fold the length check into the same constant-time result.
-    let mut difference = (provided.len() ^ expected.len()) as u8;
-    for index in 0..provided.len().max(expected.len()) {
-        let left = provided.get(index).copied().unwrap_or(0);
-        let right = expected.get(index).copied().unwrap_or(0);
-        difference |= left ^ right;
-    }
-    difference == 0
 }
 
 
@@ -219,6 +205,55 @@ fn blocks_payload() -> Vec<serde_json::Value> {
 }
 
 
+/// Registered OAuth clients and the sign-ins they hold, or `null` when OAuth is
+/// off — exactly as `cache` and `disk` are `null` on a REST-only instance.
+///
+/// No secret leaves here: a client's secret is stored hashed and was shown once
+/// at creation, and a grant's authcode is rendered through `mask_authcode`.
+fn oauth_payload() -> serde_json::Value {
+    if !oauth::is_enabled() {
+        return serde_json::Value::Null
+    }
+
+    let clients: Vec<serde_json::Value> = oauth::store::clients().iter().map(|client| json!({
+        "client_id": client.client_id,
+        "name": client.name,
+        "redirect_uris": client.redirect_uris,
+        "enabled": client.is_enabled(),
+        "created_at": client.created_at.map(|at| at.to_rfc3339())
+    })).collect();
+
+    let names: std::collections::HashMap<String, String> = oauth::store::clients().into_iter()
+        .map(|client| (client.client_id, client.name))
+        .collect();
+    let used = oauth::store::last_used();
+    let precached: Vec<String> = precache::entries().iter().map(|entry| entry.id()).collect();
+
+    let sessions: Vec<serde_json::Value> = oauth::store::grants().iter().map(|grant| json!({
+        "id": grant.id,
+        "client": names.get(&grant.client_id).cloned().unwrap_or_else(|| "(deleted client)".into()),
+        // Masked, always — the same rule the precache rows follow.
+        "authcode": grant.label,
+        "pid": grant.pid,
+        "created_at": grant.created_at.to_rfc3339(),
+        "expires_at": grant.expires_at.to_rfc3339(),
+        "last_used": used.get(&grant.id).map(|at| at.to_rfc3339()),
+        // The obvious next click: a partner whose catalog is not kept warm pays
+        // a cold build on their first question.
+        "precached": precached.contains(&grant.precache_id())
+    })).collect();
+
+    json!({
+        "enabled": true,
+        "issuer": oauth::issuer(),
+        "resource": oauth::resource_uri(),
+        "allow_headers": oauth::allow_headers(),
+        "clients": clients,
+        "sessions": sessions
+    })
+}
+
+
 /// Cache usage plus one row per configured entry, all authcodes masked, plus the
 /// blocklist. On a non-MCP instance the cache and precache sections are `null`
 /// and only `blocks` is populated.
@@ -233,6 +268,7 @@ async fn state_handler(request: HttpRequest, state: web::Data<AdminState>) -> im
             "cache": null,
             "disk": null,
             "entries": [],
+            "oauth": null,
             "blocks": blocks_payload()
         }))
     }
@@ -292,7 +328,8 @@ async fn state_handler(request: HttpRequest, state: web::Data<AdminState>) -> im
             "snapshots_stored": disk_count,
             "path": store::cache_dir().to_string_lossy()
         },
-        "entries": entries
+        "entries": entries,
+        "oauth": oauth_payload()
     }))
 }
 
@@ -637,6 +674,221 @@ async fn block_delete_handler(
 }
 
 
+/// Body for registering a connector. No secret arrives here — the server mints
+/// it, returns it once and keeps only its hash.
+#[derive(Debug, Deserialize)]
+pub struct NewOauthClient {
+    pub name: String,
+    pub redirect_uris: Vec<String>
+}
+
+/// Body for editing a connector. No `client_id`, and no way to read or reset the
+/// secret: a lost secret means a new client.
+#[derive(Debug, Deserialize)]
+pub struct OauthClientPatch {
+    pub name: Option<String>,
+    pub redirect_uris: Option<Vec<String>>,
+    pub enabled: Option<bool>
+}
+
+
+/// Refuses an OAuth operation on an instance where OAuth is off, for the same
+/// reason [`require_mcp`] exists: the state it would report does not exist.
+fn require_oauth() -> Option<HttpResponse> {
+    if oauth::is_enabled() {
+        return None
+    }
+    Some(HttpResponse::BadRequest().json(json!({
+        "error": "OAuth is disabled on this instance ([mcp] oauth_enabled = false)"
+    })))
+}
+
+
+/// Registers a connector and returns its credentials.
+///
+/// **The only response in this service that ever carries a client secret.** It is
+/// stored hashed, so it cannot be shown again; losing it means creating another
+/// client.
+async fn oauth_client_create_handler(
+    request: HttpRequest,
+    state: web::Data<AdminState>,
+    body: web::Json<NewOauthClient>
+) -> impl Responder {
+    if let Some(denied) = guard(&request, &state).await {
+        return denied
+    }
+    if let Some(denied) = require_mcp(&state) {
+        return denied
+    }
+    if let Some(denied) = require_oauth() {
+        return denied
+    }
+
+    let body = body.into_inner();
+    let name = body.name.trim().to_string();
+    if name.is_empty() {
+        return HttpResponse::BadRequest().json(json!({ "error": "name is required" }))
+    }
+
+    let redirect_uris: Vec<String> = body.redirect_uris.iter()
+        .map(|uri| uri.trim().to_string())
+        .filter(|uri| !uri.is_empty())
+        .collect();
+    if redirect_uris.is_empty() {
+        return HttpResponse::BadRequest().json(json!({
+            "error": "at least one redirect URI is required — for a claude.ai connector these are \
+                      https://claude.ai/api/mcp/auth_callback and https://claude.com/api/mcp/auth_callback"
+        }))
+    }
+    // A redirect URI is where a browser is sent with an authorization code. One
+    // that is not absolute would be matched against nothing useful.
+    if let Some(bad) = redirect_uris.iter().find(|uri| !uri.starts_with("https://") && !uri.starts_with("http://")) {
+        return HttpResponse::BadRequest().json(json!({
+            "error": format!("'{}' is not an absolute http(s) URI", bad)
+        }))
+    }
+
+    let secret = oauth::new_secret();
+    let client = oauth::OauthClient {
+        client_id: uuid::Uuid::new_v4().simple().to_string(),
+        name: name.clone(),
+        secret_hash: oauth::hash_secret(&secret),
+        redirect_uris,
+        created_at: Some(chrono::Utc::now()),
+        enabled: Some(true)
+    };
+    let client_id = client.client_id.clone();
+
+    match oauth::store::upsert_client(client) {
+        Ok(()) => {
+            let ip_address = log_ip(request.clone()).await.to_string();
+            log_with_ip(&ip_address, format!("ADMIN: OAuth client registered '{}'", name));
+            HttpResponse::Ok().json(json!({
+                "client_id": client_id,
+                "client_secret": secret,
+                "note": "This is the only time the secret is shown. Paste both values into the connector's Advanced settings now."
+            }))
+        }
+        Err(error) => HttpResponse::InternalServerError().json(json!({ "error": error }))
+    }
+}
+
+
+/// Renames a connector, edits its redirect URIs, or disables it.
+async fn oauth_client_patch_handler(
+    request: HttpRequest,
+    state: web::Data<AdminState>,
+    path: web::Path<String>,
+    body: web::Json<OauthClientPatch>
+) -> impl Responder {
+    if let Some(denied) = guard(&request, &state).await {
+        return denied
+    }
+    if let Some(denied) = require_mcp(&state) {
+        return denied
+    }
+    if let Some(denied) = require_oauth() {
+        return denied
+    }
+
+    let client_id = path.into_inner();
+    let Some(mut client) = oauth::store::find_client(&client_id) else {
+        return HttpResponse::NotFound().json(json!({ "error": "no such client" }))
+    };
+
+    let body = body.into_inner();
+    if let Some(name) = body.name.filter(|name| !name.trim().is_empty()) {
+        client.name = name.trim().to_string();
+    }
+    if let Some(uris) = body.redirect_uris {
+        let uris: Vec<String> = uris.iter().map(|uri| uri.trim().to_string()).filter(|uri| !uri.is_empty()).collect();
+        if uris.is_empty() {
+            return HttpResponse::BadRequest().json(json!({ "error": "at least one redirect URI is required" }))
+        }
+        client.redirect_uris = uris;
+    }
+    if let Some(enabled) = body.enabled {
+        client.enabled = Some(enabled);
+    }
+
+    let described = format!("{} ({})", client.name, if client.is_enabled() { "enabled" } else { "disabled" });
+    match oauth::store::upsert_client(client) {
+        Ok(()) => {
+            let ip_address = log_ip(request.clone()).await.to_string();
+            log_with_ip(&ip_address, format!("ADMIN: OAuth client updated [{}]", described));
+            HttpResponse::Ok().json(json!({ "client_id": client_id }))
+        }
+        Err(error) => HttpResponse::InternalServerError().json(json!({ "error": error }))
+    }
+}
+
+
+/// Removes a connector, and with it every sign-in it holds.
+async fn oauth_client_delete_handler(
+    request: HttpRequest,
+    state: web::Data<AdminState>,
+    path: web::Path<String>
+) -> impl Responder {
+    if let Some(denied) = guard(&request, &state).await {
+        return denied
+    }
+    if let Some(denied) = require_mcp(&state) {
+        return denied
+    }
+    if let Some(denied) = require_oauth() {
+        return denied
+    }
+
+    let client_id = path.into_inner();
+    let Some(client) = oauth::store::find_client(&client_id) else {
+        return HttpResponse::NotFound().json(json!({ "error": "no such client" }))
+    };
+    let name = client.name.clone();
+
+    match oauth::store::remove_client(&client_id) {
+        Ok(_) => {
+            let ip_address = log_ip(request.clone()).await.to_string();
+            log_with_ip(&ip_address, format!("ADMIN: OAuth client removed '{}' and every sign-in it held", name));
+            HttpResponse::Ok().json(json!({ "removed": true }))
+        }
+        Err(error) => HttpResponse::InternalServerError().json(json!({ "error": error }))
+    }
+}
+
+
+/// Revokes one sign-in. Its access tokens stop working in the same call.
+async fn oauth_session_delete_handler(
+    request: HttpRequest,
+    state: web::Data<AdminState>,
+    path: web::Path<String>
+) -> impl Responder {
+    if let Some(denied) = guard(&request, &state).await {
+        return denied
+    }
+    if let Some(denied) = require_mcp(&state) {
+        return denied
+    }
+    if let Some(denied) = require_oauth() {
+        return denied
+    }
+
+    let id = path.into_inner();
+    let Some(grant) = oauth::store::find_grant(&id) else {
+        return HttpResponse::NotFound().json(json!({ "error": "no such sign-in" }))
+    };
+    let masked = grant.masked();
+
+    match oauth::store::remove_grant(&id) {
+        Ok(_) => {
+            let ip_address = log_ip(request.clone()).await.to_string();
+            log_with_ip(&ip_address, format!("ADMIN: OAuth sign-in revoked [{}]", masked));
+            HttpResponse::Ok().json(json!({ "removed": true }))
+        }
+        Err(error) => HttpResponse::InternalServerError().json(json!({ "error": error }))
+    }
+}
+
+
 /// Serves one of the dashboard's own files, behind the same token check as the
 /// API — the page itself is part of the protected surface, not public chrome.
 async fn asset(request: &HttpRequest, state: &AdminState, name: &str) -> HttpResponse {
@@ -686,21 +938,19 @@ pub fn scope(state: AdminState) -> Scope {
         .route("/api/blocks", web::post().to(block_create_handler))
         .route("/api/blocks/{id}", web::patch().to(block_patch_handler))
         .route("/api/blocks/{id}", web::delete().to(block_delete_handler))
+        // OAuth connectors and the sign-ins they hold. Registered whatever the
+        // configuration says and refused with a 400 when OAuth is off, like the
+        // precache routes on a REST-only instance.
+        .route("/api/oauth/clients", web::post().to(oauth_client_create_handler))
+        .route("/api/oauth/clients/{id}", web::patch().to(oauth_client_patch_handler))
+        .route("/api/oauth/clients/{id}", web::delete().to(oauth_client_delete_handler))
+        .route("/api/oauth/sessions/{id}", web::delete().to(oauth_session_delete_handler))
 }
 
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn secret_comparison_accepts_only_an_exact_match() {
-        assert!(secrets_match("s3cret-token", "s3cret-token"));
-        assert!(!secrets_match("s3cret-token", "s3cret-toke"));
-        assert!(!secrets_match("s3cret-token", "s3cret-tokenn"));
-        assert!(!secrets_match("", "s3cret-token"));
-        assert!(!secrets_match("s3cret-token", ""));
-    }
 
     #[test]
     fn basic_credentials_decode_to_the_password() {

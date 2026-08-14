@@ -99,7 +99,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 /* Form */
 form { display: grid; gap: 0.85rem; max-width: 32rem; }
 label { display: grid; gap: 0.3rem; font-weight: 600; font-size: 0.85rem; }
-input, select {
+input, select, textarea {
     font: inherit;
     padding: 0.5rem 0.6rem;
     border: 1px solid var(--line);
@@ -107,7 +107,22 @@ input, select {
     background: #fff;
     color: var(--ink);
 }
-input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; resize: vertical; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* The one-time client secret. Loud on purpose: it is shown once and the server
+   keeps only its hash, so a missed copy means registering another connector. */
+.secret {
+    margin-top: 1.25rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--warn);
+    border-radius: 6px;
+    background: rgba(168, 98, 10, 0.06);
+}
+.secret h3 { margin-top: 0; }
+.secret p { margin: 0.5rem 0; font-size: 0.9rem; }
+.secret code { user-select: all; word-break: break-all; }
+.secret button { margin-top: 0.5rem; }
 
 /* Panels the REST-only instance never shows: it has no cache and no precache. */
 [hidden] { display: none; }
@@ -152,7 +167,8 @@ td .actions { display: flex; gap: 0.4rem; }
         --warn: #e0a04f;
         --bad: #f0776c;
     }
-    input, select, button { background: #131a20; }
+    input, select, textarea, button { background: #131a20; }
+    .secret { background: rgba(224, 160, 79, 0.08); }
     button[type="submit"] { background: var(--accent); color: #0d1216; }
     button[type="submit"]:hover:not(:disabled) { background: #6cb3ee; color: #0d1216; }
 }

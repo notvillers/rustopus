@@ -924,6 +924,30 @@ fn assemble(products: Vec<IndexedProduct>) -> CatalogSnapshot {
 }
 
 
+/// Proves an authcode against Octopus as cheaply as the ERP allows.
+///
+/// Used by the OAuth sign-in form, where a full catalog pull is out of the
+/// question: `from_date` is set to now, which makes the product pull incremental
+/// (`web_update`) and returns almost nothing, so a wrong code fails in well under
+/// a second.
+///
+/// The **pid is not proved here**. Only prices vary by pid — `GetCikkekAuth` and
+/// the stock call take an authcode alone — so proving it means a full price pull.
+/// Sign-in warms the snapshot in the background instead, which surfaces a wrong
+/// pid in `/admin` and costs nothing extra, since that catalog has to be built
+/// before the first question anyway.
+pub async fn verify_authcode(authcode: &str, pid: i64, url: &str) -> Result<(), SnapshotError> {
+    let response = RequestGet::Products(call_data(authcode, pid, url, Some(Utc::now()))).into_data().await;
+    let ResponseGet::Products(ProductsData::Xml(ProductsXML::En(products))) = response else {
+        return Err(SnapshotError::Malformed)
+    };
+    match products.body.response.result.answer.error {
+        Some(error) => Err(SnapshotError::Upstream(format!("{} ({})", error.description, error.code))),
+        None => Ok(())
+    }
+}
+
+
 /// Builds a complete snapshot from scratch.
 pub async fn build_snapshot(
     authcode: &str,
