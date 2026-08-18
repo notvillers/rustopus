@@ -26,13 +26,19 @@ paths:
         - name: authcode
           in: query
           required: true
-          description: Authorization code
+          description: >-
+            Authorization code. Letters, digits and `-` only; anything else is
+            refused with error `206 Malformed authcode`.
           schema:
             type: string
         - name: xmlns
           in: query
           required: false
-          description: Optional XML namespace
+          description: >-
+            Optional XML namespace. Normally **ignored**: the namespace is derived
+            from the url (everything up to and including `/services/`), which keeps
+            it consistent with the endpoint actually being called. It is used only
+            when the url has no `/services/` segment to derive one from.
           schema:
             type: string
         - name: language
@@ -70,13 +76,19 @@ paths:
         - name: authcode
           in: query
           required: true
-          description: Authorization code
+          description: >-
+            Authorization code. Letters, digits and `-` only; anything else is
+            refused with error `206 Malformed authcode`.
           schema:
             type: string
         - name: xmlns
           in: query
           required: false
-          description: Optional XML namespace
+          description: >-
+            Optional XML namespace. Normally **ignored**: the namespace is derived
+            from the url (everything up to and including `/services/`), which keeps
+            it consistent with the endpoint actually being called. It is used only
+            when the url has no `/services/` segment to derive one from.
           schema:
             type: string
         - name: language
@@ -114,13 +126,19 @@ paths:
         - name: authcode
           in: query
           required: true
-          description: Authorization code
+          description: >-
+            Authorization code. Letters, digits and `-` only; anything else is
+            refused with error `206 Malformed authcode`.
           schema:
             type: string
         - name: xmlns
           in: query
           required: false
-          description: Optional XML namespace
+          description: >-
+            Optional XML namespace. Normally **ignored**: the namespace is derived
+            from the url (everything up to and including `/services/`), which keeps
+            it consistent with the endpoint actually being called. It is used only
+            when the url has no `/services/` segment to derive one from.
           schema:
             type: string
         - name: pid
@@ -164,13 +182,19 @@ paths:
         - name: authcode
           in: query
           required: true
-          description: Authorization code
+          description: >-
+            Authorization code. Letters, digits and `-` only; anything else is
+            refused with error `206 Malformed authcode`.
           schema:
             type: string
         - name: xmlns
           in: query
           required: false
-          description: Optional XML namespace
+          description: >-
+            Optional XML namespace. Normally **ignored**: the namespace is derived
+            from the url (everything up to and including `/services/`), which keeps
+            it consistent with the endpoint actually being called. It is used only
+            when the url has no `/services/` segment to derive one from.
           schema:
             type: string
         - name: language
@@ -208,13 +232,19 @@ paths:
         - name: authcode
           in: query
           required: true
-          description: Authorization code
+          description: >-
+            Authorization code. Letters, digits and `-` only; anything else is
+            refused with error `206 Malformed authcode`.
           schema:
             type: string
         - name: xmlns
           in: query
           required: false
-          description: Optional XML namespace
+          description: >-
+            Optional XML namespace. Normally **ignored**: the namespace is derived
+            from the url (everything up to and including `/services/`), which keeps
+            it consistent with the endpoint actually being called. It is used only
+            when the url has no `/services/` segment to derive one from.
           schema:
             type: string
         - name: language
@@ -252,13 +282,19 @@ paths:
         - name: authcode
           in: query
           required: true
-          description: Authorization code
+          description: >-
+            Authorization code. Letters, digits and `-` only; anything else is
+            refused with error `206 Malformed authcode`.
           schema:
             type: string
         - name: xmlns
           in: query
           required: false
-          description: Optional XML namespace
+          description: >-
+            Optional XML namespace. Normally **ignored**: the namespace is derived
+            from the url (everything up to and including `/services/`), which keeps
+            it consistent with the endpoint actually being called. It is used only
+            when the url has no `/services/` segment to derive one from.
           schema:
             type: string
         - name: pid
@@ -326,13 +362,19 @@ paths:
         - name: authcode
           in: query
           required: true
-          description: Authorization code
+          description: >-
+            Authorization code. Letters, digits and `-` only; anything else is
+            refused with error `206 Malformed authcode`.
           schema:
             type: string
         - name: xmlns
           in: query
           required: false
-          description: Optional XML namespace
+          description: >-
+            Optional XML namespace. Normally **ignored**: the namespace is derived
+            from the url (everything up to and including `/services/`), which keeps
+            it consistent with the endpoint actually being called. It is used only
+            when the url has no `/services/` segment to derive one from.
           schema:
             type: string
         - name: pid
@@ -370,13 +412,19 @@ paths:
         - name: authcode
           in: query
           required: true
-          description: Authorization code
+          description: >-
+            Authorization code. Letters, digits and `-` only; anything else is
+            refused with error `206 Malformed authcode`.
           schema:
             type: string
         - name: xmlns
           in: query
           required: false
-          description: Optional XML namespace
+          description: >-
+            Optional XML namespace. Normally **ignored**: the namespace is derived
+            from the url (everything up to and including `/services/`), which keeps
+            it consistent with the endpoint actually being called. It is used only
+            when the url has no `/services/` segment to derive one from.
           schema:
             type: string
         - name: from_date
@@ -429,13 +477,19 @@ paths:
         - name: authcode
           in: query
           required: true
-          description: Authorization code
+          description: >-
+            Authorization code. Letters, digits and `-` only; anything else is
+            refused with error `206 Malformed authcode`.
           schema:
             type: string
         - name: xmlns
           in: query
           required: false
-          description: Optional XML namespace
+          description: >-
+            Optional XML namespace. Normally **ignored**: the namespace is derived
+            from the url (everything up to and including `/services/`), which keeps
+            it consistent with the endpoint actually being called. It is used only
+            when the url has no `/services/` segment to derive one from.
           schema:
             type: string
         - name: pid

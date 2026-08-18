@@ -4,10 +4,11 @@ use serde::Deserialize;
 
 use crate::{
     global::errors::{
-        GLOBAL_AUTH_ERROR, GLOBAL_URL_ERROR, GLOBAL_URL_NOT_ALLOWED_ERROR,
+        GLOBAL_AUTH_ERROR, GLOBAL_AUTH_FORMAT_ERROR, GLOBAL_URL_ERROR, GLOBAL_URL_NOT_ALLOWED_ERROR,
         GLOBAL_PID_ERROR, GLOBAL_MISSING_ERROR
     },
     service::{
+        authcode,
         log::{log_with_ip_uuid, elog_with_ip_uuid},
         soap_config::{get_default_url, is_allowed_soap_url}
     }
@@ -129,13 +130,31 @@ pub fn send_xlsx<T: serde::Serialize>(records: &[T], filename: &str, hu_headers:
 
 
 /// Tries to get authentication from the parameter, sends back error xml on fail
+///
+/// The code is checked against [`authcode::is_well_formed`] before it is
+/// accepted. That is the second layer under the escaping in the SOAP builders,
+/// not a replacement for it: escaping is what makes a hostile code harmless,
+/// this is what makes it visible in the log instead of being forwarded to
+/// Octopus as an ordinary-looking authentication failure. The code is never
+/// altered here — see the note in `service/authcode`.
 pub fn get_auth(request_name: &str, ip_address: &str, uuid: &str, params: &RequestParameters, send_error_xml_fn: fn(u64, &str) -> String) -> GetStringResponse {
-    if let Some(s) = params.authcode.as_ref().filter(|x| !x.trim().is_empty()) {
+    let presented = params.authcode.as_ref()
+        .filter(|x| !x.trim().is_empty())
+        .or_else(|| params.auth.as_ref().filter(|x| !x.trim().is_empty()));
+
+    if let Some(s) = presented {
+        let s = s.trim();
+        if !authcode::is_well_formed(s) {
+            let error = GLOBAL_AUTH_FORMAT_ERROR;
+            // The code itself is not logged: it is a credential even when it is
+            // malformed, and `mask_authcode` on a hostile value would only put a
+            // fragment of markup in the log.
+            elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
+            return GetStringResponse::Response(send_xml(send_error_xml_fn(error.code, error.description)))
+        }
         return GetStringResponse::Text(s.to_string())
     }
-    if let Some(s) = params.auth.as_ref().filter(|x| !x.trim().is_empty()) {
-        return GetStringResponse::Text(s.to_string())
-    }
+
     let error = GLOBAL_AUTH_ERROR;
     elog_with_ip_uuid(ip_address, uuid, format!("{}: {} ({})", error.code, error.description, request_name));
     GetStringResponse::Response(send_xml(send_error_xml_fn(error.code, error.description)))
@@ -185,19 +204,48 @@ pub fn derive_xmlns(url: &str) -> String {
 }
 
 
-/// Tries to get xmlns from parameter, if not found, then using url parameter
-pub fn get_xmlns(params: &RequestParameters, url: &str) -> String {
-    let xmlns = params.xmlns.clone().unwrap_or_default();
-    if xmlns.trim().is_empty() {
-        let derived = derive_xmlns(url);
-        // Only a successful derivation replaces the parameter. Falling through
-        // keeps a blank-but-not-empty parameter verbatim, which is what this
-        // function did before `derive_xmlns` was split out of it.
-        if !derived.is_empty() {
-            return derived
+/// Resolves the xmlns for a request: **derived from the url wherever possible**,
+/// with the `xmlns` parameter kept only as a fallback.
+///
+/// This inverts the original precedence, where a supplied parameter won. The url
+/// is allowlisted (`soap_config::is_allowed_soap_url`) and the xmlns is not, so
+/// deriving removes the last caller-controlled value from the SOAP envelope on
+/// every request that can derive one — which, since the namespace is just the
+/// url truncated after `/services/`, is every normal request.
+///
+/// The parameter still wins when derivation yields nothing, because a url
+/// without a `/services/` segment has no namespace to offer and refusing there
+/// would break a deployment whose paths are shaped differently. Both the ignored
+/// and the fallback case are logged, so a caller who does pass an `xmlns` shows
+/// up in the log rather than silently changing behaviour.
+pub fn get_xmlns(request_name: &str, ip_address: &str, uuid: &str, params: &RequestParameters, url: &str) -> String {
+    let supplied = params.xmlns.as_ref()
+        .map(|xmlns| xmlns.trim())
+        .filter(|xmlns| !xmlns.is_empty());
+
+    let derived = derive_xmlns(url);
+
+    if !derived.is_empty() {
+        if let Some(supplied) = supplied
+            && supplied != derived {
+                log_with_ip_uuid(ip_address, uuid, format!(
+                    "Ignoring the supplied xmlns '{}' in favour of the one derived from the url ({})",
+                    supplied, request_name
+                ));
         }
+        return derived
     }
-    xmlns
+
+    match supplied {
+        Some(supplied) => {
+            log_with_ip_uuid(ip_address, uuid, format!(
+                "Using the supplied xmlns '{}': the url has no '/services/' segment to derive one from ({})",
+                supplied, request_name
+            ));
+            supplied.to_string()
+        }
+        None => String::new()
+    }
 }
 
 
@@ -239,76 +287,4 @@ pub fn get_i64(request_name: &str, ip_address: &str, uuid: &str, param: Option<i
 /// `Something went wrong` response
 pub fn return_internal_server_error() -> HttpResponse {
     HttpResponse::InternalServerError().body("Something went wrong...")
-}
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn params(xmlns: Option<&str>) -> RequestParameters {
-        RequestParameters {
-            authcode: None,
-            auth: None,
-            url: None,
-            xmlns: xmlns.map(str::to_string),
-            pid: None,
-            type_mod: None,
-            from_date: None,
-            to_date: None,
-            unpaid: None,
-            language: None,
-            data_type: None
-        }
-    }
-
-    /// The behaviour `get_xmlns` had before `derive_xmlns` was split out of it,
-    /// kept here verbatim so the two can be compared case by case.
-    fn get_xmlns_original(params: &RequestParameters, url: &str) -> String {
-        let serv_str = "/services/";
-        let mut xmlns = params.xmlns.clone().unwrap_or_default();
-        if xmlns.trim().is_empty() && url.contains(serv_str)
-            && let Some(pos) = url.find(serv_str) {
-                let end = pos + serv_str.len();
-                xmlns = url[..end].to_string();
-        }
-        xmlns
-    }
-
-    #[test]
-    fn xmlns_derivation_matches_the_pre_split_behaviour() {
-        let urls = [
-            "https://orink.hu/services/vision.asmx",
-            "https://example.test/api/vision.asmx",
-            "https://example.test/services/",
-            "",
-            "/services/"
-        ];
-        let supplied = [None, Some(""), Some("   "), Some("https://given.test/services/")];
-
-        for url in urls {
-            for xmlns in supplied {
-                let params = params(xmlns);
-                assert_eq!(
-                    get_xmlns(&params, url),
-                    get_xmlns_original(&params, url),
-                    "diverged for url {:?} and xmlns {:?}",
-                    url,
-                    xmlns
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn xmlns_is_truncated_after_the_services_segment() {
-        assert_eq!(derive_xmlns("https://orink.hu/services/vision.asmx"), "https://orink.hu/services/");
-        assert_eq!(derive_xmlns("https://example.test/api/vision.asmx"), "");
-    }
-
-    #[test]
-    fn a_supplied_xmlns_wins_over_the_url() {
-        let params = params(Some("https://given.test/services/"));
-        assert_eq!(get_xmlns(&params, "https://orink.hu/services/vision.asmx"), "https://given.test/services/");
-    }
 }

@@ -1,4 +1,5 @@
 pub mod get;
+pub mod authcode;
 pub mod log;
 pub mod blocklist;
 pub mod config;

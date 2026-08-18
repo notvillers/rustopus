@@ -370,6 +370,20 @@ async fn login(form: web::Form<LoginForm>, request: HttpRequest) -> impl Respond
     if authcode.is_empty() {
         return render_login(&form.request_id, &pending.client_name, Some("Enter your authcode."), StatusCode::OK)
     }
+    // Refused before `verify_authcode` below, which costs a real SOAP call to
+    // Octopus: a value that is not shaped like an authcode cannot be one, so
+    // spending an upstream request on it only lets this form be used to generate
+    // load against the ERP. Counted as a failed attempt for the same reason.
+    if !crate::service::authcode::is_well_formed(authcode) {
+        store::note_failure(&ip_address);
+        elog_with_ip(&ip_address, "OAUTH: sign-in refused — the authcode is not shaped like one");
+        return render_login(
+            &form.request_id,
+            &pending.client_name,
+            Some("That is not a valid authcode. It contains only letters, numbers and hyphens."),
+            StatusCode::OK
+        )
+    }
     let Ok(pid) = form.pid.trim().parse::<i64>() else {
         return render_login(&form.request_id, &pending.client_name, Some("The partner ID has to be a number."), StatusCode::OK)
     };

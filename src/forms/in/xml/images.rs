@@ -2,6 +2,8 @@
 use chrono::{DateTime, Utc};
 use macro_rules_attribute::apply;
 
+use quick_xml::escape::escape;
+
 use crate::{
     macros::r#in::{O8ModelDeriveOnly, O8ModelLowercase, O8ModelPascalcase},
     forms::r#in::xml::defaults as o8_defaults
@@ -20,9 +22,9 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
                 </soap:Body>
             </soap:Envelope>
         "#,
-        xmlns,
+        escape(xmlns),
         web_update.format("%Y-%m-%dT%H:%M:%S"),
-        authcode
+        escape(authcode)
     ) 
 }
 

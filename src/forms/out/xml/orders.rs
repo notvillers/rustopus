@@ -18,9 +18,13 @@ pub fn get_request_string(xmlns: &str, rendelesxml: &str, authcode: &str) -> Str
             </soap:Body>
             </soap:Envelope>
         "#,
-        xmlns,
+        escape(xmlns),
+        // Escaped exactly once, and not for the same reason as the two beside
+        // it: Octopus wants the order document as *text* inside this element,
+        // not as nested markup. `to_xml_string` has already escaped the field
+        // contents, so a further pass here would triple-encode the order.
         escape(rendelesxml),
-        authcode
+        escape(authcode)
     )
 }
 

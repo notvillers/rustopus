@@ -74,8 +74,8 @@ async fn handler(req: HttpRequest, params: RequestParameters, body: Bytes) -> im
         GetStringResponse::Response(response) => return response
     };
 
-    // Getting XMLNS from parameters, otherwise using url
-    let xmlns = get_xmlns(&params, &url);
+    // Deriving XMLNS from the url; the parameter is only a fallback
+    let xmlns = get_xmlns(REQUEST_NAME, &ip_address, &uuid, &params, &url);
 
     // 1. Decode body
     let raw = match std::str::from_utf8(&body) {

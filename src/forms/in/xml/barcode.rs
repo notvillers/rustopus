@@ -1,6 +1,8 @@
 // Structs for GetVonalkodokAuth's XML
 use chrono::{DateTime, Utc};
 
+use quick_xml::escape::escape;
+
 use crate::{
     macros::r#in::{O8ModelLowercase, O8ModelPascalcase},
     forms::r#in::xml::defaults as o8_defaults
@@ -18,9 +20,9 @@ pub fn get_request_string(xmlns: &str, web_update: &DateTime<Utc>, authcode: &st
                 </soap:Body>
             </soap:Envelope>
         "#,
-        xmlns,
+        escape(xmlns),
         web_update.format("%Y-%m-%dT%H:%M:%S"),
-        authcode
+        escape(authcode)
     )
 }
 

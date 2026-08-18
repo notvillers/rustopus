@@ -3,12 +3,20 @@ use chrono::{NaiveDate, DateTime, Utc};
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
+use quick_xml::escape::escape;
+
 use crate::{
     macros::r#in::{O8ModelLowercase, O8ModelPascalcase},
     forms::r#in::xml::defaults as o8_defaults,
     service::dates::{get_first_date, get_datetime},
 };
 
+/// Fills in the defaults and delegates.
+///
+/// Deliberately passes `xmlns` and `authcode` through **unescaped**: the
+/// escaping happens once, at the `format!` in [`get_request_string`]. Escaping
+/// here as well would double-encode both — an authcode containing `&` would
+/// reach Octopus as `&amp;amp;`.
 pub fn get_request_string_opt(xmlns: &str, pid: &Option<i64>, tipus: &Option<i64>, datumtol: &Option<DateTime<Utc>>, datumig: &Option<DateTime<Utc>>, osszes_fizetetlen: &Option<i64>, authcode: &str) -> String {
     get_request_string(
         xmlns,
@@ -38,13 +46,13 @@ pub fn get_request_string(xmlns: &str, pid: &i64, tipus: &i64, datumtol: &DateTi
                 </soap:Body>
                 </soap:Envelope>
         "#,
-        xmlns,
+        escape(xmlns),
         pid,
         tipus,
         datumtol.format("%Y-%m-%dT%H:%M:%S"),
         datumig.format("%Y-%m-%dT%H:%M:%S"),
         osszes_fizetetlen,
-        authcode
+        escape(authcode)
     )
 }
 

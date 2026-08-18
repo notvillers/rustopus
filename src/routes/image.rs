@@ -42,8 +42,8 @@ async fn handler(req: HttpRequest, params: RequestParameters) -> impl Responder 
         GetStringResponse::Response(response) => return response
     };
 
-    // Getting XMLNS from parameters, otherwise using url
-    let xmlns = get_xmlns(&params, &url);
+    // Deriving XMLNS from the url; the parameter is only a fallback
+    let xmlns = get_xmlns(REQUEST_NAME, &ip_address, &uuid, &params, &url);
 
     // Creating call data from parameters
     let call_data = CallData {

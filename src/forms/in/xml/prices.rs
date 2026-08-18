@@ -2,6 +2,8 @@ use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 use macro_rules_attribute::apply;
 
+use quick_xml::escape::escape;
+
 use crate::{
     macros::r#in::{O8ModelDeriveOnly, O8ModelLowercase, O8ModelPascalcase},
     forms::r#in::xml::defaults as o8_defaults
@@ -21,10 +23,10 @@ pub fn get_request_string(xmlns: &str, authcode: &str, pid: &i64) -> String {
                 </soap:Body>
             </soap:Envelope>
         "#,
-        xmlns,
+        escape(xmlns),
         pid,
         "",
-        authcode
+        escape(authcode)
     )
 }
 

@@ -40,6 +40,14 @@ pub const GLOBAL_BLOCKED_ERROR: RustopusError = RustopusError {
     description: "Access blocked"
 };
 
+/// Returned when an authcode contains something an Octopus authcode never does.
+/// Separate from [`GLOBAL_AUTH_ERROR`] so a partner with a mangled code sees
+/// "malformed" rather than "missing" and stops looking for the wrong problem.
+pub const GLOBAL_AUTH_FORMAT_ERROR: RustopusError = RustopusError {
+    code: 206,
+    description: "Malformed authcode"
+};
+
 /// Returned when a request's `url` parameter points somewhere this instance is
 /// not configured to call. Deliberately does not say which hosts *are* allowed:
 /// that turns the error into a probe for the operator's internal topology, and
