@@ -20,7 +20,7 @@ use crate::{
         },
         get::defaults::{
             ReturnType as RT,
-            get_return_type
+            check_return_type
         }
     }
 };
@@ -55,7 +55,10 @@ pub async fn get_mat(call_data: CallData) -> MatData {
     let response = get_response_shared(&call_data.url, request.clone()).await;
     match quick_xml::de::from_str::<o8_mat::Envelope>(&response) {
         Ok(envelope) => {
-            match get_return_type(call_data) {
+            let error = envelope.body.get_matmodell_auth_response.get_matmodell_auth_result.valasz.hiba.clone();
+            let return_type = check_return_type(call_data, error, "mat");
+
+            match return_type {
                 RT::Xlsx => MatData::Xlsx(MatCSV::En(envelope.into())),
                 RT::Csv => MatData::Csv(MatCSV::En(envelope.into())),
                 RT::XmlHu => MatData::Xml(MatXML::Hu(envelope)),

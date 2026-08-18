@@ -20,7 +20,7 @@ use crate::{
         },
         get::defaults::{
             ReturnType as RT,
-            get_return_type
+            check_return_type
         }
     }
 };
@@ -56,7 +56,10 @@ pub async fn get_barcode(call_data: CallData) -> BarcodesData {
     let response = get_response_shared(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_barcode::Envelope>(&response) {
         Ok(envelope) => {
-            match get_return_type(call_data) {
+            let error = envelope.body.get_vonalkodok_auth_response.get_vonalkodok_auth_result.valasz.hiba.clone();
+            let return_type = check_return_type(call_data, error, "barcodes");
+
+            match return_type {
                 RT::Xlsx => BarcodesData::Xlsx(BarcodesCSV::En(envelope.into())),
                 RT::Csv => BarcodesData::Csv(BarcodesCSV::En(envelope.into())),
                 RT::XmlHu => BarcodesData::Xml(BarcodesXML::Hu(envelope)),

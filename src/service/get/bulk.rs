@@ -6,15 +6,20 @@ use crate::{
             csv::bulk as csv_bulk,
             xml::{barcode, bulk, bulk_hu, images, prices, stocks}
         }
-    }, global::errors, macros::get::get_models, service::{
+    },
+    global::errors,
+    macros::get::get_models,
+    service::{
         get::{
             products::{ProductsData, ProductsXML},
             prices::{PricesData, PricesXML},
             stocks::{StocksData, StocksXML},
             images::{ImagesData, ImagesXML},
             barcodes::{BarcodesData, BarcodesXML}
-        }, get_data::{
-            ErrorType, RequestGet, ResponseGet, error_logger, to_xml_string
+        },
+        get_data::{
+            ErrorType, RequestGet, ResponseGet,
+            error_logger, to_xml_string
         }
     }
 };

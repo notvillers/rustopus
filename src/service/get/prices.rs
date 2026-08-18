@@ -20,7 +20,7 @@ use crate::{
         },
         get::defaults::{
             ReturnType as RT,
-            get_return_type
+            check_return_type
         }
     }
 };
@@ -57,7 +57,10 @@ pub async fn get_prices(call_data: CallData) -> PricesData {
         let response = get_response_shared(&call_data.url, request).await;
         return match quick_xml::de::from_str::<o8_prices::Envelope>(&response) {
             Ok(envelope) => {
-                match get_return_type(call_data) {
+                let error = envelope.body.get_arlista_auth_response.get_arlista_auth_result.valasz.hiba.clone();
+                let return_type = check_return_type(call_data, error, "prices");
+
+                match return_type {
                     RT::Xlsx => PricesData::Xlsx(PricesCSV::En(envelope.into())),
                     RT::Csv => PricesData::Csv(PricesCSV::En(envelope.into())),
                     RT::XmlHu => PricesData::Xml(PricesXML::Hu(envelope)),

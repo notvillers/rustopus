@@ -4,23 +4,23 @@ use crate::{
     global::errors::GLOBAL_GET_DATA_ERROR,
     forms::{
         r#in::xml::{
-            stocks as o8_stocks,
-            defaults::CallData
-        },
+            defaults::CallData,
+            stocks as o8_stocks
+        }, 
         out::{
-            xml::stocks as p_stocks,
-            csv::stocks as csv_stocks
+            csv::stocks as csv_stocks,
+            xml::stocks as p_stocks
         }
     },
     service::{
         soap::get_response_shared,
         get_data::{
-            FIRST_DATE, ErrorType,
+            ErrorType, FIRST_DATE,
             error_logger, to_xml_string
         },
         get::defaults::{
             ReturnType as RT,
-            get_return_type
+            check_return_type
         }
     }
 };
@@ -54,9 +54,14 @@ impl StocksXML {
 pub async fn get_stocks(call_data: CallData) -> StocksData {
     let request = o8_stocks::get_request_string(&call_data.xmlns, &call_data.from_date.unwrap_or(*FIRST_DATE), &call_data.authcode);
     let response = get_response_shared(&call_data.url, request).await;
+    // Resolved before the envelope is inspected, because `get_return_type`
+    // consumes `call_data` and both branches below need the answer.
     match quick_xml::de::from_str::<o8_stocks::Envelope>(&response) {
         Ok(envelope) => {
-            match get_return_type(call_data) {
+            let error = envelope.body.get_cikkek_keszlet_valtozas_auth_response.get_cikkek_keszlet_valtozas_auth_result.valasz.hiba.clone();
+            let return_type = check_return_type(call_data, error, "stocks");
+
+            match return_type {
                 RT::Xlsx => StocksData::Xlsx(StocksCSV::En(envelope.into())),
                 RT::Csv => StocksData::Csv(StocksCSV::En(envelope.into())),
                 RT::XmlHu => StocksData::Xml(StocksXML::Hu(envelope)),

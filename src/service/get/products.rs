@@ -20,7 +20,7 @@ use crate::{
         },
         get::defaults::{
             ReturnType as RT,
-            get_return_type
+            check_return_type
         }
     }
 };
@@ -55,7 +55,10 @@ pub async fn get_products(call_data: CallData) -> ProductsData {
     let response = get_response_shared(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_products::Envelope>(&response) {
         Ok(envelope) => {
-            match get_return_type(call_data) {
+            let error = envelope.body.get_cikkek_auth_response.get_cikkek_auth_result.valasz.hiba.clone();
+            let return_type = check_return_type(call_data, error, "products");
+
+            match return_type {
                 RT::Xlsx => ProductsData::Xlsx(ProductsCSV::En(envelope.into())),
                 RT::Csv => ProductsData::Csv(ProductsCSV::En(envelope.into())),
                 RT::XmlHu => ProductsData::Xml(ProductsXML::Hu(envelope)),

@@ -20,7 +20,7 @@ use crate::{
         },
         get::defaults::{
             ReturnType as RT,
-            get_return_type
+            check_return_type
         }
     }
 };
@@ -58,7 +58,10 @@ pub async fn get_images(call_data: CallData) -> ImagesData {
     let response = get_response_shared(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_images::Envelope>(&response) {
         Ok(envelope) => {
-            match get_return_type(call_data) {
+            let error = envelope.body.get_cikk_kepek_auth_response.get_cikk_kepek_auth_result.valasz.hiba.clone();
+            let return_type = check_return_type(call_data, error, "images");
+
+            match return_type {
                 RT::Xlsx => ImagesData::Xlsx(ImagesCSV::En(envelope.into())),
                 RT::Csv => ImagesData::Csv(ImagesCSV::En(envelope.into())),
                 RT::XmlHu => ImagesData::Xml(ImagesXML::Hu(envelope)),

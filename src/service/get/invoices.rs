@@ -20,7 +20,7 @@ use crate::{
         },
         get::defaults::{
             ReturnType as RT,
-            get_return_type
+            check_return_type
         }
     }
 };
@@ -56,7 +56,10 @@ pub async fn get_invoices(call_data: CallData) -> InvoicesData {
     let response = get_response_shared(&call_data.url, request).await;
     match quick_xml::de::from_str::<o8_invoices::Envelope>(&response) {
         Ok(envelope) => {
-            match get_return_type(call_data) {
+            let error = envelope.body.get_szamlak_auth_response.get_szamlak_auth_result.valasz.hiba.clone();
+            let return_type = check_return_type(call_data, error, "invoices");
+
+            match return_type {
                 RT::Xlsx => InvoicesData::Xlsx(InvoicesCSV::En(envelope.into())),
                 RT::Csv => InvoicesData::Csv(InvoicesCSV::En(envelope.into())),
                 RT::XmlHu => InvoicesData::Xml(InvoicesXML::Hu(envelope)),
