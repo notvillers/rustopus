@@ -13,7 +13,7 @@ mod language;
 use crate::{
     routes::{barcode, bulk, image, index, invoice, mat, order, price, product, stock, test}, service::{
         blocklist, log::{elogger, logger}, mcp, soap_config::{
-            SOAP_URL, SoapConfig, check_soap_config, get_soap_path
+            SOAP_URL, SoapConfig, check_soap_config, get_soap_path, init_allowlist
         }
     }
 };
@@ -71,6 +71,12 @@ async fn main() -> std::io::Result<()> {
     };
 
     let _ = SOAP_URL.set(soap_url);
+
+    // Which hosts a request's `url` parameter may point at. Resolved here rather
+    // than on the first request so the log says what is allowed at startup, and
+    // *after* `SOAP_URL` is set — with no `allowed_soap_hosts` configured, the
+    // default url's host is the list.
+    init_allowlist();
 
     logger(format!("Running on '{}:{}', with {} worker{}", config.server.host, config.server.port, config.server.workers, if config.server.workers > 1 { "s" } else { "" }));
     

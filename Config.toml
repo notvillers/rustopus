@@ -5,6 +5,26 @@ timeout = 1200
 workers = 2
 # Max concurrent outbound SOAP calls; extra requests wait. Optional, default 4.
 soap_concurrency = 4
+# Hosts the `url` request parameter may point at.
+#
+# `url` is caller-controlled on every fetcher and on /post-order, and it decides
+# where this process opens a connection — unrestricted, it lets an
+# unauthenticated caller make the server POST an arbitrary body to anything it
+# can route to (internal services, link-local metadata, a third party attacked
+# from this machine's address). This list is what stops that; requests naming
+# anything else are refused with error 205 before a connection is opened.
+#
+# Entries may be a host (`orink.hu` — any port), a host and port
+# (`orink.hu:8443` — that port only), or a whole url, whose host is taken.
+# Matching is on the parsed host, so a lookalike (`orink.hu.attacker.test`) and a
+# userinfo trick (`orink.hu@attacker.test`) both miss. Subdomains are separate
+# hosts: list each one that is wanted.
+#
+# Optional. Left unset (or empty), the host of soap.json's url is the only one
+# allowed, which is what a single-Octopus deployment wants and needs no entry
+# here. With neither set, every request carrying a `url` is refused — the
+# startup log says so.
+# allowed_soap_hosts = ["orink.hu"]
 
 # MCP endpoint (/mcp) + admin dashboard (/admin). Every key is optional, and
 # `enabled` defaults to false: with it off, no MCP route is registered, no

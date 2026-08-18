@@ -1,8 +1,7 @@
 use std::fmt;
-use reqwest;
 use actix_web::HttpRequest;
 
-use crate::service::log::{logger, elogger};
+use crate::service::log::elogger;
 
 /// `RequestIP` enum
 pub enum RequestIP {
@@ -21,21 +20,6 @@ impl fmt::Display for RequestIP {
 }
 
 
-/// This function gets the server's own ip, by curling an ipv4 address returner site
-pub async fn get_ip() -> RequestIP {
-    match reqwest::get("https://ip.villers.website").await {
-        Ok(response) => {
-            match response.text().await {
-                Ok(body) => return RequestIP::Ok(body.trim().to_string()),
-                Err(error) => elogger(format!("ipv4 error: {}", error)),
-            }
-        }
-        Err(error) => elogger(format!("ipv4 error: {}", error))
-    }
-    RequestIP::Err("unknown ipv4 address".into())
-}
-
-
 /// This function tries to get ipv4 address from the request
 pub async fn log_ip(req: HttpRequest) -> RequestIP {
     if let Some(ip) = req
@@ -47,9 +31,6 @@ pub async fn log_ip(req: HttpRequest) -> RequestIP {
     }
     if let Some(peer_address) = req.peer_addr() {
         let ip = peer_address.ip().to_string();
-        if ip == get_ip().await.to_string() {
-            logger(format!("IP request is coming from the host: {}", ip));
-        }
         return RequestIP::Ok(ip)
     }
     elogger("Can not get IP address");

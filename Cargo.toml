@@ -39,6 +39,10 @@ sha2 = "0.10"
 # place to reuse the hand-rolled standard-alphabet decoder in mcp/admin.rs.
 base64 = "0.22"
 toml = "0.8"
+# Real URL parsing for the outbound-host allowlist in `service/soap_config.rs`.
+# Already in the tree through reqwest; a hand-rolled host extractor on a security
+# boundary is how an allowlist gets walked past.
+url = "2"
 flate2 = "1"
 
 # Optimize dependencies even in dev builds, while our own crate stays at

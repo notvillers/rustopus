@@ -4,12 +4,12 @@ use serde::Deserialize;
 
 use crate::{
     global::errors::{
-        GLOBAL_AUTH_ERROR, GLOBAL_URL_ERROR,
+        GLOBAL_AUTH_ERROR, GLOBAL_URL_ERROR, GLOBAL_URL_NOT_ALLOWED_ERROR,
         GLOBAL_PID_ERROR, GLOBAL_MISSING_ERROR
     },
     service::{
         log::{log_with_ip_uuid, elog_with_ip_uuid},
-        soap_config::get_default_url
+        soap_config::{get_default_url, is_allowed_soap_url}
     }
 };
 
@@ -143,8 +143,22 @@ pub fn get_auth(request_name: &str, ip_address: &str, uuid: &str, params: &Reque
 
 
 /// Tries to get url from the parameter, if not found, then tries to get default url from the `./soap.json` file, sends back error xml on fail
+///
+/// A supplied `url` is checked against the outbound allowlist
+/// ([`is_allowed_soap_url`]) before it is accepted. This is the boundary where a
+/// caller-controlled value decides where the process opens a connection, so it
+/// is the one place the check has to happen: every fetcher and `/post-order`
+/// reaches the SOAP layer through here.
 pub fn get_url(request_name: &str, ip_address: &str, uuid: &str, params: &RequestParameters, send_error_xml_fn: fn(u64, &str) -> String) -> GetStringResponse {
     if let Some(s) = params.url.as_ref().filter(|x| !x.trim().is_empty()) {
+        if !is_allowed_soap_url(s) {
+            let error = GLOBAL_URL_NOT_ALLOWED_ERROR;
+            // The refused url is logged in full: an operator adding a host to the
+            // allowlist needs to see what was asked for, and this is also what an
+            // SSRF attempt looks like in the log.
+            elog_with_ip_uuid(ip_address, uuid, format!("{}: {} -> '{}' ({})", error.code, error.description, s, request_name));
+            return GetStringResponse::Response(send_xml(send_error_xml_fn(error.code, error.description)))
+        }
         return GetStringResponse::Text(s.into())
     }
     if let Some(s) = get_default_url() {

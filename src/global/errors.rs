@@ -40,6 +40,15 @@ pub const GLOBAL_BLOCKED_ERROR: RustopusError = RustopusError {
     description: "Access blocked"
 };
 
+/// Returned when a request's `url` parameter points somewhere this instance is
+/// not configured to call. Deliberately does not say which hosts *are* allowed:
+/// that turns the error into a probe for the operator's internal topology, and
+/// the allowlist is in `Config.toml` where whoever needs it can read it.
+pub const GLOBAL_URL_NOT_ALLOWED_ERROR: RustopusError = RustopusError {
+    code: 205,
+    description: "Url not allowed"
+};
+
 pub const GLOBAL_MISSING_ERROR: RustopusError = RustopusError {
     code: 299,
     description: "Missing value"

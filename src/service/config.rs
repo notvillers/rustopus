@@ -26,7 +26,11 @@ ConfigModelDerive! {
         // Optional so existing Config.toml files without the key keep
         // deserializing (a missing required field would fail the whole parse
         // and silently fall back to the hardcoded defaults, port 8080 included).
-        pub soap_concurrency: Option<usize>
+        pub soap_concurrency: Option<usize>,
+        // Hosts a caller-supplied `url` parameter may point at. Optional for the
+        // same reason, and when it is absent the host of `soap.json`'s url is the
+        // only one allowed — see `service/soap_config::allowed_soap_hosts`.
+        pub allowed_soap_hosts: Option<Vec<String>>
     }
 
     /// `[mcp]` table. Every field is `Option` and every default is applied in
@@ -289,7 +293,11 @@ fn load_settings() -> Settings {
                     1
                 }
             },
-            soap_concurrency: None
+            soap_concurrency: None,
+            // No allowlist in the fallback either: `soap_config` then falls back
+            // to the host of `soap.json`'s url, which is the one host an
+            // instance running on hardcoded defaults ever calls.
+            allowed_soap_hosts: None
         },
         mcp: None
     }

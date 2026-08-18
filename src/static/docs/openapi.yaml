@@ -15,7 +15,12 @@ paths:
         - name: url
           in: query
           required: true
-          description: Endpoint URL with the ```.asmx``` file
+          description: >-
+            Endpoint URL with the ```.asmx``` file. Must point at a host this
+            deployment allows (`[server] allowed_soap_hosts` in `Config.toml`,
+            defaulting to the host of the configured `soap.json` url); any other
+            host is refused with error `205 Url not allowed`. Omit the parameter
+            to use the server's configured default.
           schema:
             type: string
         - name: authcode
@@ -54,7 +59,12 @@ paths:
         - name: url
           in: query
           required: true
-          description: Endpoint URL with the ```.asmx``` file
+          description: >-
+            Endpoint URL with the ```.asmx``` file. Must point at a host this
+            deployment allows (`[server] allowed_soap_hosts` in `Config.toml`,
+            defaulting to the host of the configured `soap.json` url); any other
+            host is refused with error `205 Url not allowed`. Omit the parameter
+            to use the server's configured default.
           schema:
             type: string
         - name: authcode
@@ -93,7 +103,12 @@ paths:
         - name: url
           in: query
           required: true
-          description: Endpoint URL with the ```.asmx``` file
+          description: >-
+            Endpoint URL with the ```.asmx``` file. Must point at a host this
+            deployment allows (`[server] allowed_soap_hosts` in `Config.toml`,
+            defaulting to the host of the configured `soap.json` url); any other
+            host is refused with error `205 Url not allowed`. Omit the parameter
+            to use the server's configured default.
           schema:
             type: string
         - name: authcode
@@ -138,7 +153,12 @@ paths:
         - name: url
           in: query
           required: true
-          description: Endpoint URL with the ```.asmx``` file
+          description: >-
+            Endpoint URL with the ```.asmx``` file. Must point at a host this
+            deployment allows (`[server] allowed_soap_hosts` in `Config.toml`,
+            defaulting to the host of the configured `soap.json` url); any other
+            host is refused with error `205 Url not allowed`. Omit the parameter
+            to use the server's configured default.
           schema:
             type: string
         - name: authcode
@@ -177,7 +197,12 @@ paths:
         - name: url
           in: query
           required: true
-          description: Endpoint URL with the ```.asmx``` file
+          description: >-
+            Endpoint URL with the ```.asmx``` file. Must point at a host this
+            deployment allows (`[server] allowed_soap_hosts` in `Config.toml`,
+            defaulting to the host of the configured `soap.json` url); any other
+            host is refused with error `205 Url not allowed`. Omit the parameter
+            to use the server's configured default.
           schema:
             type: string
         - name: authcode
@@ -216,7 +241,12 @@ paths:
         - name: url
           in: query
           required: true
-          description: Endpoint URL with the ```.asmx``` file
+          description: >-
+            Endpoint URL with the ```.asmx``` file. Must point at a host this
+            deployment allows (`[server] allowed_soap_hosts` in `Config.toml`,
+            defaulting to the host of the configured `soap.json` url); any other
+            host is refused with error `205 Url not allowed`. Omit the parameter
+            to use the server's configured default.
           schema:
             type: string
         - name: authcode
@@ -285,7 +315,12 @@ paths:
         - name: url
           in: query
           required: true
-          description: Endpoint URL with the ```.asmx``` file
+          description: >-
+            Endpoint URL with the ```.asmx``` file. Must point at a host this
+            deployment allows (`[server] allowed_soap_hosts` in `Config.toml`,
+            defaulting to the host of the configured `soap.json` url); any other
+            host is refused with error `205 Url not allowed`. Omit the parameter
+            to use the server's configured default.
           schema:
             type: string
         - name: authcode
@@ -324,7 +359,12 @@ paths:
         - name: url
           in: query
           required: true
-          description: Endpoint URL with the ```.asmx``` file
+          description: >-
+            Endpoint URL with the ```.asmx``` file. Must point at a host this
+            deployment allows (`[server] allowed_soap_hosts` in `Config.toml`,
+            defaulting to the host of the configured `soap.json` url); any other
+            host is refused with error `205 Url not allowed`. Omit the parameter
+            to use the server's configured default.
           schema:
             type: string
         - name: authcode
@@ -378,7 +418,12 @@ paths:
         - name: url
           in: query
           required: true
-          description: Endpoint URL with the ```.asmx``` file
+          description: >-
+            Endpoint URL with the ```.asmx``` file. Must point at a host this
+            deployment allows (`[server] allowed_soap_hosts` in `Config.toml`,
+            defaulting to the host of the configured `soap.json` url); any other
+            host is refused with error `205 Url not allowed`. Omit the parameter
+            to use the server's configured default.
           schema:
             type: string
         - name: authcode
