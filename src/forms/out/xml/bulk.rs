@@ -1,5 +1,7 @@
 // Bulk english struct(s) from XML(s) got from the Octopus calls
 use quick_xml;
+use std::num::NonZeroU8;
+use chrono::NaiveDate;
 
 use crate::{
     macros::out::OutModelDeriveOnly,
@@ -51,6 +53,11 @@ OutModelDeriveOnly! {
         pub oem_code: String,
         pub category_code: String,
         pub category_name: String,
+        #[serde(rename="type")]
+        pub v_type: NonZeroU8,
+        pub supply_status: NonZeroU8,
+        pub web_available: NonZeroU8,
+        pub web_available_from: Option<NaiveDate>,
         pub description: String,
         pub weight: Option<f64>,
         pub size: Option<products::Size>,
@@ -208,6 +215,10 @@ impl From<(products::Product, Option<&prices::Price>, Option<&stocks::Product>, 
             brand: c.brand.clone(),
             category_code: c.category_code.clone(),
             category_name: c.category_name.clone(),
+            v_type: c.v_type,
+            supply_status: c.supply_status,
+            web_available: c.web_available,
+            web_available_from: c.web_available_from,
             description: c.description.clone(),
             weight: c.weight,
             size: c.size.as_ref().map(|s| *s),

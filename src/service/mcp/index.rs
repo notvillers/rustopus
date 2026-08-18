@@ -108,6 +108,15 @@ pub struct IndexedProduct {
     pub sell_unit: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub origin_country: Option<String>,
+    /// Whether Octopus publishes this product to the web (`webmegjel == 1`).
+    ///
+    /// Anything other than 1 means the product exists in the ERP but is not on
+    /// offer, so it is excluded from search, export and the category counts.
+    /// It is deliberately still reachable through
+    /// [`get_by_no`](CatalogSnapshot::get_by_no): a partner quoting an article
+    /// number off an old order deserves "not available" rather than "no such
+    /// product", which reads like a catalog gap.
+    pub available: bool,
     /// What this partner pays, taken from Octopus's `akcios_ar`.
     ///
     /// Octopus sends three figures per product (`listaar`, `ar`, `akcios_ar`)
@@ -220,7 +229,12 @@ pub struct PersistedSnapshot {
 /// 0 — implicit, pre-versioning: `price` carried Octopus's `ar`, with
 ///     `list_price` and `sale_price` stored beside it.
 /// 1 — one price only, carrying `akcios_ar`.
-pub const SNAPSHOT_VERSION: u32 = 1;
+/// 2 — `available` (`webmegjel`) stored per product. A bump rather than a
+///     defaulted field: whichever way a v1 file defaulted, it would be a guess
+///     applied to every row, and an incremental refresh only corrects the rows
+///     that happen to change — so a wrong guess would stay visible to partners
+///     until the next full pull.
+pub const SNAPSHOT_VERSION: u32 = 2;
 
 impl From<&CatalogSnapshot> for PersistedSnapshot {
     fn from(snapshot: &CatalogSnapshot) -> Self {
@@ -509,6 +523,16 @@ impl CatalogSnapshot {
         (Utc::now() - self.fetched_at).num_seconds().max(0)
     }
 
+    /// Products a caller can actually reach through search or export.
+    pub fn available_count(&self) -> usize {
+        self.products.iter().filter(|product| product.available).count()
+    }
+
+    /// Products held but hidden, i.e. not published to the web by the ERP.
+    pub fn hidden_count(&self) -> usize {
+        self.products.len() - self.available_count()
+    }
+
     /// Exact lookup by article number, then by manufacturer part number, then by
     /// internal record id. The id is accepted here but never fed to the ranking
     /// (see [`FoldedEntry`]).
@@ -620,7 +644,7 @@ impl CatalogSnapshot {
         let mut scored: Vec<(f64, usize)> = Vec::new();
 
         for (position, product) in self.products.iter().enumerate() {
-            if !self.passes(product, filters) {
+            if !product.available || !self.passes(product, filters) {
                 continue
             }
             let Some(entry) = self.folded.get(position) else {
@@ -692,6 +716,7 @@ impl CatalogSnapshot {
         self.folded.iter().enumerate()
             .filter(|(_, entry)| entry.sku.starts_with(&prefix))
             .filter_map(|(position, _)| self.products.get(position))
+            .filter(|product| product.available)
             .take(limit)
             .map(ProductSummary::from)
             .collect()
@@ -703,7 +728,7 @@ impl CatalogSnapshot {
         let mut main_groups: HashMap<(String, String), u32> = HashMap::new();
         let mut groups: HashMap<(String, String), u32> = HashMap::new();
 
-        for product in &self.products {
+        for product in self.products.iter().filter(|product| product.available) {
             if let Some(brand) = &product.brand {
                 *brands.entry(brand.clone()).or_default() += 1;
             }
@@ -1080,6 +1105,9 @@ fn to_indexed(product: Product, price: Option<&Price>, stock: Option<f64>) -> In
         size: product.size.map(Dimensions::from),
         sell_unit: product.sell_unit,
         origin_country: non_empty(product.origin_country),
+        // Octopus uses `webmegjel` as a small enum, not a flag: 1 is published,
+        // every other value is one of the ways a product can be withheld.
+        available: product.web_available.get() == 1,
         // `akcios_ar` only, with no fallback to `ar` or `listaar`: those two mean
         // different things for different partners, so falling back would quote a
         // retail price as if it were the caller's own.
@@ -1178,6 +1206,7 @@ pub fn test_product(no: &str, name: &str, brand: &str, oem: &str) -> IndexedProd
         size: None,
         sell_unit: None,
         origin_country: None,
+        available: true,
         price: None,
         currency: None,
         stock: None
@@ -1187,6 +1216,8 @@ pub fn test_product(no: &str, name: &str, brand: &str, oem: &str) -> IndexedProd
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroU8;
+
     use super::*;
 
     pub(super) fn product(no: &str, name: &str, brand: &str, oem: &str) -> IndexedProduct {
@@ -1208,6 +1239,7 @@ mod tests {
             size: None,
             sell_unit: None,
             origin_country: None,
+            available: true,
             price: None,
             currency: None,
             stock: None
@@ -1234,6 +1266,10 @@ mod tests {
             brand: "Orink".into(),
             category_code: String::new(),
             category_name: String::new(),
+            v_type: NonZeroU8::MIN,
+            supply_status: NonZeroU8::MIN,
+            web_available: NonZeroU8::MIN,
+            web_available_from: None,
             description: String::new(),
             weight: None,
             size: None,
@@ -1274,6 +1310,10 @@ mod tests {
             brand: String::new(),
             category_code: String::new(),
             category_name: String::new(),
+            v_type: NonZeroU8::MIN,
+            supply_status: NonZeroU8::MIN,
+            web_available: NonZeroU8::MIN,
+            web_available_from: None,
             description: String::new(),
             weight: None,
             size: None,
@@ -1303,6 +1343,93 @@ mod tests {
             folded.push(entry);
         }
         CatalogSnapshot { products: rows, by_sku, folded, fetched_at: Utc::now(), bytes: 0 }
+    }
+
+    /// An English out-model product with a chosen `webmegjel`, for exercising
+    /// the availability projection.
+    fn out_product(no: &str, web_available: u8) -> Product {
+        Product {
+            id: 1,
+            no: no.into(),
+            name: "Pen".into(),
+            unit: String::new(),
+            base_unit: String::new(),
+            base_unit_qty: None,
+            brand: String::new(),
+            category_code: String::new(),
+            category_name: String::new(),
+            v_type: NonZeroU8::MIN,
+            supply_status: NonZeroU8::MIN,
+            web_available: NonZeroU8::new(web_available).unwrap_or(NonZeroU8::MIN),
+            web_available_from: None,
+            description: String::new(),
+            weight: None,
+            size: None,
+            oem_code: String::new(),
+            main_category_code: String::new(),
+            main_category_name: String::new(),
+            sell_unit: None,
+            origin_country: String::new()
+        }
+    }
+
+    #[test]
+    fn only_webmegjel_one_counts_as_available() {
+        // `webmegjel` is a small enum, not a boolean: 2 and 3 are distinct ways
+        // of being withheld, and neither may read as "on offer".
+        assert!(to_indexed(out_product("A-1", 1), None, None).available);
+        assert!(!to_indexed(out_product("A-2", 2), None, None).available);
+        assert!(!to_indexed(out_product("A-3", 3), None, None).available);
+    }
+
+    #[test]
+    fn withheld_products_are_absent_from_search_and_export() {
+        let mut rows = vec![
+            product("A1", "Highlighter", "Orink", ""),
+            product("A2", "Highlighter", "Orink", "")
+        ];
+        rows[1].available = false;
+        let snapshot = snapshot(rows);
+
+        let outcome = snapshot.search("highlighter", &SearchFilters::default(), 10);
+        assert_eq!(outcome.matched, 1);
+        assert_eq!(outcome.results[0].no, "A1");
+        // `select` feeds the export writer, so the same rule has to hold there.
+        assert_eq!(snapshot.select("highlighter", &SearchFilters::default()).len(), 1);
+        assert_eq!(snapshot.count_matching("highlighter", &SearchFilters::default()), 1);
+    }
+
+    #[test]
+    fn a_withheld_product_is_still_reachable_by_article_number() {
+        // The point of keeping it in the snapshot: a partner quoting a number
+        // off an old order gets "not on offer", not "no such product".
+        let mut rows = vec![product("A1", "Pen", "Orink", "MFG-9")];
+        rows[0].available = false;
+        let snapshot = snapshot(rows);
+
+        assert_eq!(snapshot.get_by_no("A1").map(|p| p.available), Some(false));
+        assert_eq!(snapshot.get_by_no("MFG-9").map(|p| p.no.as_str()), Some("A1"));
+    }
+
+    #[test]
+    fn withheld_products_are_left_out_of_counts_and_suggestions() {
+        let mut rows = vec![
+            product("ABCD-1", "Pen", "Orink", ""),
+            product("ABCD-2", "Pen", "Orink", "")
+        ];
+        rows[1].available = false;
+        rows[0].category_name = Some("Pens".into());
+        rows[1].category_name = Some("Pens".into());
+        let snapshot = snapshot(rows);
+
+        assert_eq!(snapshot.available_count(), 1);
+        assert_eq!(snapshot.hidden_count(), 1);
+        assert_eq!(snapshot.categories().categories[0].count, 1);
+        assert_eq!(snapshot.categories().brands[0].count, 1);
+        // Suggesting something the caller cannot then buy is worse than none.
+        let suggestions = snapshot.did_you_mean("ABCD-7", 5);
+        assert_eq!(suggestions.len(), 1);
+        assert_eq!(suggestions[0].no, "ABCD-1");
     }
 
     #[test]

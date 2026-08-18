@@ -370,13 +370,27 @@ impl RustopusMcp {
         match snapshot.get_by_no(&args.no) {
             Some(product) => {
                 logger(format!(
-                    "MCP tool 'get_product' by {}: no='{}' -> found",
-                    caller_identity(&context), args.no
+                    "MCP tool 'get_product' by {}: no='{}' -> found (available={})",
+                    caller_identity(&context), args.no, product.available
                 ));
-                Ok(json_result(json!({
+                let mut payload = json!({
                     "catalog_age_seconds": snapshot.age_secs(),
                     "product": product
-                })))
+                });
+                // A withheld product is served rather than hidden — the caller
+                // asked for it by article number — but the record alone reads
+                // like any other, so say plainly that it is not on offer.
+                if !product.available && let Some(object) = payload.as_object_mut() {
+                    object.insert(
+                        "note".into(),
+                        json!(format!(
+                            "'{}' exists in the catalog but is not currently published for sale, \
+                            so it does not appear in search or export results.",
+                            product.no
+                        ))
+                    );
+                }
+                Ok(json_result(payload))
             }
             None => {
                 logger(format!(
@@ -460,16 +474,24 @@ impl RustopusMcp {
         };
 
         logger(format!(
-            "MCP tool 'catalog_status' by {}: products={} age_seconds={}",
-            caller_identity(&context), snapshot.products.len(), snapshot.age_secs()
+            "MCP tool 'catalog_status' by {}: products={} hidden={} age_seconds={}",
+            caller_identity(&context), snapshot.available_count(), snapshot.hidden_count(), snapshot.age_secs()
         ));
 
+        // `products` counts what the other tools can actually return, so the
+        // number a caller is told matches the number they can reach. The rows
+        // the ERP withholds are reported separately rather than folded in.
         Ok(json_result(json!({
-            "products": snapshot.products.len(),
+            "products": snapshot.available_count(),
+            "hidden_products": snapshot.hidden_count(),
             "fetched_at": snapshot.fetched_at.to_rfc3339(),
             "age_seconds": snapshot.age_secs(),
-            "priced_products": snapshot.products.iter().filter(|p| p.price.is_some()).count(),
-            "note": "Prices and stock are specific to the partner id configured on this connector."
+            "priced_products": snapshot.products.iter()
+                .filter(|p| p.available && p.price.is_some())
+                .count(),
+            "note": "Prices and stock are specific to the partner id configured on this connector. \
+                `hidden_products` are held in the catalog but not published for sale, so they do not \
+                appear in search or export results."
         })))
     }
 

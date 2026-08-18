@@ -1,6 +1,8 @@
 /// Products english struct(s) for XML(s) got from the Octopus call
 use quick_xml;
 use macro_rules_attribute::apply;
+use std::num::NonZeroU8;
+use chrono::NaiveDate;
 
 use crate::{
     macros::out::{OutModelDeriveSerializeOnly, OutModelDeriveOnly},
@@ -48,6 +50,11 @@ OutModelDeriveSerializeOnly! {
         pub brand: String,
         pub category_code: String,
         pub category_name: String,
+        #[serde(rename="type")]
+        pub v_type: NonZeroU8,
+        pub supply_status: NonZeroU8,
+        pub web_available: NonZeroU8,
+        pub web_available_from: Option<NaiveDate>,
         pub description: String,
         pub weight: Option<f64>,
         pub size: Option<Size>,
@@ -128,6 +135,10 @@ impl From<o8_products::Cikk> for Product {
             brand: c.gyarto,
             category_code: c.cikkcsoportkod,
             category_name: c.cikkcsoportnev,
+            v_type: c.tipus,
+            supply_status: c.beszerzesiallapot,
+            web_available: c.webmegjel,
+            web_available_from: c.webigendatum,
             description: c.leiras,
             weight: c.tomeg,
             size: c.meret.map(|s| s.into()),

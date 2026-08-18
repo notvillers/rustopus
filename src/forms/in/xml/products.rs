@@ -1,8 +1,11 @@
 /// Structs for GetCikkekAuth's XML
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Deserializer};
 use macro_rules_attribute::apply;
-use std::str::FromStr;
+use std::{
+    num::NonZeroU8,
+    str::FromStr
+};
 
 use crate::{
     macros::r#in::{O8ModelDeriveOnly, O8ModelLowercase, O8ModelPascalcase},
@@ -61,6 +64,11 @@ O8ModelLowercase! {
         pub gyarto: String,
         pub cikkcsoportkod: String,
         pub cikkcsoportnev: String,
+        pub tipus: NonZeroU8,
+        pub beszerzesiallapot: NonZeroU8,
+        pub webmegjel: NonZeroU8,
+        #[serde(with = "hungarian_date_format_opt", default)]
+        pub webigendatum: Option<NaiveDate>,
         pub leiras: String,
         #[serde(deserialize_with = "parse_comma_f64", default)]
         pub tomeg: Option<f64>,
@@ -96,6 +104,35 @@ pub struct Valasz {
 
     #[serde(rename = "hiba")]
     pub hiba: Option<o8_defaults::Hiba>
+}
+
+
+// Format Octopus date (`2012.11.29.`) to NaiveDate
+mod hungarian_date_format_opt {
+    use super::*;
+    const FORMAT: &str = "%Y.%m.%d.";
+
+    pub fn serialize<S>(date: &Option<NaiveDate>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match date {
+            Some(d) => serializer.serialize_str(&d.format(FORMAT).to_string()),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<NaiveDate>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Octopus sends the date with a trailing '.', but not always
+        let s: Option<String> = Option::deserialize(deserializer)?;
+        match s {
+            Some(text) => Ok(NaiveDate::parse_from_str(text.trim().trim_end_matches('.'), "%Y.%m.%d").ok()),
+            None => Ok(None),
+        }
+    }
 }
 
 

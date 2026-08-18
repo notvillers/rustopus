@@ -1,4 +1,6 @@
 // Bulk CSV
+use std::num::NonZeroU8;
+use chrono::NaiveDate;
 use crate::{
     macros::out::OutModelDeriveSerializeOnly,
     forms::out::xml::bulk as p_bulk,
@@ -16,6 +18,11 @@ OutModelDeriveSerializeOnly! {
         pub brand: String,
         pub category_code: String,
         pub category_name: String,
+        #[serde(rename="type")]
+        pub v_type: NonZeroU8,
+        pub supply_status: NonZeroU8,
+        pub web_available: NonZeroU8,
+        pub web_available_from: Option<NaiveDate>,
         pub description: String,
         pub weight: Option<f64>,
         pub xsize: Option<f64>,
@@ -51,6 +58,10 @@ impl From<p_bulk::Product> for Product {
             brand: c.brand,
             category_code: c.category_code,
             category_name: c.category_name,
+            v_type: c.v_type,
+            supply_status: c.supply_status,
+            web_available: c.web_available,
+            web_available_from: c.web_available_from,
             description: str_remove_breaks(&c.description),
             weight: c.weight,
             xsize: c.size

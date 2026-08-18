@@ -1,4 +1,6 @@
 // Products CSV
+use std::num::NonZeroU8;
+use chrono::NaiveDate;
 use crate::{
     macros::out::OutModelDeriveSerializeOnly,
     forms::r#in::xml::products as o8_products,
@@ -16,6 +18,11 @@ OutModelDeriveSerializeOnly! {
         pub brand: String,
         pub category_code: String,
         pub category_name: String,
+        #[serde(rename="type")]
+        pub v_type: NonZeroU8,
+        pub supply_status: NonZeroU8,
+        pub web_available: NonZeroU8,
+        pub web_available_from: Option<NaiveDate>,
         pub description: String,
         pub weight: Option<f64>,
         pub xsize: Option<f64>,
@@ -46,6 +53,10 @@ impl From<o8_products::Cikk> for Product {
             brand: c.gyarto,
             category_code: c.cikkcsoportkod,
             category_name: c.cikkcsoportnev,
+            v_type: c.tipus,
+            supply_status: c.beszerzesiallapot,
+            web_available: c.webmegjel,
+            web_available_from: c.webigendatum,
             description: str_remove_breaks(&c.leiras),
             weight: c.tomeg,
             xsize: c.meret

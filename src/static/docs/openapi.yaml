@@ -721,6 +721,21 @@ components:
               type: string
             category_name:
               type: string
+            type:
+              type: integer
+              enum: [1, 2]
+              description: Stocking policy — 1 = sourced only when ordered, 2 = kept in stock
+            supply_status:
+              type: integer
+              enum: [1, 2, 3]
+              description: 1 = orderable, 2 = not orderable, 3 = temporarily not orderable
+            web_available:
+              type: integer
+              description: 1 = published for sale on the web, any other value = held in the ERP but not offered
+            web_available_from:
+              type: string
+              format: date
+              description: Date the product is published on the web (`YYYY-MM-DD`), empty when the ERP has none on file
             description:
               type: string
             weight:
@@ -963,6 +978,21 @@ components:
               type: string
             category_name:
               type: string
+            type:
+              type: integer
+              enum: [1, 2]
+              description: Stocking policy — 1 = sourced only when ordered, 2 = kept in stock
+            supply_status:
+              type: integer
+              enum: [1, 2, 3]
+              description: 1 = orderable, 2 = not orderable, 3 = temporarily not orderable
+            web_available:
+              type: integer
+              description: 1 = published for sale on the web, any other value = held in the ERP but not offered
+            web_available_from:
+              type: string
+              format: date
+              description: Date the product is published on the web (`YYYY-MM-DD`), empty when the ERP has none on file
             description:
               type: string
             weight:
