@@ -32,7 +32,7 @@ OutModelDeriveOnly! {
     #[serde(rename = "rendeles")]
     pub struct Rendeles {
         #[serde(rename = "@verzio")]
-        pub verzio: Option<String>,
+        pub verzio: String,
         pub fej: Fej,
         pub tetelek: Tetelek
     }

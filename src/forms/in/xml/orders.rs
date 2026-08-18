@@ -3,8 +3,8 @@ use crate::macros::r#in::O8ModelLowercase;
 
 O8ModelLowercase! {
     pub struct Order {
-        #[serde(rename = "@version")]
-        pub version: Option<String>,
+        #[serde(rename = "@version", default)]
+        pub version: String,
         pub header: Header,
         pub items: Items
     }

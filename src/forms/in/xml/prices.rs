@@ -48,13 +48,8 @@ O8ModelPascalcase! {
 
 O8ModelDeriveOnly! {
     pub struct Valasz {
-        #[serde(rename = "@verzio")]
+        #[serde(rename = "@verzio", default)]
         pub verzio: String,
-        /// Absent whenever Octopus answers with `<hiba>` instead of data — a
-        /// rate limit, a bad authcode, maintenance. Without the default this
-        /// field is mandatory, deserialization fails with `missing field
-        /// 'arak'`, and `hiba` below is never read: the caller gets a generic
-        /// parse error instead of the real reason, untranslated.
         #[serde(default)]
         pub arak: Arak,
         #[serde(rename = "hiba")]

@@ -97,11 +97,10 @@ O8ModelLowercase! {
 
 #[apply(O8ModelDeriveOnly)]
 pub struct Valasz {
-    #[serde(rename = "@verzio")]
+    #[serde(rename = "@verzio", default)]
     pub verzio: String,
 
-    #[serde(rename = "cikk")]
-    #[serde(default)]
+    #[serde(rename = "cikk", default)]
     pub cikk: Vec<Cikk>,
 
     #[serde(rename = "hiba")]

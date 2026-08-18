@@ -19,7 +19,7 @@ O8ModelPascalcase! {
 O8ModelDeriveOnly! {
     #[derive(Default, Clone)]
     pub struct Valasz {
-        #[serde(rename = "@verzio")]
+        #[serde(rename = "@verzio", default)]
         pub verzio: Option<String>,
         pub fej: ValaszFej,
         #[serde(default)]

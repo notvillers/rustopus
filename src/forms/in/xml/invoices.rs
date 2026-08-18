@@ -78,11 +78,8 @@ O8ModelLowercase! {
     }
     
     pub struct Valasz {
-        #[serde(rename = "@verzio")]
+        #[serde(rename = "@verzio", default)]
         pub verzio: String,
-        /// Absent when Octopus answers with `<hiba>` instead of data. See the
-        /// note on `Valasz::arak` in `prices.rs` — without the default, the
-        /// error response fails to parse and its reason never reaches the caller.
         #[serde(default)]
         pub szamlak: Szamlak,
         #[serde(rename = "hiba")]
