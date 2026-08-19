@@ -160,11 +160,15 @@ pub struct ProductSummary {
     pub unit: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub oem_code: Option<String>,
-    /// Every barcode, main EAN first — all of them, not just the main one, so a
-    /// caller who searched by a packaging EAN sees the code they typed in the
-    /// row that came back.
+    /// The main EAN, if any — the code to quote back when a caller asks "the"
+    /// barcode rather than a specific packaging unit's.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub primary_barcode: Option<String>,
+    /// Every other barcode Octopus holds for this product (other packaging
+    /// units), so a caller who searched by one of these still sees the code
+    /// they typed in the row that came back.
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub barcodes: Vec<String>,
+    pub secondary_barcodes: Vec<String>,
     /// What this partner pays. Same figure and same meaning as
     /// [`IndexedProduct::price`].
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -184,7 +188,8 @@ impl From<&IndexedProduct> for ProductSummary {
             category_name: product.category_name.clone(),
             unit: product.unit.clone(),
             oem_code: product.oem_code.clone(),
-            barcodes: product.barcodes.clone(),
+            primary_barcode: product.barcodes.first().cloned(),
+            secondary_barcodes: product.barcodes.iter().skip(1).cloned().collect(),
             price: product.price,
             currency: product.currency.clone(),
             stock: product.stock
@@ -1525,7 +1530,10 @@ mod tests {
             assert_eq!(outcome.results[0].no, "A1");
             // The row echoes back every code, so the one the caller typed is
             // visible in the result they got.
-            assert!(outcome.results[0].barcodes.iter().any(|code| code == ean));
+            let result = &outcome.results[0];
+            let has_code = result.primary_barcode.as_deref() == Some(ean)
+                || result.secondary_barcodes.iter().any(|code| code == ean);
+            assert!(has_code, "row must echo back {}", ean);
             assert_eq!(snapshot.get_by_no(ean).map(|p| p.no.as_str()), Some("A1"), "lookup must find {}", ean);
         }
         // The manufacturer code still works — barcodes joined that bucket, they

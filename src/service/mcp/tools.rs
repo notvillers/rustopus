@@ -380,6 +380,19 @@ impl RustopusMcp {
                     "catalog_age_seconds": snapshot.age_secs(),
                     "product": product
                 });
+                // Split the raw, main-EAN-first `barcodes` array into an explicit
+                // primary/secondary pair, matching `search_products`' shape — a
+                // caller should never have to infer "primary" from array order.
+                if let Some(product_object) = payload["product"].as_object_mut() {
+                    product_object.remove("barcodes");
+                    if let Some(primary) = product.barcodes.first() {
+                        product_object.insert("primary_barcode".into(), json!(primary));
+                    }
+                    let secondary: Vec<&String> = product.barcodes.iter().skip(1).collect();
+                    if !secondary.is_empty() {
+                        product_object.insert("secondary_barcodes".into(), json!(secondary));
+                    }
+                }
                 // A withheld product is served rather than hidden — the caller
                 // asked for it by article number — but the record alone reads
                 // like any other, so say plainly that it is not on offer.
