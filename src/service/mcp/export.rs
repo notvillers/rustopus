@@ -38,11 +38,12 @@ use crate::service::{
 /// Column order for both formats. Fixed rather than derived from the struct so
 /// the spreadsheet stays stable for people building their own sheets on top of
 /// it, and so the header row can be human-readable.
-const COLUMNS: [(&str, &str); 16] = [
+const COLUMNS: [(&str, &str); 17] = [
     ("no", "Article number"),
     ("name", "Name"),
     ("brand", "Brand"),
     ("oem_code", "Manufacturer part number"),
+    ("barcode", "Barcode (EAN)"),
     ("category_code", "Product group code"),
     ("category_name", "Product group"),
     ("main_category_code", "Main group code"),
@@ -165,6 +166,11 @@ fn field_text(product: &IndexedProduct, key: &str) -> String {
         "name" => product.name.clone(),
         "brand" => product.brand.clone().unwrap_or_default(),
         "oem_code" => product.oem_code.clone().unwrap_or_default(),
+        // The main EAN only. A product's other codes identify packaging units,
+        // and a webshop import wants one value per row, not a list in a cell.
+        // Deliberately text and never a `field_number`: a spreadsheet renders a
+        // 13-digit number in scientific notation and eats a leading zero.
+        "barcode" => product.barcodes.first().cloned().unwrap_or_default(),
         "category_code" => product.category_code.clone().unwrap_or_default(),
         "category_name" => product.category_name.clone().unwrap_or_default(),
         "main_category_code" => product.main_category_code.clone().unwrap_or_default(),
@@ -444,9 +450,20 @@ mod tests {
         }
         assert_eq!(field_text(&product, "no"), "A-1");
         assert_eq!(field_text(&product, "brand"), "Orink");
+        // A barcode stays text, or Excel turns 13 digits into 5.99877E+12.
+        assert_eq!(field_number(&product, "barcode"), None);
         // Absent optional values render as empty, never as "None".
         assert_eq!(field_text(&product, "currency"), "");
         assert_eq!(field_number(&product, "price"), None);
+    }
+
+    #[test]
+    fn the_barcode_column_carries_the_main_ean() {
+        let mut product = crate::service::mcp::index::test_product("A-1", "Pen", "Orink", "");
+        assert_eq!(field_text(&product, "barcode"), "", "no codes renders empty, not \"None\"");
+
+        product.barcodes = vec!["5998765432109".into(), "15998765432106".into()];
+        assert_eq!(field_text(&product, "barcode"), "5998765432109");
     }
 
     #[test]

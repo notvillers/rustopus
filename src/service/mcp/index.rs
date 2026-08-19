@@ -33,6 +33,7 @@ use crate::{
     routes::default::derive_xmlns,
     service::{
         get::{
+            barcodes::{BarcodesData, BarcodesXML},
             prices::{PricesData, PricesXML},
             products::{ProductsData, ProductsXML},
             stocks::{StocksData, StocksXML}
@@ -83,6 +84,18 @@ pub struct IndexedProduct {
     /// Manufacturer's own part number (`gycikkszam`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub oem_code: Option<String>,
+    /// Every barcode Octopus holds for this product, main EAN first.
+    ///
+    /// A product carries one per packaging unit (piece, box, pallet), and a
+    /// partner scanning a box has no way to know which one they hold — so all of
+    /// them are indexed and any of them resolves the product.
+    ///
+    /// `default` rather than a `SNAPSHOT_VERSION` bump: barcodes are pulled in
+    /// full on every refresh, so a snapshot written before this field existed
+    /// loads with an empty list and fills itself on the next refresh, instead of
+    /// forcing every partner's catalog to rebuild from scratch.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub barcodes: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unit: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -147,6 +160,11 @@ pub struct ProductSummary {
     pub unit: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub oem_code: Option<String>,
+    /// Every barcode, main EAN first — all of them, not just the main one, so a
+    /// caller who searched by a packaging EAN sees the code they typed in the
+    /// row that came back.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub barcodes: Vec<String>,
     /// What this partner pays. Same figure and same meaning as
     /// [`IndexedProduct::price`].
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -166,6 +184,7 @@ impl From<&IndexedProduct> for ProductSummary {
             category_name: product.category_name.clone(),
             unit: product.unit.clone(),
             oem_code: product.oem_code.clone(),
+            barcodes: product.barcodes.clone(),
             price: product.price,
             currency: product.currency.clone(),
             stock: product.stock
@@ -187,7 +206,9 @@ struct FoldedEntry {
     rest: String,
     /// Folded primary article number. An exact hit here outranks everything.
     sku: String,
-    /// Folded manufacturer part number.
+    /// Folded secondary codes: the manufacturer part number and every barcode.
+    /// All share one bucket because they are all exact-lookup codes — a caller
+    /// pasting either expects the same product back.
     alt_codes: Vec<String>
 }
 
@@ -836,7 +857,12 @@ struct CatalogParts {
     prices: HashMap<String, Price>,
     /// Stock levels, keyed by article number. Incremental when `from_date` was
     /// set, in which case it holds only what moved since.
-    stocks: HashMap<String, f64>
+    stocks: HashMap<String, f64>,
+    /// Barcodes per article number, main EAN first. Always the full list, for
+    /// the same reason prices are: an incremental pull cannot report a barcode
+    /// that was *removed*, and the list is small enough that a full one costs
+    /// little beside the product pull.
+    barcodes: HashMap<String, Vec<String>>
 }
 
 
@@ -866,11 +892,14 @@ async fn fetch_parts(
     // Prices and stock are independent of each other, so they overlap. Both go
     // through the existing SOAP_GATE, so this cannot exceed the configured
     // outbound concurrency.
-    let (prices_response, stocks_response) = futures::join!(
+    let (prices_response, stocks_response, barcodes_response) = futures::join!(
         // Prices carry no date: `call_data`'s `from_date` is ignored by
         // `GetArlistaAuth`, so this is a full list on every refresh.
         RequestGet::Prices(call_data(authcode, pid, url, None)).into_data(),
-        RequestGet::Stocks(call_data(authcode, pid, url, from_date)).into_data()
+        RequestGet::Stocks(call_data(authcode, pid, url, from_date)).into_data(),
+        // `GetVonalkodokAuth` *does* take a date, but it is deliberately not
+        // given one: see `CatalogParts::barcodes`.
+        RequestGet::Barcodes(call_data(authcode, pid, url, None)).into_data()
     );
 
     let prices: HashMap<String, Price> = match prices_response {
@@ -905,10 +934,42 @@ async fn fetch_parts(
         }
     };
 
+    let barcodes: HashMap<String, Vec<String>> = match barcodes_response {
+        ResponseGet::Barcodes(BarcodesData::Xml(BarcodesXML::En(envelope)))
+            if envelope.body.response.result.answer.error.is_none() =>
+        {
+            let mut grouped: HashMap<String, Vec<String>> = HashMap::new();
+            for row in envelope.body.response.result.answer.barcodes.barcode {
+                if row.ean.trim().is_empty() {
+                    continue
+                }
+                let list = grouped.entry(row.no).or_default();
+                // Main EAN first, so `barcodes[0]` is the one to quote back. The
+                // rest keep the order Octopus sent them in.
+                if row.main_ean {
+                    list.insert(0, row.ean);
+                } else {
+                    list.push(row.ean);
+                }
+            }
+            // One EAN can be listed against several packaging units.
+            for list in grouped.values_mut() {
+                let mut seen = std::collections::HashSet::new();
+                list.retain(|ean| seen.insert(ean.clone()));
+            }
+            grouped
+        }
+        _ => {
+            elogger(format!("MCP snapshot: barcodes unavailable for {} pid={}", mask_authcode(authcode), pid));
+            HashMap::new()
+        }
+    };
+
     Ok(CatalogParts {
         products: products.body.response.result.answer.products.product,
         prices,
-        stocks
+        stocks,
+        barcodes
     })
 }
 
@@ -934,7 +995,11 @@ fn assemble(products: Vec<IndexedProduct>) -> CatalogSnapshot {
                 product.main_category_name.as_deref().unwrap_or_default()
             )),
             sku: fold(&product.no),
-            alt_codes: product.oem_code.as_deref().map(|code| vec![fold(code)]).unwrap_or_default()
+            alt_codes: product.oem_code.as_deref()
+                .map(fold)
+                .into_iter()
+                .chain(product.barcodes.iter().map(|ean| fold(ean)))
+                .collect()
         };
         if !entry.sku.is_empty() {
             // `u32` indices keep the map small; a catalog past four billion rows
@@ -987,7 +1052,8 @@ pub async fn build_snapshot(
         .map(|product| {
             let price = parts.prices.get(&product.no);
             let stock = parts.stocks.get(&product.no).copied();
-            to_indexed(product, price, stock)
+            let barcodes = parts.barcodes.get(&product.no).cloned().unwrap_or_default();
+            to_indexed(product, price, stock, barcodes)
         })
         .collect();
 
@@ -1034,6 +1100,16 @@ pub async fn refresh_snapshot(
         }
     }
 
+    // Barcodes arrived in full, exactly like prices, so they are authoritative
+    // for every row — including the removals an incremental pull cannot report.
+    // An empty map means the sub-call failed; keep what the snapshot already has
+    // rather than blanking every product's codes.
+    if !parts.barcodes.is_empty() {
+        for product in products.iter_mut() {
+            product.barcodes = parts.barcodes.get(&product.no).cloned().unwrap_or_default();
+        }
+    }
+
     // Stock deltas: only the rows that moved.
     for (no, level) in &parts.stocks {
         if let Some(position) = positions.get(no)
@@ -1049,7 +1125,10 @@ pub async fn refresh_snapshot(
         let existing = positions.get(&product.no).copied();
         let stock = parts.stocks.get(&product.no).copied()
             .or_else(|| existing.and_then(|position| products.get(position)).and_then(|p| p.stock));
-        let indexed = to_indexed(product, price, stock);
+        let barcodes = parts.barcodes.get(&product.no).cloned()
+            .or_else(|| existing.and_then(|position| products.get(position)).map(|p| p.barcodes.clone()))
+            .unwrap_or_default();
+        let indexed = to_indexed(product, price, stock, barcodes);
 
         match existing {
             Some(position) => products[position] = indexed,
@@ -1086,13 +1165,19 @@ fn log_build(
 
 /// Projects an English `Product` plus the caller's price and stock into the
 /// indexed record, dropping empty fields and flattening the description.
-fn to_indexed(product: Product, price: Option<&Price>, stock: Option<f64>) -> IndexedProduct {
+fn to_indexed(
+    product: Product,
+    price: Option<&Price>,
+    stock: Option<f64>,
+    barcodes: Vec<String>
+) -> IndexedProduct {
     IndexedProduct {
         id: product.id,
         no: product.no,
         name: product.name,
         brand: non_empty(product.brand),
         oem_code: non_empty(product.oem_code),
+        barcodes,
         unit: non_empty(product.unit),
         base_unit: non_empty(product.base_unit),
         base_unit_qty: product.base_unit_qty,
@@ -1135,6 +1220,8 @@ fn measure_bytes(
     for product in products {
         bytes += product.no.capacity() as u64;
         bytes += product.name.capacity() as u64;
+        bytes += (product.barcodes.capacity() * size_of::<String>()) as u64;
+        bytes += product.barcodes.iter().map(|ean| ean.capacity() as u64).sum::<u64>();
         for field in [
             &product.brand, &product.oem_code, &product.unit, &product.base_unit,
             &product.category_code, &product.category_name, &product.main_category_code,
@@ -1194,6 +1281,7 @@ pub fn test_product(no: &str, name: &str, brand: &str, oem: &str) -> IndexedProd
         name: name.into(),
         brand: non_empty(brand.into()),
         oem_code: non_empty(oem.into()),
+        barcodes: Vec::new(),
         unit: None,
         base_unit: None,
         base_unit_qty: None,
@@ -1227,6 +1315,7 @@ mod tests {
             name: name.into(),
             brand: non_empty(brand.into()),
             oem_code: non_empty(oem.into()),
+            barcodes: Vec::new(),
             unit: None,
             base_unit: None,
             base_unit_qty: None,
@@ -1283,7 +1372,7 @@ mod tests {
         // Octopus's `ar` (1882) is the wrong figure to publish — it is the retail
         // price for some partners and the net one for others. Only `akcios_ar`
         // means the same thing for everyone, so that is the one `price` carries.
-        let indexed = to_indexed(product, Some(&source), None);
+        let indexed = to_indexed(product, Some(&source), None, Vec::new());
         assert_eq!(indexed.price, Some(1495.0));
         assert_eq!(ProductSummary::from(&indexed).price, Some(1495.0));
     }
@@ -1326,23 +1415,13 @@ mod tests {
 
         // Falling back to `ar` here would quote 999 as if the partner had agreed
         // to it. Better to show no price than the wrong one.
-        assert_eq!(to_indexed(full, Some(&source), None).price, None);
+        assert_eq!(to_indexed(full, Some(&source), None, Vec::new()).price, None);
     }
 
+    /// Straight through `assemble`, so the tests exercise the real folding and
+    /// the real haystack composition rather than a copy that can drift from it.
     fn snapshot(rows: Vec<IndexedProduct>) -> CatalogSnapshot {
-        let mut by_sku = HashMap::new();
-        let mut folded = Vec::new();
-        for (position, row) in rows.iter().enumerate() {
-            let entry = FoldedEntry {
-                name: fold(&row.name),
-                rest: fold(row.brand.as_deref().unwrap_or_default()),
-                sku: fold(&row.no),
-                alt_codes: row.oem_code.as_deref().map(|code| vec![fold(code)]).unwrap_or_default()
-            };
-            by_sku.insert(entry.sku.clone(), position as u32);
-            folded.push(entry);
-        }
-        CatalogSnapshot { products: rows, by_sku, folded, fetched_at: Utc::now(), bytes: 0 }
+        assemble(rows)
     }
 
     /// An English out-model product with a chosen `webmegjel`, for exercising
@@ -1377,9 +1456,9 @@ mod tests {
     fn only_webmegjel_one_counts_as_available() {
         // `webmegjel` is a small enum, not a boolean: 2 and 3 are distinct ways
         // of being withheld, and neither may read as "on offer".
-        assert!(to_indexed(out_product("A-1", 1), None, None).available);
-        assert!(!to_indexed(out_product("A-2", 2), None, None).available);
-        assert!(!to_indexed(out_product("A-3", 3), None, None).available);
+        assert!(to_indexed(out_product("A-1", 1), None, None, Vec::new()).available);
+        assert!(!to_indexed(out_product("A-2", 2), None, None, Vec::new()).available);
+        assert!(!to_indexed(out_product("A-3", 3), None, None, Vec::new()).available);
     }
 
     #[test]
@@ -1430,6 +1509,42 @@ mod tests {
         let suggestions = snapshot.did_you_mean("ABCD-7", 5);
         assert_eq!(suggestions.len(), 1);
         assert_eq!(suggestions[0].no, "ABCD-1");
+    }
+
+    #[test]
+    fn a_product_is_reachable_by_any_of_its_barcodes() {
+        // A partner scanning a box has no way to know whether they are holding
+        // the piece EAN or the carton one, so every code has to resolve.
+        let mut rows = vec![product("A1", "Highlighter", "Orink", "MFG-1")];
+        rows[0].barcodes = vec!["5998765432109".into(), "15998765432106".into()];
+        let snapshot = snapshot(rows);
+
+        for ean in ["5998765432109", "15998765432106"] {
+            let outcome = snapshot.search(ean, &SearchFilters::default(), 10);
+            assert_eq!(outcome.matched, 1, "search must find {}", ean);
+            assert_eq!(outcome.results[0].no, "A1");
+            // The row echoes back every code, so the one the caller typed is
+            // visible in the result they got.
+            assert!(outcome.results[0].barcodes.iter().any(|code| code == ean));
+            assert_eq!(snapshot.get_by_no(ean).map(|p| p.no.as_str()), Some("A1"), "lookup must find {}", ean);
+        }
+        // The manufacturer code still works — barcodes joined that bucket, they
+        // did not replace it.
+        assert_eq!(snapshot.get_by_no("MFG-1").map(|p| p.no.as_str()), Some("A1"));
+    }
+
+    #[test]
+    fn an_exact_barcode_outranks_a_name_hit() {
+        let mut rows = vec![
+            product("A1", "5998765432109 lookalike", "Orink", ""),
+            product("A2", "Highlighter", "Orink", "")
+        ];
+        rows[1].barcodes = vec!["5998765432109".into()];
+        let snapshot = snapshot(rows);
+
+        let outcome = snapshot.search("5998765432109", &SearchFilters::default(), 10);
+        assert_eq!(outcome.matched, 2);
+        assert_eq!(outcome.results[0].no, "A2", "the barcode holder comes first");
     }
 
     #[test]

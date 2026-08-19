@@ -114,7 +114,8 @@ where
 McpToolArgs! {
     pub struct SearchProductsArgs {
         /// Words to search for. Accent- and case-insensitive: `szovegkiemelo`
-        /// matches `Szövegkiemelő`. Every word must match somewhere.
+        /// matches `Szövegkiemelő`. Every word must match somewhere. A barcode
+        /// (EAN) or a manufacturer part number can be pasted here directly.
         pub query: String,
         /// Restrict to a brand / manufacturer, e.g. "Orink".
         pub brand: Option<String>,
@@ -134,8 +135,8 @@ McpToolArgs! {
     }
 
     pub struct GetProductArgs {
-        /// Article number (`cikkszam`). A manufacturer part number or the
-        /// internal record id also resolves.
+        /// Article number (`cikkszam`). A barcode (EAN), a manufacturer part
+        /// number or the internal record id also resolves.
         pub no: String
     }
 
@@ -190,11 +191,13 @@ impl RustopusMcp {
         Self { tool_router: Self::tool_router() }
     }
 
-    /// Search the catalog. The workhorse: name, article number, brand and
-    /// manufacturer part number in one ranked pass, with the caller's own price
-    /// and stock inline so a follow-up call is not needed to answer "how much".
-    #[tool(description = "Search Orink products by name, article number, brand or manufacturer part number. \
-        Accent-insensitive. Returns this partner's own price and current stock inline.")]
+    /// Search the catalog. The workhorse: name, article number, barcode, brand
+    /// and manufacturer part number in one ranked pass, with the caller's own
+    /// price and stock inline so a follow-up call is not needed to answer
+    /// "how much".
+    #[tool(description = "Search Orink products by name, article number, barcode (EAN), brand or \
+        manufacturer part number. Accent-insensitive. Returns this partner's own price and current \
+        stock inline.")]
     async fn search_products(
         &self,
         context: RequestContext<RoleServer>,
@@ -355,8 +358,8 @@ impl RustopusMcp {
 
     /// Everything known about one product, for when a search result needs
     /// following up.
-    #[tool(description = "Full master data for one Orink product by article number, including \
-        current stock. `price` is what this partner pays.")]
+    #[tool(description = "Full master data for one Orink product by article number, barcode (EAN) or \
+        manufacturer part number, including current stock. `price` is what this partner pays.")]
     async fn get_product(
         &self,
         context: RequestContext<RoleServer>,
