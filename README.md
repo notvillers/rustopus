@@ -17,6 +17,12 @@ THIS API SPEAKS OCTOPUS
 ![VERSION](https://img.shields.io/badge/VERSION-1.1.0-0038E8?style=flat-square)
 [![LICENSE](https://img.shields.io/badge/LICENSE-MIT-0038E8?style=flat-square)](LICENSE)
 
+<br>
+
+<a href="./src/static/docs/assets/brag.mp4">
+  <img src="./src/static/docs/assets/brag.jpg" alt="Rustopus — 24s demo video" width="640">
+</a>
+
 </div>
 
 <br>

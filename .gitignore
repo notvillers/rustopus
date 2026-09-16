@@ -28,3 +28,5 @@ oauth_clients.toml.tmp
 oauth_sessions.toml
 oauth_sessions.toml.tmp
 VULNERABILITIES_TO_FIX.md
+brag-output/
+brag-output-*/
