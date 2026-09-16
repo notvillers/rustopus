@@ -10,34 +10,21 @@ THIS API SPEAKS OCTOPUS
 
 <samp>HUNGARIAN SOAP/XML IN — CLEAN ENGLISH XML (OR CSV) OUT.</samp>
 
-<br><br>
 
 ![RUST](https://img.shields.io/badge/RUST-2024_EDITION-0038E8?style=flat-square)
 ![ACTIX](https://img.shields.io/badge/SERVER-ACTIX--WEB-0038E8?style=flat-square)
 ![VERSION](https://img.shields.io/badge/VERSION-1.1.0-0038E8?style=flat-square)
 [![LICENSE](https://img.shields.io/badge/LICENSE-MIT-0038E8?style=flat-square)](LICENSE)
 
-<br>
-
-<a href="./src/static/docs/assets/brag.mp4">
-  <img src="./src/static/docs/assets/brag.jpg" alt="Rustopus — 24s demo video" width="640">
-</a>
-
 </div>
 
-<br>
-
 > Rustopus sits between the **Octopus 8 ERP** and your clients. It fetches the Hungarian-tagged SOAP payloads, translates them into English-tagged XML, CSV or XLSX — and forwards English-tagged input back to Octopus as Hungarian.
-
-<br>
 
 <samp>RUN VIA TERMINAL</samp>
 
 ```bash
 cargo run    # reads Config.toml + soap.json from the repo root
 ```
-
-<br>
 
 ## #1 CONFIGURE
 
