@@ -151,12 +151,22 @@ pub struct OauthClient {
     pub created_at: Option<DateTime<Utc>>,
     /// Set `false` to keep a client on file but refuse its sign-ins.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub enabled: Option<bool>
+    pub enabled: Option<bool>,
+    /// Whether this connector's sign-ins may place orders through
+    /// `submit_order`. Off unless an operator turns it on in `/admin`, and read
+    /// on **every** request rather than baked into the grant, so turning it off
+    /// takes effect at once without anyone signing in again.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allow_orders: Option<bool>
 }
 
 impl OauthClient {
     pub fn is_enabled(&self) -> bool {
         self.enabled.unwrap_or(true)
+    }
+
+    pub fn allows_orders(&self) -> bool {
+        self.allow_orders.unwrap_or(false)
     }
 
     /// Whether this client may be redirected to `presented`.

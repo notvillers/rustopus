@@ -57,8 +57,37 @@ static IN_FLIGHT: Lazy<Mutex<HashMap<(String, String), InFlight>>> = Lazy::new(|
 
 static NEXT_IN_FLIGHT_ID: AtomicU64 = AtomicU64::new(0);
 
-/// This function handles the request to the given url with the given soap string, theoretically it can handle other requests too
-pub async fn get_response(url: &str, soap_request: String) -> String {
+/// Why an outbound SOAP call produced no response body.
+///
+/// The split exists for mutating calls: a read can simply be retried, but an
+/// order that "failed" may or may not have been recorded, and the caller has to
+/// be told which.
+#[derive(Debug)]
+pub enum SendError {
+    /// The connection was never established, so Octopus never saw the request.
+    /// Safe to send again.
+    NotSent(String),
+    /// The request may have reached Octopus — it timed out, or the connection
+    /// broke after sending. Whether it took effect is unknown.
+    NoAnswer(String)
+}
+
+impl std::fmt::Display for SendError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NotSent(reason) => write!(f, "not sent: {reason}"),
+            Self::NoAnswer(reason) => write!(f, "no answer: {reason}")
+        }
+    }
+}
+
+/// Sends one SOAP request and reports *how* it failed, not just that it did.
+///
+/// `timeout` overrides the client-wide `[server] timeout` for this one call;
+/// `None` keeps it. Never coalesced, so this is the entry point for mutating
+/// calls (`/post-order`); the read-only fetchers go through
+/// [`get_response_shared`].
+pub async fn send(url: &str, soap_request: String, timeout: Option<Duration>) -> Result<String, SendError> {
     // Wait for a free slot; the permit is held only for the duration of this
     // one HTTP round-trip. `acquire` can only fail if the semaphore is closed
     // (never done here) — on that impossible error, log and fetch ungated
@@ -71,28 +100,43 @@ pub async fn get_response(url: &str, soap_request: String) -> String {
         }
     };
 
-    match CLIENT
+    let mut request = CLIENT
         .post(url)
         .header(CONTENT_TYPE, "text/xml; charset=utf-8")
-        .body(soap_request)
-        .send()
-        .await {
-            Ok(resp) => match resp.text().await {
-                Ok(text) => return text,
-                Err(error) => elogger(format!("Response error: {}", error))
-            },
-            Err(error) => elogger(format!("Response error: {}", error))
+        .body(soap_request);
+    if let Some(timeout) = timeout {
+        request = request.timeout(timeout);
     }
-    "<Envelope></Envelope>".into()
+
+    let response = match request.send().await {
+        Ok(response) => response,
+        // A connect error (refused, DNS, TLS handshake — including one that
+        // timed out) happens before a byte of the body is written. Anything
+        // else, a timeout above all, may have been sent already.
+        Err(error) if error.is_connect() || error.is_builder() => return Err(SendError::NotSent(error.to_string())),
+        Err(error) => return Err(SendError::NoAnswer(error.to_string()))
+    };
+
+    response.text().await.map_err(|error| SendError::NoAnswer(error.to_string()))
+}
+
+/// This function handles the request to the given url with the given soap string, theoretically it can handle other requests too
+pub async fn get_response(url: &str, soap_request: String) -> String {
+    match send(url, soap_request, None).await {
+        Ok(text) => text,
+        Err(error) => {
+            elogger(format!("Response error: {}", error));
+            "<Envelope></Envelope>".into()
+        }
+    }
 }
 
 /// Singleflight variant of [`get_response`] for the read-only GET fetchers:
 /// identical concurrent requests (same url + SOAP body) share one upstream
 /// call and one response buffer instead of each fetching separately.
 ///
-/// Do NOT use this for mutating calls (`/post-order` keeps the raw
-/// `get_response`) — coalescing would silently merge two intentional
-/// submissions into one.
+/// Do NOT use this for mutating calls (`/post-order` uses [`send`]) —
+/// coalescing would silently merge two intentional submissions into one.
 pub async fn get_response_shared(url: &str, soap_request: String) -> Arc<String> {
     let key = (url.to_string(), soap_request.clone());
 
@@ -130,4 +174,34 @@ pub async fn get_response_shared(url: &str, soap_request: String) -> Arc<String>
     }
 
     response
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{io::Read, net::TcpListener, thread};
+
+    /// The line between "never sent" and "sent, no answer" is what tells an
+    /// order caller whether resubmitting can duplicate an order.
+    #[actix_web::test]
+    async fn send_separates_never_sent_from_no_answer() {
+        // Nothing listens on a port that was just released: refused at connect.
+        let closed = TcpListener::bind("127.0.0.1:0").and_then(|l| l.local_addr()).expect("bind");
+        let refused = send(&format!("http://{closed}/"), String::new(), Some(Duration::from_secs(2))).await;
+        assert!(matches!(refused, Err(SendError::NotSent(_))), "{refused:?}");
+
+        // A server that accepts and reads the request but never replies.
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
+        let silent = listener.local_addr().expect("addr");
+        thread::spawn(move || {
+            if let Ok((mut stream, _)) = listener.accept() {
+                let mut buffer = [0u8; 1024];
+                let _ = stream.read(&mut buffer);
+                thread::sleep(Duration::from_secs(3));
+            }
+        });
+        let unanswered = send(&format!("http://{silent}/"), String::new(), Some(Duration::from_millis(300))).await;
+        assert!(matches!(unanswered, Err(SendError::NoAnswer(_))), "{unanswered:?}");
+    }
 }

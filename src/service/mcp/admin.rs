@@ -220,6 +220,7 @@ fn oauth_payload() -> serde_json::Value {
         "name": client.name,
         "redirect_uris": client.redirect_uris,
         "enabled": client.is_enabled(),
+        "allow_orders": client.allows_orders(),
         "created_at": client.created_at.map(|at| at.to_rfc3339())
     })).collect();
 
@@ -248,6 +249,9 @@ fn oauth_payload() -> serde_json::Value {
         "issuer": oauth::issuer(),
         "resource": oauth::resource_uri(),
         "allow_headers": oauth::allow_headers(),
+        // Whether a connector's "Allow orders" switch can have any effect: with
+        // `[mcp] orders_enabled` off the tool does not exist.
+        "orders_enabled": crate::service::config::get_mcp_settings().orders_enabled(),
         "clients": clients,
         "sessions": sessions
     })
@@ -688,7 +692,8 @@ pub struct NewOauthClient {
 pub struct OauthClientPatch {
     pub name: Option<String>,
     pub redirect_uris: Option<Vec<String>>,
-    pub enabled: Option<bool>
+    pub enabled: Option<bool>,
+    pub allow_orders: Option<bool>
 }
 
 
@@ -755,7 +760,9 @@ async fn oauth_client_create_handler(
         secret_hash: oauth::hash_secret(&secret),
         redirect_uris,
         created_at: Some(chrono::Utc::now()),
-        enabled: Some(true)
+        enabled: Some(true),
+        // Read-only until an operator says otherwise, one connector at a time.
+        allow_orders: Some(false)
     };
     let client_id = client.client_id.clone();
 
@@ -810,8 +817,16 @@ async fn oauth_client_patch_handler(
     if let Some(enabled) = body.enabled {
         client.enabled = Some(enabled);
     }
+    if let Some(allow_orders) = body.allow_orders {
+        client.allow_orders = Some(allow_orders);
+    }
 
-    let described = format!("{} ({})", client.name, if client.is_enabled() { "enabled" } else { "disabled" });
+    let described = format!(
+        "{} ({}, orders {})",
+        client.name,
+        if client.is_enabled() { "enabled" } else { "disabled" },
+        if client.allows_orders() { "allowed" } else { "not allowed" }
+    );
     match oauth::store::upsert_client(client) {
         Ok(()) => {
             let ip_address = log_ip(request.clone()).await.to_string();

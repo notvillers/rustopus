@@ -610,7 +610,8 @@ mod tests {
                 secret_hash: hash_secret("s3cret"),
                 redirect_uris: vec!["https://claude.ai/api/mcp/auth_callback".into()],
                 created_at: Some(Utc::now()),
-                enabled: Some(true)
+                enabled: Some(true),
+                allow_orders: Some(true)
             }]
         };
         let text = toml::to_string_pretty(&config).expect("serializes");
@@ -620,6 +621,7 @@ mod tests {
         assert_eq!(parsed.clients.len(), 1);
         assert_eq!(parsed.clients[0].redirect_uris.len(), 1);
         assert!(parsed.clients[0].is_enabled());
+        assert!(parsed.clients[0].allows_orders());
     }
 
     #[test]

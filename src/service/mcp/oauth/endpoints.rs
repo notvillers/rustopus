@@ -216,7 +216,11 @@ fn redirect_error(redirect_uri: &str, state: Option<&str>, error: &str, descript
 /// A template rather than a static file: the page has to carry the opaque
 /// request id, and the client's name beside it is operator input, so both go
 /// through [`oauth::escape_html`].
-fn render_login(request_id: &str, client_name: &str, error: Option<&str>, status: StatusCode) -> HttpResponse {
+///
+/// The connector's order permission is looked up here, by id, so the page says
+/// what signing in hands over *now* — not what it handed over when the
+/// authorization request was first validated.
+fn render_login(request_id: &str, client_id: &str, client_name: &str, error: Option<&str>, status: StatusCode) -> HttpResponse {
     let path = static_dir().join("login.html");
     let template = match std::fs::read_to_string(&path) {
         Ok(template) => template,
@@ -237,6 +241,7 @@ fn render_login(request_id: &str, client_name: &str, error: Option<&str>, status
     let body = template
         .replace("{{REQUEST_ID}}", &oauth::escape_html(request_id))
         .replace("{{CLIENT_NAME}}", &oauth::escape_html(client_name))
+        .replace("{{ORDERS}}", &orders_notice(client_id))
         .replace("{{ERROR}}", &banner);
 
     HttpResponse::build(status)
@@ -246,6 +251,22 @@ fn render_login(request_id: &str, client_name: &str, error: Option<&str>, status
         .insert_header((header::CACHE_CONTROL, "no-store"))
         .content_type("text/html; charset=utf-8")
         .body(body)
+}
+
+
+/// The sign-in page's warning that this connector can place orders, or nothing.
+///
+/// Shown only when both the server-wide switch and the connector's own are on —
+/// the two conditions under which `submit_order` will actually accept this
+/// sign-in. Static markup: nothing operator- or user-supplied goes into it.
+fn orders_notice(client_id: &str) -> String {
+    let can_order = get_mcp_settings().orders_enabled()
+        && store::find_client(client_id).is_some_and(|client| client.allows_orders());
+    if !can_order {
+        return String::new()
+    }
+    "<p class=\"warning\" role=\"note\">This connector can also <strong>place orders</strong> \
+     in your name. Orders it submits are real and are recorded in Orink's system.</p>".to_string()
 }
 
 
@@ -321,7 +342,7 @@ async fn authorize(query: web::Query<AuthorizeQuery>, request: HttpRequest) -> i
     ));
 
     log_with_ip(&ip_address, format!("OAUTH: sign-in page served for client '{}'", client.name));
-    render_login(&request_id, &client.name, None, StatusCode::OK)
+    render_login(&request_id, &client.client_id, &client.name, None, StatusCode::OK)
 }
 
 
@@ -360,6 +381,7 @@ async fn login(form: web::Form<LoginForm>, request: HttpRequest) -> impl Respond
         elog_with_ip(&ip_address, "OAUTH: sign-in refused — too many failed attempts");
         return render_login(
             &form.request_id,
+            &pending.client_id,
             &pending.client_name,
             Some("Too many failed attempts. Wait ten minutes and try again."),
             StatusCode::TOO_MANY_REQUESTS
@@ -368,7 +390,7 @@ async fn login(form: web::Form<LoginForm>, request: HttpRequest) -> impl Respond
 
     let authcode = form.authcode.trim();
     if authcode.is_empty() {
-        return render_login(&form.request_id, &pending.client_name, Some("Enter your authcode."), StatusCode::OK)
+        return render_login(&form.request_id, &pending.client_id, &pending.client_name, Some("Enter your authcode."), StatusCode::OK)
     }
     // Refused before `verify_authcode` below, which costs a real SOAP call to
     // Octopus: a value that is not shaped like an authcode cannot be one, so
@@ -379,13 +401,14 @@ async fn login(form: web::Form<LoginForm>, request: HttpRequest) -> impl Respond
         elog_with_ip(&ip_address, "OAUTH: sign-in refused — the authcode is not shaped like one");
         return render_login(
             &form.request_id,
+            &pending.client_id,
             &pending.client_name,
             Some("That is not a valid authcode. It contains only letters, numbers and hyphens."),
             StatusCode::OK
         )
     }
     let Ok(pid) = form.pid.trim().parse::<i64>() else {
-        return render_login(&form.request_id, &pending.client_name, Some("The partner ID has to be a number."), StatusCode::OK)
+        return render_login(&form.request_id, &pending.client_id, &pending.client_name, Some("The partner ID has to be a number."), StatusCode::OK)
     };
 
     let Some(url) = get_default_url() else {
@@ -406,6 +429,7 @@ async fn login(form: web::Form<LoginForm>, request: HttpRequest) -> impl Respond
         ));
         return render_login(
             &form.request_id,
+            &pending.client_id,
             &pending.client_name,
             Some("Octopus did not accept that authcode. Check it and try again."),
             StatusCode::OK

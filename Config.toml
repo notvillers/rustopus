@@ -100,6 +100,16 @@ oauth_refresh_ttl_secs = 2592000
 # Failed sign-ins allowed per IP per 10 minutes. Default 10. Without a limit the
 # sign-in form is an oracle for guessing authcodes against the ERP.
 oauth_login_rate_limit = 10
+# Lets MCP callers place orders through the submit_order tool. Default false:
+# with it off the tool is not even listed. An OAuth connector additionally needs
+# "Allow orders" switched on in /admin; an X-Authcode caller already holds the
+# code that /post-order accepts, so this switch alone covers it.
+orders_enabled = false
+# How long submit_order waits for Octopus, in seconds. Default 45. Keep it below
+# the MCP client's own tool-call timeout: past this the tool reports "outcome
+# unknown" itself, rather than the client giving up and retrying an order that
+# may already have been recorded.
+order_timeout_secs = 45
 # Admin dashboard token. Prefer the RUSTOPUS_ADMIN_TOKEN environment variable —
 # this file is tracked in git, so a token written here gets committed. With
 # neither set, /admin is not registered at all.

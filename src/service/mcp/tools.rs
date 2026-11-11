@@ -3,11 +3,14 @@
 //!
 //! Caller identity arrives as HTTP headers (`X-Authcode`, `X-Pid`), is lifted
 //! into rmcp's request extensions by the `on_request` hook below, and is read
-//! back inside each tool through `RequestContext::extensions`. **No tool takes a
-//! partner argument** — the pid is fixed per user by their connector config, so
-//! a model cannot ask for another partner's prices.
+//! back inside each tool through `RequestContext::extensions`. **No read tool
+//! takes a partner argument** — the pid is fixed per user by their connector
+//! config, so a model cannot ask for another partner's prices. `submit_order` is
+//! the one exception: booking to another partner is a real case, and Octopus
+//! decides whether this authcode may do it.
 //!
-//! Four tools, shaped by what people ask rather than by SOAP operation. Every
+//! Five read tools, plus `submit_order` when `[mcp] orders_enabled` is on —
+//! shaped by what people ask rather than by SOAP operation. Every
 //! tool definition costs context on every request, so there is deliberately no
 //! tool-per-endpoint mapping, and deliberately **no sync tool**: refresh is the
 //! precache job's business, and a model-triggered 28-second sync is exactly what
@@ -37,8 +40,10 @@ use crate::{
             cache::cache,
             export,
             index::{CatalogSnapshot, SearchFilters, fold},
-            mask_authcode
+            mask_authcode,
+            orders::{self, SubmitOrderArgs}
         },
+        config::get_mcp_settings,
         soap_config::get_default_url
     }
 };
@@ -82,7 +87,7 @@ fn caller_identity(context: &RequestContext<RoleServer>) -> String {
 /// `invalid type: string "20", expected u32` — a message that reads like a server
 /// bug and blocks the call entirely. Accepting both costs nothing and is the
 /// difference between a working tool and a dead end for the person asking.
-fn lenient_count<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+pub(crate) fn lenient_count<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
 where
     D: serde::Deserializer<'de>
 {
@@ -168,14 +173,13 @@ McpToolArgs! {
 /// The MCP service. One instance is built per session by the transport's service
 /// factory; all shared state lives in the process-wide cache rather than in this
 /// struct, so constructing it is cheap.
+///
+/// The router is held per instance (and `#[tool_handler]` pointed at it) so a
+/// tool can be left out of it: `submit_order` is removed when orders are off,
+/// which keeps it out of `tools/list` rather than listing a tool that only
+/// ever refuses.
 #[derive(Clone)]
 pub struct RustopusMcp {
-    #[expect(
-        dead_code,
-        reason = "Initialized by Self::new(); the #[tool_handler] macro reaches the router \
-                  through Self::tool_router(), not through this field. Matches the pattern in \
-                  rmcp-actix-web's own examples."
-    )]
     tool_router: ToolRouter<RustopusMcp>
 }
 
@@ -188,14 +192,18 @@ impl Default for RustopusMcp {
 #[tool_router]
 impl RustopusMcp {
     pub fn new() -> Self {
-        Self { tool_router: Self::tool_router() }
+        let mut tool_router = Self::tool_router();
+        if !get_mcp_settings().orders_enabled() {
+            tool_router.remove_route("submit_order");
+        }
+        Self { tool_router }
     }
 
     /// Search the catalog. The workhorse: name, article number, barcode, brand
     /// and manufacturer part number in one ranked pass, with the caller's own
     /// price and stock inline so a follow-up call is not needed to answer
     /// "how much".
-    #[tool(description = "Search Orink products by name, article number, barcode (EAN), brand or \
+    #[tool(annotations(read_only_hint = true, open_world_hint = false), description = "Search Orink products by name, article number, barcode (EAN), brand or \
         manufacturer part number. Accent-insensitive. Returns this partner's own price and current \
         stock inline.")]
     async fn search_products(
@@ -270,7 +278,7 @@ impl RustopusMcp {
     /// Bulk export. The answer to "I need this in Excel", and the reason
     /// `search_products` does not need to page through 24,000 products: the rows
     /// go to a file, never through the model's context.
-    #[tool(description = "Export Orink products to an Excel (.xlsx) or CSV file and return a download link. \
+    #[tool(annotations(read_only_hint = true, open_world_hint = false), description = "Export Orink products to an Excel (.xlsx) or CSV file and return a download link. \
         Use this whenever more than a page of products is needed — a whole category, a whole brand, or the \
         entire catalog. Filters are optional; with none, every product is exported. The rows are written to \
         a file, so this works for the full catalog and costs no context.")]
@@ -358,7 +366,7 @@ impl RustopusMcp {
 
     /// Everything known about one product, for when a search result needs
     /// following up.
-    #[tool(description = "Full master data for one Orink product by article number, barcode (EAN) or \
+    #[tool(annotations(read_only_hint = true, open_world_hint = false), description = "Full master data for one Orink product by article number, barcode (EAN) or \
         manufacturer part number, including current stock. `price` is what this partner pays.")]
     async fn get_product(
         &self,
@@ -435,7 +443,7 @@ impl RustopusMcp {
 
     /// The vocabulary of the catalog, so filters can be chosen from real values
     /// rather than guessed.
-    #[tool(description = "List the brands, main groups and product groups in the Orink catalog, with product counts.")]
+    #[tool(annotations(read_only_hint = true, open_world_hint = false), description = "List the brands, main groups and product groups in the Orink catalog, with product counts.")]
     async fn list_categories(
         &self,
         context: RequestContext<RoleServer>,
@@ -482,7 +490,7 @@ impl RustopusMcp {
     }
 
     /// Freshness, so an answer can be qualified instead of implied to be live.
-    #[tool(description = "How many products the cached Orink catalog holds and how old the data is.")]
+    #[tool(annotations(read_only_hint = true, open_world_hint = false), description = "How many products the cached Orink catalog holds and how old the data is.")]
     async fn catalog_status(&self, context: RequestContext<RoleServer>) -> Result<CallToolResult, McpError> {
         let snapshot = match self.snapshot(&context).await {
             Ok(snapshot) => snapshot,
@@ -509,6 +517,46 @@ impl RustopusMcp {
                 `hidden_products` are held in the catalog but not published for sale, so they do not \
                 appear in search or export results."
         })))
+    }
+
+    /// Places a real order in Octopus and waits for its answer. The one tool
+    /// that changes anything; see `service/mcp/orders.rs` for why it is shaped
+    /// the way it is.
+    #[tool(
+        annotations(title = "Submit order", read_only_hint = false, destructive_hint = true, idempotent_hint = false, open_world_hint = true),
+        description = "Place a REAL order with Orink and wait for Octopus's answer. Only call this when the \
+            user has clearly asked to place the order and has seen what will be ordered (articles, \
+            quantities, delivery). Use exact article numbers from search_products or get_product. The \
+            answer says, line by line, what was recorded and what was not — relay that, including any \
+            line that was NOT recorded. If the answer says the outcome is unknown, do NOT retry: tell the \
+            user to check the order in Orink's system first."
+    )]
+    async fn submit_order(
+        &self,
+        context: RequestContext<RoleServer>,
+        Parameters(args): Parameters<SubmitOrderArgs>
+    ) -> Result<CallToolResult, McpError> {
+        let Some(auth) = context.extensions.get::<McpAuth>().cloned() else {
+            return Ok(CallToolResult::error(vec![Content::text(
+                "This connector is not sending credentials, so no order can be placed."
+            )]))
+        };
+        if !auth.can_order {
+            logger(format!("MCP tool 'submit_order' by {}: refused — connector is read-only", auth.masked()));
+            return Ok(CallToolResult::error(vec![Content::text(
+                "This connector is read-only: placing orders has not been enabled for it. Nothing was \
+                 sent. Whoever runs the Rustopus server can allow orders for this connector."
+            )]))
+        }
+        let Some(url) = get_default_url() else {
+            elogger("MCP: no default SOAP url configured (soap.json missing or empty)");
+            return Ok(CallToolResult::error(vec![Content::text(
+                "The Rustopus server has no Octopus url configured, so no order can be placed. Nothing \
+                 was sent. This is a server-side configuration problem."
+            )]))
+        };
+
+        Ok(orders::run(args, &auth, &url).await)
     }
 
     /// The caller's catalog snapshot, or a ready-made error result explaining
@@ -553,18 +601,25 @@ impl RustopusMcp {
     }
 }
 
-#[tool_handler]
+#[tool_handler(router = self.tool_router)]
 impl ServerHandler for RustopusMcp {
     fn get_info(&self) -> ServerInfo {
+        let mut instructions = String::from(
+            "Orink product data from the Octopus 8 ERP. Stock and pricing are specific to the \
+             partner id configured on this connector: `price` is what this partner actually \
+             pays, not a list or retail price, so it can be quoted as-is. Data comes from a \
+             periodically refreshed snapshot — call catalog_status when the freshness of an \
+             answer matters."
+        );
+        if get_mcp_settings().orders_enabled() {
+            instructions.push_str(
+                " submit_order places real orders: confirm the lines with the user before calling it, \
+                 never call it twice for one request, and relay its per-line result."
+            );
+        }
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
             .with_server_info(Implementation::new("rustopus-mcp", env!("CARGO_PKG_VERSION")))
-            .with_instructions(
-                "Orink product data from the Octopus 8 ERP. Stock and pricing are specific to the \
-                 partner id configured on this connector: `price` is what this partner actually \
-                 pays, not a list or retail price, so it can be quoted as-is. Data comes from a \
-                 periodically refreshed snapshot — call catalog_status when the freshness of an \
-                 answer matters."
-            )
+            .with_instructions(instructions)
     }
 }
 
@@ -657,7 +712,7 @@ fn extract_auth(request: &HttpRequest, extensions: &mut rmcp::model::Extensions)
     match (authcode, pid) {
         (Some(authcode), Some(pid)) => {
             logger(format!("MCP request: credentials received ({} pid={})", mask_authcode(authcode), pid));
-            extensions.insert(McpAuth { authcode: authcode.to_string(), pid });
+            extensions.insert(McpAuth { authcode: authcode.to_string(), pid, can_order: true });
         }
         (Some(authcode), None) => elogger(format!(
             "MCP request: {} received ({}) but {} missing or not an integer",

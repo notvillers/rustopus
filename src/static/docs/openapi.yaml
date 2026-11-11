@@ -514,8 +514,12 @@ paths:
         '400':
           description: Invalid XML format
         '500':
-          description: Failed to parse Octopus response
-    
+          description: Octopus answered with something that is not an order response. The order may have been recorded; check before submitting it again.
+        '502':
+          description: Octopus could not be reached, so the order was not sent. It is safe to submit it again.
+        '504':
+          description: No answer from Octopus (timeout or broken connection). The order may have been recorded; check before submitting it again.
+
   # The entries below are NOT REST endpoints and are documented here only so this
   # file stays a complete map of what the binary serves. They exist only in an
   # instance started with `[mcp] enabled = true` (and, for the OAuth ones, with
@@ -549,6 +553,13 @@ paths:
         `export_products` writes an Excel or CSV file and returns a link to
         `/export/{token}` rather than the rows themselves — a catalog of ~24,000
         products cannot be delivered through a chat at any page size.
+
+        A sixth tool, `submit_order`, exists only with `[mcp] orders_enabled = true`.
+        It places a real order through the same path as `/post-order`, waits for
+        Octopus's answer and reports it line by line. An OAuth connector may use it
+        only when its operator has allowed orders for that connector; a timeout is
+        reported as an unknown outcome rather than a failure, and an identical order
+        within ten minutes is refused unless the caller confirms it.
       tags:
         - MCP
       parameters:

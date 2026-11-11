@@ -11,6 +11,9 @@
     --accent: #1b64d1;
     --bad: #b3261e;
     --bad-bg: #fdecea;
+    --warn: #7a4b00;
+    --warn-bg: #fff4dc;
+    --warn-line: #f0d39a;
     --page: #f4f6f9;
 }
 
@@ -89,6 +92,18 @@ button {
 
 button:hover { background: #1855b4; }
 button:disabled { opacity: .65; cursor: progress; }
+
+/* Shown when the connector may place orders, so signing in is not mistaken for
+ * granting read access only. */
+.warning {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--warn-line);
+    border-radius: 8px;
+    background: var(--warn-bg);
+    color: var(--warn);
+    font-size: 14px;
+}
 
 .error {
     margin: 0 0 4px;

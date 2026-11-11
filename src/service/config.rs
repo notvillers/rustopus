@@ -53,7 +53,9 @@ ConfigModelDerive! {
         pub oauth_sessions_path: Option<String>,
         pub oauth_access_ttl_secs: Option<u64>,
         pub oauth_refresh_ttl_secs: Option<u64>,
-        pub oauth_login_rate_limit: Option<u32>
+        pub oauth_login_rate_limit: Option<u32>,
+        pub orders_enabled: Option<bool>,
+        pub order_timeout_secs: Option<u64>
     }
 
 }
@@ -126,6 +128,13 @@ const DEFAULT_OAUTH_REFRESH_TTL_SECS: u64 = 2_592_000;
 /// `[mcp] oauth_login_rate_limit` is unset. Without a limit the sign-in form is
 /// an oracle for guessing authcodes against the ERP.
 const DEFAULT_OAUTH_LOGIN_RATE_LIMIT: u32 = 10;
+
+/// How long the MCP `submit_order` tool waits for Octopus when
+/// `[mcp] order_timeout_secs` is unset: 45 seconds. It has to be shorter than
+/// the MCP client's own patience — a client that gives up first sees a bare
+/// failure, retries, and an order Octopus did record gets placed twice. Within
+/// this limit the tool itself reports "outcome unknown" instead.
+const DEFAULT_ORDER_TIMEOUT_SECS: u64 = 45;
 
 impl McpConfig {
     pub fn is_enabled(&self) -> bool {
@@ -232,6 +241,16 @@ impl McpConfig {
     pub fn oauth_login_rate_limit(&self) -> u32 {
         self.oauth_login_rate_limit.unwrap_or(DEFAULT_OAUTH_LOGIN_RATE_LIMIT)
     }
+
+    /// Whether the MCP `submit_order` tool exists at all. Off by default: with it
+    /// off the tool is not even listed, and every MCP caller stays read-only.
+    pub fn orders_enabled(&self) -> bool {
+        self.orders_enabled.unwrap_or(false)
+    }
+
+    pub fn order_timeout_secs(&self) -> u64 {
+        self.order_timeout_secs.filter(|secs| *secs > 0).unwrap_or(DEFAULT_ORDER_TIMEOUT_SECS)
+    }
 }
 
 
@@ -254,7 +273,9 @@ pub fn get_mcp_settings() -> McpConfig {
         oauth_sessions_path: None,
         oauth_access_ttl_secs: None,
         oauth_refresh_ttl_secs: None,
-        oauth_login_rate_limit: None
+        oauth_login_rate_limit: None,
+        orders_enabled: None,
+        order_timeout_secs: None
     })
 }
 

@@ -118,7 +118,10 @@ pub async fn guard(
 
         store::touch(&grant.id);
         logger(format!("MCP request: bearer token accepted ({})", grant.masked()));
-        request.extensions_mut().insert(McpAuth { authcode: grant.authcode.clone(), pid: grant.pid });
+        // Looked up per request, not stored on the grant: revoking a connector's
+        // order permission must not wait for its users to sign in again.
+        let can_order = store::find_client(&grant.client_id).is_some_and(|client| client.allows_orders());
+        request.extensions_mut().insert(McpAuth { authcode: grant.authcode.clone(), pid: grant.pid, can_order });
         return next.call(request).await.map(ServiceResponse::map_into_boxed_body)
     }
 

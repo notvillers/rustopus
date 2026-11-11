@@ -282,11 +282,14 @@
         return td;
     }
 
-    function renderClients(clients) {
+    /* `ordersEnabled` is the server-wide [mcp] orders_enabled switch: with it off
+     * a connector's own "Allow orders" setting is kept but has no effect, and the
+     * column says so rather than claiming the connector can order. */
+    function renderClients(clients, ordersEnabled) {
         clientsBodyEl.textContent = '';
 
         if (!clients || !clients.length) {
-            emptyRow(clientsBodyEl, 6, 'No connectors registered. Register one below, then paste its id and secret into the claude.ai connector.');
+            emptyRow(clientsBodyEl, 7, 'No connectors registered. Register one below, then paste its id and secret into the claude.ai connector.');
             return;
         }
 
@@ -309,10 +312,26 @@
             cell(row,
                 client.enabled ? 'enabled' : 'disabled',
                 client.enabled ? 'state-ok' : 'state-idle');
+            if (!client.allow_orders) {
+                cell(row, 'read-only', 'state-idle');
+            } else if (ordersEnabled) {
+                cell(row, 'can order', 'state-warn');
+            } else {
+                cell(row, 'allowed (server-wide off)', 'state-idle');
+            }
 
             var actions = document.createElement('td');
             var wrapper = document.createElement('div');
             wrapper.className = 'actions';
+
+            wrapper.appendChild(actionButton(client.allow_orders ? 'Make read-only' : 'Allow orders', null, function () {
+                if (!client.allow_orders && !window.confirm(
+                    'Let every sign-in through "' + client.name + '" place real orders in Octopus? ' +
+                    'This applies at once, also to people already signed in.')) { return; }
+                request('PATCH', '/admin/api/oauth/clients/' + encodeURIComponent(client.client_id), { allow_orders: !client.allow_orders })
+                    .then(function () { load(); })
+                    .catch(function (error) { setStatus(error.message, 'error'); });
+            }));
 
             wrapper.appendChild(actionButton(client.enabled ? 'Disable' : 'Enable', null, function () {
                 request('PATCH', '/admin/api/oauth/clients/' + encodeURIComponent(client.client_id), { enabled: !client.enabled })
@@ -400,7 +419,7 @@
                 applyOauthVisibility(!!payload.oauth);
                 renderBlocks(payload.blocks);
                 if (payload.oauth) {
-                    renderClients(payload.oauth.clients);
+                    renderClients(payload.oauth.clients, !!payload.oauth.orders_enabled);
                     renderSessions(payload.oauth.sessions);
                 }
                 if (payload.cache) {

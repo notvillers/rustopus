@@ -14,6 +14,7 @@ pub mod cache;
 pub mod export;
 pub mod index;
 pub mod oauth;
+pub mod orders;
 pub mod precache;
 pub mod store;
 pub mod tools;
@@ -72,7 +73,13 @@ pub fn secrets_match(provided: &str, expected: &str) -> bool {
 #[derive(Clone, Debug)]
 pub struct McpAuth {
     pub authcode: String,
-    pub pid: i64
+    pub pid: i64,
+    /// Whether this caller may place orders. `true` for an `X-Authcode` caller,
+    /// who holds the code `/post-order` already accepts; for an OAuth caller it
+    /// is the connector's "Allow orders" switch, because there the code was
+    /// handed to the connector by someone signing in, not presented by the caller.
+    /// `[mcp] orders_enabled` gates both, separately.
+    pub can_order: bool
 }
 
 impl McpAuth {

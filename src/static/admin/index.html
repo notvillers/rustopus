@@ -134,6 +134,11 @@
             secret below into <em>Advanced settings</em>. The secret is stored hashed and
             <strong>shown only once</strong> — if it is lost, register another connector.
         </p>
+        <p class="note">
+            A new connector is <strong>read-only</strong>. <em>Allow orders</em> lets every
+            sign-in through it place real orders in Octopus, and takes effect at once; it
+            only works while <code>[mcp] orders_enabled</code> is on.
+        </p>
         <div class="table-scroll">
             <table id="clients">
                 <thead>
@@ -143,11 +148,12 @@
                     <th>Redirect URIs</th>
                     <th>Added</th>
                     <th>Status</th>
+                    <th>Orders</th>
                     <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody id="clients-body">
-                <tr><td colspan="6" class="empty">Loading…</td></tr>
+                <tr><td colspan="7" class="empty">Loading…</td></tr>
                 </tbody>
             </table>
         </div>
