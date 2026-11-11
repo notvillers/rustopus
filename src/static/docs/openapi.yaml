@@ -1519,17 +1519,69 @@ components:
                                 type: string
                                 example: "HUF"
                         extra_items:
-                          type: string
-                          nullable: true
+                          $ref: '#/components/schemas/OrderCharges'
                         shipping_cost:
-                          type: string
-                          nullable: true
+                          $ref: '#/components/schemas/OrderCharges'
                         cash_on_delivery:
-                          type: string
-                          nullable: true
+                          $ref: '#/components/schemas/OrderCharges'
                         extra_services:
-                          type: string
-                          nullable: true
+                          $ref: '#/components/schemas/OrderCharges'
                         return_fee:
-                          type: string
-                          nullable: true
+                          $ref: '#/components/schemas/OrderCharges'
+
+    OrderCharges:
+      type: array
+      description: >-
+        Charge lines Octopus added to the order on its own, e.g. the delivery fee on
+        a delivery order (`shipping_cost`) or a deposit per deposit-return product
+        (`return_fee`). An empty element when there is none.
+      xml:
+        wrapped: true
+      items:
+        type: object
+        xml:
+          name: item
+        properties:
+          recorded_item_number:
+            type: integer
+            example: 3
+          product_id:
+            type: integer
+            example: 67
+          product_number:
+            type: string
+            example: "FUVARDIJKOZV"
+          product_name:
+            type: string
+            example: "Fuvar díj (közvetített szolgáltatás)"
+          quantity:
+            type: object
+            properties:
+              type:
+                type: string
+                example: "1"
+              coverage:
+                type: string
+                example: ""
+              value:
+                type: number
+                example: 1.0
+          unit_price_net:
+            type: number
+            example: 2950.0
+          unit_price_gross:
+            type: number
+            example: 3746.5
+          value_net:
+            type: number
+            example: 2950.0
+          value_gross:
+            type: number
+            example: 3746.5
+          currency:
+            type: string
+            example: "HUF"
+          parent_item_number:
+            type: integer
+            description: On a deposit line, the recorded item number of the product it is charged for.
+            example: 1

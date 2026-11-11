@@ -31,16 +31,20 @@ O8ModelDeriveOnly! {
         pub fej: Option<ValaszFej>,
         #[serde(default)]
         pub tetelek: ValaszTetelek,
+        // The five charge blocks Octopus adds on its own — a delivery order
+        // gets a `fuvarkoltseg` line, a deposit-return (DRS) product a
+        // `visszavaltasi_dij` line — each as `<tetel>` elements, and an empty
+        // `<x />` when there is none.
         #[serde(default)]
-        pub extratetelek: Option<String>,
+        pub extratetelek: ValaszDijak,
         #[serde(default)]
-        pub fuvarkoltseg: Option<String>,
+        pub fuvarkoltseg: ValaszDijak,
         #[serde(default)]
-        pub utanvet: Option<String>,
+        pub utanvet: ValaszDijak,
         #[serde(default)]
-        pub extraszolg: Option<String>,
+        pub extraszolg: ValaszDijak,
         #[serde(default)]
-        pub visszavaltasi_dij: Option<String>,
+        pub visszavaltasi_dij: ValaszDijak,
         #[serde(default)]
         pub hiba: Option<o8_defaults::Hiba>,
     }
@@ -79,6 +83,43 @@ O8ModelDeriveOnly! {
         pub brertek: Option<String>,
         #[serde(default)]
         pub dnem: Option<String>,
+    }
+
+    #[derive(Clone, Default)]
+    pub struct ValaszDijak {
+        #[serde(rename = "tetel", default)]
+        pub tetel: Vec<ValaszDij>,
+    }
+
+    /// A charge line Octopus added to the order. Shaped like an order line but
+    /// not the same: it carries the article's name and internal id, has no
+    /// requested line number, and a deposit line names the line it belongs to.
+    #[derive(Clone)]
+    pub struct ValaszDij {
+        #[serde(default)]
+        pub rogzitett_tetelszam: Option<String>,
+        #[serde(default)]
+        pub cikkid: Option<String>,
+        #[serde(default)]
+        pub cikkszam: Option<String>,
+        #[serde(default)]
+        pub cikknev: Option<String>,
+        #[serde(default)]
+        pub mennyiseg: Option<ValaszMennyiseg>,
+        #[serde(default)]
+        pub egysegar: Option<String>,
+        #[serde(default)]
+        pub bregysegar: Option<String>,
+        #[serde(default)]
+        pub ertek: Option<String>,
+        #[serde(default)]
+        pub brertek: Option<String>,
+        #[serde(default)]
+        pub dnem: Option<String>,
+        /// On a deposit line: the recorded line number of the product the
+        /// deposit is charged for.
+        #[serde(default)]
+        pub vcapatszam: Option<String>,
     }
 
     #[derive(Clone)]

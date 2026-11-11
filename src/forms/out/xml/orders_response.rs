@@ -32,16 +32,13 @@ OutModelDeriveOnly! {
         pub header: Option<OrderResponseHeader>,
         #[serde(default)]
         pub items: OrderResponseItems,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub extra_items: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub shipping_cost: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub cash_on_delivery: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub extra_services: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub return_fee: Option<String>,
+        // Charges Octopus added to the order (delivery, deposit, …), each an
+        // empty element when there is none — as they always were.
+        pub extra_items: OrderCharges,
+        pub shipping_cost: OrderCharges,
+        pub cash_on_delivery: OrderCharges,
+        pub extra_services: OrderCharges,
+        pub return_fee: OrderCharges,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub error: Option<p_defaults::Error>,
     }
@@ -51,6 +48,37 @@ OutModelDeriveOnly! {
         pub web_identifier: String,
         pub document_number: String,
         pub delivery_date: String,
+    }
+
+    pub struct OrderCharges {
+        #[serde(rename = "item", default)]
+        pub item: Vec<OrderCharge>,
+    }
+
+    pub struct OrderCharge {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub recorded_item_number: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub product_id: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub product_number: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub product_name: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub quantity: Option<OrderResponseQuantity>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub unit_price_net: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub unit_price_gross: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub value_net: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub value_gross: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub currency: Option<String>,
+        /// On a deposit line: the recorded item number it is charged for.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub parent_item_number: Option<String>,
     }
 
     pub struct OrderResponseItems {
@@ -137,11 +165,11 @@ impl From<p_orders_response::Valasz> for Answer {
                 .filter(|fej| !fej.azonosito.trim().is_empty())
                 .map(Into::into),
             items: v.tetelek.into(),
-            extra_items: v.extratetelek,
-            shipping_cost: v.fuvarkoltseg,
-            cash_on_delivery: v.utanvet,
-            extra_services: v.extraszolg,
-            return_fee: v.visszavaltasi_dij,
+            extra_items: v.extratetelek.into(),
+            shipping_cost: v.fuvarkoltseg.into(),
+            cash_on_delivery: v.utanvet.into(),
+            extra_services: v.extraszolg.into(),
+            return_fee: v.visszavaltasi_dij.into(),
             error: v.hiba.map(Into::into),
         }
     }
@@ -155,6 +183,34 @@ impl From<p_orders_response::ValaszFej> for OrderResponseHeader {
             web_identifier: fej.webazon,
             document_number: fej.bizonylatszam,
             delivery_date: fej.szalldatum,
+        }
+    }
+}
+
+
+impl From<p_orders_response::ValaszDijak> for OrderCharges {
+    fn from(dijak: p_orders_response::ValaszDijak) -> Self {
+        Self {
+            item: dijak.tetel.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+
+impl From<p_orders_response::ValaszDij> for OrderCharge {
+    fn from(dij: p_orders_response::ValaszDij) -> Self {
+        Self {
+            recorded_item_number: dij.rogzitett_tetelszam,
+            product_id: dij.cikkid,
+            product_number: dij.cikkszam,
+            product_name: dij.cikknev,
+            quantity: dij.mennyiseg.map(Into::into),
+            unit_price_net: dij.egysegar,
+            unit_price_gross: dij.bregysegar,
+            value_net: dij.ertek,
+            value_gross: dij.brertek,
+            currency: dij.dnem,
+            parent_item_number: dij.vcapatszam,
         }
     }
 }

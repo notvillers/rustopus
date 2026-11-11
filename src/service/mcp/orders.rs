@@ -521,29 +521,63 @@ fn describe_answer(envelope: Envelope, sent: &Sent) -> (CallToolResult, bool) {
     });
     if let Some(object) = payload.as_object_mut() {
         if let Some(fej) = header {
+            // Charges Octopus added on its own: delivery on a delivery order,
+            // a deposit per DRS product, and so on. They are part of what the
+            // partner pays, so they go into the totals.
+            let mut charges_net = 0.0;
+            let mut charges_gross = 0.0;
+            let charges: Vec<Value> = [
+                ("shipping", &answer.fuvarkoltseg),
+                ("deposit", &answer.visszavaltasi_dij),
+                ("cash_on_delivery", &answer.utanvet),
+                ("extra_item", &answer.extratetelek),
+                ("extra_service", &answer.extraszolg)
+            ].into_iter().flat_map(|(kind, block)| block.tetel.iter().map(move |charge| (kind, charge))).map(|(kind, charge)| {
+                charges_net += parse(charge.ertek.as_deref()).unwrap_or(0.0);
+                charges_gross += parse(charge.brertek.as_deref()).unwrap_or(0.0);
+                if currency.is_none() {
+                    currency = charge.dnem.clone();
+                }
+                let mut row = json!({ "kind": kind });
+                if let Some(row_object) = row.as_object_mut() {
+                    if let Some(no) = &charge.cikkszam {
+                        row_object.insert("no".into(), json!(no));
+                    }
+                    if let Some(name) = &charge.cikknev {
+                        row_object.insert("name".into(), json!(name));
+                    }
+                    if let Some(quantity) = &charge.mennyiseg {
+                        row_object.insert("quantity".into(), number(&quantity.value, None));
+                    }
+                    insert_money(row_object, "value_net", charge.ertek.as_deref());
+                    insert_money(row_object, "value_gross", charge.brertek.as_deref());
+                    // A deposit names the *recorded* line number of the
+                    // product it is charged for.
+                    if let Some(parent) = charge.vcapatszam.as_deref().filter(|parent| !parent.trim().is_empty()) {
+                        row_object.insert("for_recorded_line".into(), number(parent, None));
+                    }
+                }
+                row
+            }).collect();
+
             object.insert("order_id".into(), json!(fej.azonosito));
             object.insert("document_number".into(), json!(fej.bizonylatszam));
             object.insert("web_id".into(), json!(fej.webazon));
             object.insert("delivery_date".into(), json!(fej.szalldatum));
-            object.insert("total_net".into(), json!(round2(total_net)));
-            object.insert("total_gross".into(), json!(round2(total_gross)));
+            object.insert("items_net".into(), json!(round2(total_net)));
+            object.insert("items_gross".into(), json!(round2(total_gross)));
+            if !charges.is_empty() {
+                object.insert("charges".into(), json!(charges));
+            }
+            object.insert("total_net".into(), json!(round2(total_net + charges_net)));
+            object.insert("total_gross".into(), json!(round2(total_gross + charges_gross)));
             if let Some(currency) = currency {
                 object.insert("currency".into(), json!(currency));
             }
-            for (key, value) in [
-                ("shipping_cost", &answer.fuvarkoltseg),
-                ("cash_on_delivery", &answer.utanvet),
-                ("extra_items", &answer.extratetelek),
-                ("extra_services", &answer.extraszolg),
-                ("return_fee", &answer.visszavaltasi_dij)
-            ] {
-                if let Some(value) = value.as_deref().filter(|value| !value.trim().is_empty()) {
-                    object.insert(key.into(), json!(value));
-                }
-            }
         }
         object.insert("note".into(), json!(match status {
-            "recorded" => "Every line was recorded. Give the user the document_number.",
+            "recorded" => "Every line was recorded. Give the user the document_number, and mention any \
+                charges (delivery, deposit) — total_net and total_gross include them.",
             "partially_recorded" => "Only some lines were recorded — the order exists, but tell the user \
                 exactly which lines were NOT recorded and why. Do not resubmit the recorded lines.",
             _ => "Nothing was recorded, usually because the article numbers are unknown. Check them with \
@@ -649,6 +683,36 @@ mod tests {
         let same = prepare(args(vec![("b", 2.0), ("a", 1.0)]), 9).expect("valid");
         assert_eq!(same.fingerprint, other.fingerprint, "line order and letter case do not make a new order");
         assert_ne!(other.fingerprint, prepared.fingerprint, "a different partner is a different order");
+    }
+
+    /// Octopus's real answer to a delivery order of one DRS product: the order
+    /// line plus a delivery charge and a deposit charge, both as `<tetel>`
+    /// blocks. The first delivery order through the tool failed to parse on
+    /// exactly this, and reported "outcome unknown" for an order that was fine.
+    const DELIVERY_ORDER_ANSWER: &str = r#"<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body><RendelesFeladasAuthResponse xmlns="https://orink.hu/services/"><RendelesFeladasAuthResult><valasz verzio="1.0" xmlns=""><fej><azonosito>2111994</azonosito><webazon>07f7e7c6-bdf5-4eb1-a2e1-63d857b4ae9d</webazon><bizonylatszam>XKBRE2630996</bizonylatszam><szalldatum>2026.11.12</szalldatum></fej><tetelek><tetel><tetelszam>1</tetelszam><rogzitett_tetelszam>1</rogzitett_tetelszam><cikkszam>62419</cikkszam><mennyiseg tipus="1" kenocs="{0:0.##} {1}" datum="2026-11-11T00:00:00">1,0000000</mennyiseg><egysegar>445,1154720</egysegar><bregysegar>565,29664944000</bregysegar><ertek>445,115472</ertek><brertek>565,296649</brertek><dnem>HUF</dnem></tetel></tetelek><extratetelek /><fuvarkoltseg><tetel><rogzitett_tetelszam>3</rogzitett_tetelszam><cikkid>67</cikkid><cikkszam>FUVARDIJKOZV</cikkszam><cikknev>Fuvar díj (közvetített szolgáltatás)</cikknev><menny>1,0000000</menny><mennyiseg tipus="1" kenocs="">1,0000000</mennyiseg><egysegar>2950,0000000</egysegar><bregysegar>3746,5000000</bregysegar><ertek>2950,0000000</ertek><brertek>3746,5000000</brertek><dnem>HUF</dnem></tetel></fuvarkoltseg><utanvet /><extraszolg /><visszavaltasi_dij><tetel><rogzitett_tetelszam>2</rogzitett_tetelszam><cikkid>57061</cikkid><cikkszam>EUTVISSZ</cikkszam><cikknev>Egyutas visszaváltási díj</cikknev><menny>1,0000000</menny><mennyiseg tipus="1" kenocs="">1,0000000</mennyiseg><egysegar>50,0000000</egysegar><bregysegar>50,0000000</bregysegar><ertek>50,0000000</ertek><brertek>50,0000000</brertek><dnem>HUF</dnem><vcapatszam>1</vcapatszam></tetel></visszavaltasi_dij></valasz></RendelesFeladasAuthResult></RendelesFeladasAuthResponse></soap:Body></soap:Envelope>"#;
+
+    #[test]
+    fn a_delivery_order_answer_with_charges_is_read_and_totalled() {
+        let parse = || quick_xml::de::from_str::<Envelope>(DELIVERY_ORDER_ANSWER).expect("Octopus's answer parses");
+
+        let sent = Sent { pid: 7824, reference: "ai_test_20261011_1".into(), lines: 1 };
+        let (result, certainly_not_recorded) = describe_answer(parse(), &sent);
+        assert!(!certainly_not_recorded);
+        assert_ne!(result.is_error, Some(true));
+        let text = result.content.first().and_then(|content| content.as_text()).map(|text| text.text.clone()).unwrap_or_default();
+        let payload: Value = serde_json::from_str(&text).expect("the summary is JSON");
+        assert_eq!(payload["status"], "recorded");
+        assert_eq!(payload["document_number"], "XKBRE2630996");
+        assert_eq!(payload["charges"].as_array().map(Vec::len), Some(2), "delivery and deposit");
+        assert_eq!(payload["items_net"], 445.12);
+        assert_eq!(payload["total_net"], 3445.12, "the charges are part of the total");
+
+        // The REST answer is built from the same parse.
+        let english = crate::service::get_data::to_xml_string(
+            &crate::forms::out::xml::orders_response::Envelope::from(parse())
+        );
+        assert!(english.contains("<product_number>FUVARDIJKOZV</product_number>"), "{english}");
+        assert!(english.contains("<parent_item_number>1</parent_item_number>"), "{english}");
     }
 
     #[test]
