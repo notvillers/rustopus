@@ -467,7 +467,7 @@ fn describe_answer(envelope: Envelope, sent: &Sent) -> (CallToolResult, bool) {
         let recorded = line.rogzitett_tetelszam.trim() != "0"
             && line.mennyiseg.tipus.as_deref().map(str::trim) != Some("4");
         let mut row = json!({
-            "line": line.tetelszam.trim().parse::<u64>().map(|line| json!(line)).unwrap_or_else(|_| json!(line.tetelszam.trim())),
+            "line": line_number(&line.tetelszam),
             "no": line.cikkszam,
             "quantity": number(&line.mennyiseg.value, None),
             "recorded": recorded
@@ -554,7 +554,7 @@ fn describe_answer(envelope: Envelope, sent: &Sent) -> (CallToolResult, bool) {
                     // A deposit names the *recorded* line number of the
                     // product it is charged for.
                     if let Some(parent) = charge.vcapatszam.as_deref().filter(|parent| !parent.trim().is_empty()) {
-                        row_object.insert("for_recorded_line".into(), number(parent, None));
+                        row_object.insert("for_recorded_line".into(), line_number(parent));
                     }
                 }
                 row
@@ -612,6 +612,11 @@ fn number(value: &str, decimals: Option<i32>) -> Value {
         },
         None => json!(value.trim())
     }
+}
+
+/// A line number as an integer (`1`, not `1.0`), the original text where it is not one.
+fn line_number(value: &str) -> Value {
+    value.trim().parse::<u64>().map(|line| json!(line)).unwrap_or_else(|_| json!(value.trim()))
 }
 
 fn insert_money(object: &mut serde_json::Map<String, Value>, key: &str, value: Option<&str>) {
@@ -706,6 +711,7 @@ mod tests {
         assert_eq!(payload["charges"].as_array().map(Vec::len), Some(2), "delivery and deposit");
         assert_eq!(payload["items_net"], 445.12);
         assert_eq!(payload["total_net"], 3445.12, "the charges are part of the total");
+        assert_eq!(payload["charges"][1]["for_recorded_line"], json!(1), "a line number, not 1.0");
 
         // The REST answer is built from the same parse.
         let english = crate::service::get_data::to_xml_string(
