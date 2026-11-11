@@ -30,3 +30,4 @@ oauth_sessions.toml.tmp
 VULNERABILITIES_TO_FIX.md
 brag-output/
 brag-output-*/
+*.bak
