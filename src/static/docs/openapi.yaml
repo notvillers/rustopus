@@ -1428,8 +1428,17 @@ components:
                         version:
                           type: string
                           example: "1.0"
+                        error:
+                          type: object
+                          description: Present only when Octopus refused the order; nothing was recorded, `header` is absent and `items` is empty.
+                          properties:
+                            code:
+                              type: number
+                            description:
+                              type: string
                         header:
                           type: object
+                          description: Absent when nothing was recorded, either because the order was refused (see `error`) or because no line could be recorded.
                           xml:
                             name: header
                           properties:
@@ -1461,6 +1470,7 @@ components:
                                 example: 1
                               recorded_item_number:
                                 type: integer
+                                description: 0 when the line was not recorded (e.g. unknown product number); such a line carries no date or prices.
                                 example: 1
                               product_number:
                                 type: string
@@ -1470,6 +1480,7 @@ components:
                                 properties:
                                   type:
                                     type: string
+                                    description: "1: recorded, 4: not recorded (coverage then reads \"Nem rögzített\")."
                                     example: "1"
                                   coverage:
                                     type: string

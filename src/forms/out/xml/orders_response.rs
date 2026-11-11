@@ -1,6 +1,9 @@
 use crate::{
     macros::out::OutModelDeriveOnly,
-    forms::r#in::xml::orders_response as p_orders_response
+    forms::{
+        r#in::xml::orders_response as p_orders_response,
+        out::xml::defaults as p_defaults
+    }
 };
 
 OutModelDeriveOnly! {
@@ -23,7 +26,10 @@ OutModelDeriveOnly! {
     pub struct Answer {
         #[serde(rename = "@version")]
         pub version: Option<String>,
-        pub header: OrderResponseHeader,
+        // Absent when Octopus refused the order: no header means nothing was
+        // recorded, which an empty `<header>` would only blur.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub header: Option<OrderResponseHeader>,
         #[serde(default)]
         pub items: OrderResponseItems,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -36,6 +42,8 @@ OutModelDeriveOnly! {
         pub extra_services: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub return_fee: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub error: Option<p_defaults::Error>,
     }
     
     pub struct OrderResponseHeader {
@@ -50,28 +58,35 @@ OutModelDeriveOnly! {
         pub item: Vec<OrderResponseItem>,
     }
 
+    // Prices and the date are absent on a line Octopus did not record
+    // (`recorded_item_number` 0, quantity `type` 4).
     pub struct OrderResponseItem {
         pub item_number: String,
         pub recorded_item_number: String,
         pub product_number: String,
         pub quantity: OrderResponseQuantity,
-        pub unit_price_net: String,
-        pub unit_price_gross: String,
-        pub value_net: String,
-        pub value_gross: String,
-        pub currency: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub unit_price_net: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub unit_price_gross: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub value_net: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub value_gross: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub currency: Option<String>,
     }
 
     #[derive(Clone)]
     pub struct OrderResponseQuantity {
         #[serde(rename = "$value")]
         pub value: String,
-        #[serde(rename = "@type")]
-        pub type_indicator: String,
-        #[serde(rename = "@coverage")]
-        pub coverage: String,
-        #[serde(rename = "@date")]
-        pub date: String,
+        #[serde(rename = "@type", skip_serializing_if = "Option::is_none")]
+        pub type_indicator: Option<String>,
+        #[serde(rename = "@coverage", skip_serializing_if = "Option::is_none")]
+        pub coverage: Option<String>,
+        #[serde(rename = "@date", skip_serializing_if = "Option::is_none")]
+        pub date: Option<String>,
     }
 }
 
@@ -116,13 +131,18 @@ impl From<p_orders_response::Valasz> for Answer {
     fn from(v: p_orders_response::Valasz) -> Self {
         Self {
             version: v.verzio,
-            header: v.fej.into(),
+            // When no line was recorded Octopus still sends a `<fej>`, but
+            // with every identifier empty: that is "no order", not a header.
+            header: v.fej
+                .filter(|fej| !fej.azonosito.trim().is_empty())
+                .map(Into::into),
             items: v.tetelek.into(),
             extra_items: v.extratetelek,
             shipping_cost: v.fuvarkoltseg,
             cash_on_delivery: v.utanvet,
             extra_services: v.extraszolg,
             return_fee: v.visszavaltasi_dij,
+            error: v.hiba.map(Into::into),
         }
     }
 }
