@@ -35,7 +35,7 @@ use crate::{
     forms::{
         r#in::xml::{
             orders::{Address, Header, Item, Items, Order},
-            orders_response::{Envelope, Valasz}
+            orders_response::{Envelope, Valasz, ValaszMennyiseg}
         },
         out::xml::defaults::Error as EnglishError
     },
@@ -464,12 +464,14 @@ fn describe_answer(envelope: Envelope, sent: &Sent) -> (CallToolResult, bool) {
     let mut total_gross = 0.0;
     let mut currency: Option<String> = None;
     let lines: Vec<Value> = answer.tetelek.tetel.iter().map(|line| {
+        let parts = &line.mennyiseg;
+        let refused = |part: &&ValaszMennyiseg| part.tipus.as_deref().map(str::trim) == Some("4");
         let recorded = line.rogzitett_tetelszam.trim() != "0"
-            && line.mennyiseg.tipus.as_deref().map(str::trim) != Some("4");
+            && !(!parts.is_empty() && parts.iter().all(|part| refused(&part)));
         let mut row = json!({
             "line": line_number(&line.tetelszam),
             "no": line.cikkszam,
-            "quantity": number(&line.mennyiseg.value, None),
+            "quantity": total_quantity(parts),
             "recorded": recorded
         });
         if let Some(object) = row.as_object_mut() {
@@ -487,12 +489,28 @@ fn describe_answer(envelope: Envelope, sent: &Sent) -> (CallToolResult, bool) {
                 if let Some(currency) = &line.dnem {
                     object.insert("currency".into(), json!(currency));
                 }
-                if let Some(date) = line.mennyiseg.datum.as_deref().filter(|date| !date.trim().is_empty()) {
-                    object.insert("expected_date".into(), json!(date.get(..10).unwrap_or(date)));
+                // The date the whole line is in: the latest of its parts
+                // (ISO dates compare correctly as text).
+                if let Some(date) = parts.iter().filter_map(|part| day(part.datum.as_deref())).max() {
+                    object.insert("expected_date".into(), json!(date));
+                }
+                // A line split between stock and a later arrival: how much
+                // comes when.
+                if parts.len() > 1 {
+                    object.insert("deliveries".into(), json!(parts.iter().map(|part| {
+                        let mut delivery = json!({ "quantity": number(&part.value, None) });
+                        if let (Some(object), Some(date)) = (delivery.as_object_mut(), day(part.datum.as_deref())) {
+                            object.insert("expected_date".into(), json!(date));
+                        }
+                        delivery
+                    }).collect::<Vec<Value>>()));
                 }
             } else {
                 object.insert("reason".into(), json!(
-                    line.mennyiseg.kenocs.as_deref().filter(|text| !text.trim().is_empty()).unwrap_or("not recorded")
+                    parts.iter().find(refused).or(parts.first())
+                        .and_then(|part| part.kenocs.as_deref())
+                        .filter(|text| !text.trim().is_empty())
+                        .unwrap_or("not recorded")
                 ));
             }
         }
@@ -546,8 +564,8 @@ fn describe_answer(envelope: Envelope, sent: &Sent) -> (CallToolResult, bool) {
                     if let Some(name) = &charge.cikknev {
                         row_object.insert("name".into(), json!(name));
                     }
-                    if let Some(quantity) = &charge.mennyiseg {
-                        row_object.insert("quantity".into(), number(&quantity.value, None));
+                    if !charge.mennyiseg.is_empty() {
+                        row_object.insert("quantity".into(), total_quantity(&charge.mennyiseg));
                     }
                     insert_money(row_object, "value_net", charge.ertek.as_deref());
                     insert_money(row_object, "value_gross", charge.brertek.as_deref());
@@ -577,7 +595,8 @@ fn describe_answer(envelope: Envelope, sent: &Sent) -> (CallToolResult, bool) {
         }
         object.insert("note".into(), json!(match status {
             "recorded" => "Every line was recorded. Give the user the document_number, and mention any \
-                charges (delivery, deposit) — total_net and total_gross include them.",
+                charges (delivery, deposit) — total_net and total_gross include them. A line with \
+                `deliveries` ships in parts: tell the user how much arrives when.",
             "partially_recorded" => "Only some lines were recorded — the order exists, but tell the user \
                 exactly which lines were NOT recorded and why. Do not resubmit the recorded lines.",
             _ => "Nothing was recorded, usually because the article numbers are unknown. Check them with \
@@ -612,6 +631,25 @@ fn number(value: &str, decimals: Option<i32>) -> Value {
         },
         None => json!(value.trim())
     }
+}
+
+/// The quantity of a line that may ship in parts: the one part's own text
+/// when there is one, the sum when there are several.
+fn total_quantity(parts: &[ValaszMennyiseg]) -> Value {
+    match parts {
+        [] => Value::Null,
+        [part] => number(&part.value, None),
+        _ => match parts.iter().map(|part| parse(Some(&part.value))).sum::<Option<f64>>() {
+            Some(sum) => json!(sum),
+            None => json!(parts.iter().map(|part| part.value.trim()).collect::<Vec<_>>().join(" + "))
+        }
+    }
+}
+
+/// `2026-11-20T00:00:00` → `2026-11-20`; nothing for an empty date.
+fn day(value: Option<&str>) -> Option<&str> {
+    let value = value?.trim();
+    (!value.is_empty()).then(|| value.get(..10).unwrap_or(value))
 }
 
 /// A line number as an integer (`1`, not `1.0`), the original text where it is not one.
@@ -719,6 +757,36 @@ mod tests {
         );
         assert!(english.contains("<product_number>FUVARDIJKOZV</product_number>"), "{english}");
         assert!(english.contains("<parent_item_number>1</parent_item_number>"), "{english}");
+    }
+
+    /// Two lines of Octopus's real answer to an 8-line order: one shipping
+    /// partly from stock and partly later (two `<mennyiseg>`), one arriving
+    /// later in full. The order was recorded, but the repeated element failed
+    /// the parse and the tool reported "outcome unknown".
+    const SPLIT_LINE_ANSWER: &str = r#"<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><RendelesFeladasAuthResponse xmlns="https://orink.hu/services/"><RendelesFeladasAuthResult><valasz verzio="1.0" xmlns=""><fej><azonosito>2113850</azonosito><webazon>b7135c4e-5723-446c-88ac-9807ec9666d2</webazon><bizonylatszam>XKBRE2631138</bizonylatszam><szalldatum>2026.11.13</szalldatum></fej><tetelek><tetel><tetelszam>6</tetelszam><rogzitett_tetelszam>6</rogzitett_tetelszam><cikkszam>65877</cikkszam><mennyiseg tipus="1" kenocs="{0:0.##} {1}" datum="2026-11-12T00:00:00">11,0000000</mennyiseg><mennyiseg tipus="3" kenocs="Érkezik" datum="2026-11-20T00:00:00">9,0000000</mennyiseg><egysegar>3506,8000000</egysegar><bregysegar>4453,63600000000</bregysegar><ertek>70136,000000</ertek><brertek>89072,720000</brertek><dnem>HUF</dnem></tetel><tetel><tetelszam>7</tetelszam><rogzitett_tetelszam>7</rogzitett_tetelszam><cikkszam>44478</cikkszam><mennyiseg tipus="3" kenocs="Érkezik" datum="2026-12-16T00:00:00">20,0000000</mennyiseg><egysegar>381,7000000</egysegar><bregysegar>484,75900000000</bregysegar><ertek>7634,000000</ertek><brertek>9695,180000</brertek><dnem>HUF</dnem></tetel></tetelek><extratetelek /><fuvarkoltseg /><utanvet /><extraszolg /><visszavaltasi_dij /></valasz></RendelesFeladasAuthResult></RendelesFeladasAuthResponse></soap:Body></soap:Envelope>"#;
+
+    #[test]
+    fn a_line_shipping_in_parts_is_read_as_recorded() {
+        let parse = || quick_xml::de::from_str::<Envelope>(SPLIT_LINE_ANSWER).expect("Octopus's answer parses");
+
+        let sent = Sent { pid: 29936, reference: "4502301770/N09/4120".into(), lines: 2 };
+        let (result, _) = describe_answer(parse(), &sent);
+        let text = result.content.first().and_then(|content| content.as_text()).map(|text| text.text.clone()).unwrap_or_default();
+        let payload: Value = serde_json::from_str(&text).expect("the summary is JSON");
+        assert_eq!(payload["status"], "recorded", "{payload}");
+        let split = &payload["lines"][0];
+        assert_eq!(split["quantity"], 20.0, "the parts add up to the ordered quantity");
+        assert_eq!(split["expected_date"], "2026-11-20", "the whole line is in when its last part is");
+        assert_eq!(split["deliveries"], json!([
+            { "quantity": 11.0, "expected_date": "2026-11-12" },
+            { "quantity": 9.0, "expected_date": "2026-11-20" }
+        ]));
+        assert!(payload["lines"][1].get("deliveries").is_none(), "one part needs no breakdown");
+
+        let english = crate::service::get_data::to_xml_string(
+            &crate::forms::out::xml::orders_response::Envelope::from(parse())
+        );
+        assert_eq!(english.matches("<quantity ").count(), 3, "both parts reach the REST answer: {english}");
     }
 
     #[test]

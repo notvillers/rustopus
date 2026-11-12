@@ -67,12 +67,18 @@ O8ModelDeriveOnly! {
     // A line Octopus did not record (unknown article, …) comes back with
     // `rogzitett_tetelszam = 0`, `mennyiseg tipus="4"` and no date or prices,
     // so everything past the identifying fields is optional.
+    //
+    // `mennyiseg` repeats when a line ships in parts: 11 from stock
+    // (`tipus="1"`) and 9 arriving later (`tipus="3"`, `kenocs="Érkezik"`),
+    // each with its own date. A single field fails the whole answer with
+    // "duplicate field `mennyiseg`" — for an order that was recorded fine.
     #[derive(Clone)]
     pub struct ValaszTetel {
         pub tetelszam: String,
         pub rogzitett_tetelszam: String,
         pub cikkszam: String,
-        pub mennyiseg: ValaszMennyiseg,
+        #[serde(default)]
+        pub mennyiseg: Vec<ValaszMennyiseg>,
         #[serde(default)]
         pub egysegar: Option<String>,
         #[serde(default)]
@@ -104,8 +110,9 @@ O8ModelDeriveOnly! {
         pub cikkszam: Option<String>,
         #[serde(default)]
         pub cikknev: Option<String>,
+        /// A list for the same reason as on `ValaszTetel`.
         #[serde(default)]
-        pub mennyiseg: Option<ValaszMennyiseg>,
+        pub mennyiseg: Vec<ValaszMennyiseg>,
         #[serde(default)]
         pub egysegar: Option<String>,
         #[serde(default)]

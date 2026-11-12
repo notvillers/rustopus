@@ -64,8 +64,8 @@ OutModelDeriveOnly! {
         pub product_number: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub product_name: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub quantity: Option<OrderResponseQuantity>,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        pub quantity: Vec<OrderResponseQuantity>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub unit_price_net: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -87,12 +87,13 @@ OutModelDeriveOnly! {
     }
 
     // Prices and the date are absent on a line Octopus did not record
-    // (`recorded_item_number` 0, quantity `type` 4).
+    // (`recorded_item_number` 0, quantity `type` 4). `quantity` repeats, as
+    // in Octopus's answer, when the line ships in parts (stock + arriving).
     pub struct OrderResponseItem {
         pub item_number: String,
         pub recorded_item_number: String,
         pub product_number: String,
-        pub quantity: OrderResponseQuantity,
+        pub quantity: Vec<OrderResponseQuantity>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub unit_price_net: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -204,7 +205,7 @@ impl From<p_orders_response::ValaszDij> for OrderCharge {
             product_id: dij.cikkid,
             product_number: dij.cikkszam,
             product_name: dij.cikknev,
-            quantity: dij.mennyiseg.map(Into::into),
+            quantity: dij.mennyiseg.into_iter().map(Into::into).collect(),
             unit_price_net: dij.egysegar,
             unit_price_gross: dij.bregysegar,
             value_net: dij.ertek,
@@ -231,7 +232,7 @@ impl From<p_orders_response::ValaszTetel> for OrderResponseItem {
             item_number: tetel.tetelszam,
             recorded_item_number: tetel.rogzitett_tetelszam,
             product_number: tetel.cikkszam,
-            quantity: tetel.mennyiseg.into(),
+            quantity: tetel.mennyiseg.into_iter().map(Into::into).collect(),
             unit_price_net: tetel.egysegar,
             unit_price_gross: tetel.bregysegar,
             value_net: tetel.ertek,

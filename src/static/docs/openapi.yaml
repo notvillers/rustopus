@@ -1487,22 +1487,30 @@ components:
                                 type: string
                                 example: "PAPIRA4CAN"
                               quantity:
-                                type: object
-                                properties:
-                                  type:
-                                    type: string
-                                    description: "1: recorded, 4: not recorded (coverage then reads \"Nem rögzített\")."
-                                    example: "1"
-                                  coverage:
-                                    type: string
-                                    example: "1-50"
-                                  date:
-                                    type: string
-                                    format: date-time
-                                    example: "2026-03-31T00:00:00"
-                                  value:
-                                    type: number
-                                    example: 1.0
+                                type: array
+                                description: >-
+                                  One element per part of the line. A line that ships in parts
+                                  repeats it: e.g. 11 from stock (type 1) and 9 arriving later
+                                  (type 3, coverage "Érkezik"), each with its own date.
+                                items:
+                                  type: object
+                                  xml:
+                                    name: quantity
+                                  properties:
+                                    type:
+                                      type: string
+                                      description: "1: recorded, 3: recorded, arriving later, 4: not recorded (coverage then reads \"Nem rögzített\")."
+                                      example: "1"
+                                    coverage:
+                                      type: string
+                                      example: "1-50"
+                                    date:
+                                      type: string
+                                      format: date-time
+                                      example: "2026-03-31T00:00:00"
+                                    value:
+                                      type: number
+                                      example: 1.0
                               unit_price_net:
                                 type: number
                                 example: 1193.5007520
