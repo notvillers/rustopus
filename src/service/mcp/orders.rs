@@ -90,6 +90,11 @@ McpToolArgs! {
         pub note: Option<String>,
         /// A note for the delivery (for the courier).
         pub delivery_note: Option<String>,
+        /// A note for Orink's warehouse staff who pick and pack the order.
+        pub note_warehouse: Option<String>,
+        /// An internal note kept with the order for Orink's staff. Use it only
+        /// when the user asks for a hidden or internal note.
+        pub note_hidden: Option<String>,
         /// Set to true ONLY when the user has explicitly confirmed that they want
         /// to place an order identical to one placed in the last 10 minutes.
         /// Never set it on a first attempt.
@@ -305,8 +310,8 @@ pub fn prepare(args: SubmitOrderArgs, own_pid: i64) -> Result<Prepared, String> 
             contact_phone: None,
             contact_email: None,
             note: text(args.note),
-            note_warehouse: None,
-            note_hidden: None,
+            note_warehouse: text(args.note_warehouse),
+            note_hidden: text(args.note_hidden),
             invoice_address: None,
             delivery_address,
             enduser_delivery_mode: None,
@@ -677,6 +682,8 @@ mod tests {
             reference: None,
             note: None,
             delivery_note: None,
+            note_warehouse: None,
+            note_hidden: None,
             confirm_duplicate: None
         }
     }
