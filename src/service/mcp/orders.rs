@@ -108,6 +108,13 @@ McpToolArgs! {
         /// How many to order, in the product's own unit.
         #[serde(deserialize_with = "lenient_quantity")]
         pub quantity: f64,
+        /// Net unit price to record this line at. Only when the user explicitly
+        /// gives one (e.g. from their purchase order) — never copy a catalog
+        /// price. Octopus applies it only if Orink has enabled it for this
+        /// partner; otherwise the line is recorded at the current price, and the
+        /// answer reports that per line.
+        #[serde(default, deserialize_with = "lenient_price")]
+        pub unit_price: Option<f64>,
         /// A note for this line.
         pub note: Option<String>
     }
@@ -170,8 +177,21 @@ where
     match Quantity::deserialize(deserializer)? {
         Quantity::Number(value) => Ok(value),
         Quantity::Text(text) => text.trim().replace(',', ".").parse::<f64>()
-            .map_err(|_| serde::de::Error::custom(format!("'{}' is not a quantity", text.trim())))
+            .map_err(|_| serde::de::Error::custom(format!("'{}' is not a number", text.trim())))
     }
+}
+
+/// `lenient_quantity` for an optional price.
+fn lenient_price<'de, D>(deserializer: D) -> Result<Option<f64>, D::Error>
+where
+    D: serde::Deserializer<'de>
+{
+    use serde::Deserialize;
+
+    #[derive(Deserialize)]
+    struct Price(#[serde(deserialize_with = "lenient_quantity")] f64);
+
+    Ok(Option::<Price>::deserialize(deserializer)?.map(|Price(price)| price))
 }
 
 
@@ -181,9 +201,12 @@ pub struct Prepared {
     pub pid: u64,
     pub reference: String,
     pub lines: usize,
+    /// The requested unit price per line, by line number - 1.
+    pub prices: Vec<Option<f64>>,
     /// Identity of this order for the duplicate guard: partner, mode and the
-    /// sorted lines. Notes and references are left out on purpose — a retry
-    /// with a fresh generated reference is still the same order.
+    /// sorted lines. Notes, references and prices are left out on purpose — a
+    /// retry with a fresh generated reference, or with a corrected price, is
+    /// still the same order.
     pub fingerprint: String
 }
 
@@ -282,11 +305,15 @@ pub fn prepare(args: SubmitOrderArgs, own_pid: i64) -> Result<Prepared, String> 
         if !line.quantity.is_finite() || line.quantity <= 0.0 {
             return Err(format!("Line {} ({}) needs a quantity above zero.", index + 1, no))
         }
+        if line.unit_price.is_some_and(|price| !price.is_finite() || price <= 0.0) {
+            return Err(format!("Line {} ({}) needs a unit_price above zero, or none at all.", index + 1, no))
+        }
         fingerprint_lines.push(format!("{}*{}", no.to_uppercase(), line.quantity));
         items.push(Item {
             lot_no: index as u64 + 1,
             no,
             qty: line.quantity,
+            unit_price: line.unit_price,
             enduser_price: None,
             note: text(line.note)
         });
@@ -295,6 +322,7 @@ pub fn prepare(args: SubmitOrderArgs, own_pid: i64) -> Result<Prepared, String> 
 
     let reference = text(args.reference).unwrap_or_else(generated_reference);
     let lines = items.len();
+    let prices = items.iter().map(|item| item.unit_price).collect();
 
     let order = Order {
         version: "1.0".into(),
@@ -330,6 +358,7 @@ pub fn prepare(args: SubmitOrderArgs, own_pid: i64) -> Result<Prepared, String> 
         pid,
         reference,
         lines,
+        prices,
         fingerprint: format!("{}|{}|{}", pid, delivery_mode, fingerprint_lines.join(","))
     })
 }
@@ -392,8 +421,8 @@ pub async fn run(args: SubmitOrderArgs, auth: &McpAuth, url: &str) -> CallToolRe
         auth.masked(), prepared.reference, prepared.pid, prepared.lines
     ));
 
-    let Prepared { order, pid, reference, lines, fingerprint } = prepared;
-    let sent = Sent { pid, reference, lines };
+    let Prepared { order, pid, reference, lines, prices, fingerprint } = prepared;
+    let sent = Sent { pid, reference, lines, prices };
 
     let timeout = Duration::from_secs(get_mcp_settings().order_timeout_secs());
     let label = format!("MCP ORDER '{}'", sent.reference);
@@ -412,7 +441,9 @@ pub async fn run(args: SubmitOrderArgs, auth: &McpAuth, url: &str) -> CallToolRe
 struct Sent {
     pid: u64,
     reference: String,
-    lines: usize
+    lines: usize,
+    /// The requested unit price per line, by line number - 1.
+    prices: Vec<Option<f64>>
 }
 
 
@@ -465,6 +496,7 @@ fn describe_answer(envelope: Envelope, sent: &Sent) -> (CallToolResult, bool) {
     let header = answer.fej.as_ref().filter(|fej| !fej.azonosito.trim().is_empty());
 
     let mut recorded_lines = 0usize;
+    let mut prices_not_applied = 0usize;
     let mut total_net = 0.0;
     let mut total_gross = 0.0;
     let mut currency: Option<String> = None;
@@ -493,6 +525,17 @@ fn describe_answer(envelope: Envelope, sent: &Sent) -> (CallToolResult, bool) {
                 insert_money(object, "value_gross", line.brertek.as_deref());
                 if let Some(currency) = &line.dnem {
                     object.insert("currency".into(), json!(currency));
+                }
+                // A requested price is honoured only where Orink enabled it
+                // for the partner; otherwise Octopus silently records its own,
+                // and the user must not be told their price went through.
+                if let Some(requested) = requested_price(sent, &line.tetelszam) {
+                    let applied = price_applied(requested, parse(line.egysegar.as_deref()));
+                    if !applied {
+                        prices_not_applied += 1;
+                    }
+                    object.insert("requested_unit_price".into(), json!(requested));
+                    object.insert("price_applied".into(), json!(applied));
                 }
                 // The date the whole line is in: the latest of its parts
                 // (ISO dates compare correctly as text).
@@ -529,9 +572,10 @@ fn describe_answer(envelope: Envelope, sent: &Sent) -> (CallToolResult, bool) {
     };
 
     logger(format!(
-        "MCP ORDER '{}': {} — {}/{} line(s) recorded{}",
+        "MCP ORDER '{}': {} — {}/{} line(s) recorded{}{}",
         sent.reference, status, recorded_lines, sent.lines,
-        header.map(|fej| format!(", document {}", fej.bizonylatszam)).unwrap_or_default()
+        header.map(|fej| format!(", document {}", fej.bizonylatszam)).unwrap_or_default(),
+        if prices_not_applied > 0 { format!(", {} requested price(s) not applied", prices_not_applied) } else { String::new() }
     ));
 
     let mut payload = json!({
@@ -542,6 +586,16 @@ fn describe_answer(envelope: Envelope, sent: &Sent) -> (CallToolResult, bool) {
         "lines_recorded": recorded_lines,
         "lines": lines
     });
+    let price_note = if prices_not_applied > 0 {
+        format!(
+            " {} line(s) were NOT recorded at the requested unit price (price_applied false): Octopus \
+             used its current price instead, usually because sending prices is not enabled for this \
+             partner. Tell the user which lines and at what price they were recorded.",
+            prices_not_applied
+        )
+    } else {
+        String::new()
+    };
     if let Some(object) = payload.as_object_mut() {
         if let Some(fej) = header {
             // Charges Octopus added on its own: delivery on a delivery order,
@@ -598,7 +652,7 @@ fn describe_answer(envelope: Envelope, sent: &Sent) -> (CallToolResult, bool) {
                 object.insert("currency".into(), json!(currency));
             }
         }
-        object.insert("note".into(), json!(match status {
+        object.insert("note".into(), json!(format!("{}{}", match status {
             "recorded" => "Every line was recorded. Give the user the document_number, and mention any \
                 charges (delivery, deposit) — total_net and total_gross include them. A line with \
                 `deliveries` ships in parts: tell the user how much arrives when.",
@@ -606,7 +660,7 @@ fn describe_answer(envelope: Envelope, sent: &Sent) -> (CallToolResult, bool) {
                 exactly which lines were NOT recorded and why. Do not resubmit the recorded lines.",
             _ => "Nothing was recorded, usually because the article numbers are unknown. Check them with \
                 search_products or get_product."
-        }));
+        }, price_note)));
     }
 
     let text = serde_json::to_string(&payload).unwrap_or_else(|_| status.to_string());
@@ -657,6 +711,18 @@ fn day(value: Option<&str>) -> Option<&str> {
     (!value.is_empty()).then(|| value.get(..10).unwrap_or(value))
 }
 
+/// The unit price the caller asked for on the answer's line `tetelszam`.
+fn requested_price(sent: &Sent, tetelszam: &str) -> Option<f64> {
+    let line = tetelszam.trim().parse::<usize>().ok()?;
+    sent.prices.get(line.checked_sub(1)?).copied().flatten()
+}
+
+/// Whether Octopus recorded the line at the requested price. It keeps seven
+/// decimals, so anything beyond rounding means it used a price of its own.
+fn price_applied(requested: f64, recorded: Option<f64>) -> bool {
+    recorded.is_some_and(|recorded| (recorded - requested).abs() < 0.0001)
+}
+
 /// A line number as an integer (`1`, not `1.0`), the original text where it is not one.
 fn line_number(value: &str) -> Value {
     value.trim().parse::<u64>().map(|line| json!(line)).unwrap_or_else(|_| json!(value.trim()))
@@ -675,7 +741,7 @@ mod tests {
 
     fn args(items: Vec<(&str, f64)>) -> SubmitOrderArgs {
         SubmitOrderArgs {
-            items: items.into_iter().map(|(no, quantity)| OrderLineArgs { no: no.into(), quantity, note: None }).collect(),
+            items: items.into_iter().map(|(no, quantity)| OrderLineArgs { no: no.into(), quantity, unit_price: None, note: None }).collect(),
             delivery_mode: None,
             delivery_address: None,
             partner_id: None,
@@ -705,6 +771,10 @@ mod tests {
             ("no lines", args(vec![])),
             ("blank article", args(vec![("  ", 1.0)])),
             ("zero quantity", args(vec![("A", 0.0)])),
+            ("negative price", SubmitOrderArgs {
+                items: vec![OrderLineArgs { no: "A".into(), quantity: 1.0, unit_price: Some(-5.0), note: None }],
+                ..args(vec![])
+            }),
             ("end-customer mode", SubmitOrderArgs { delivery_mode: Some(3), ..args(vec![("A", 1.0)]) }),
             ("unknown mode", SubmitOrderArgs { delivery_mode: Some(7), ..args(vec![("A", 1.0)]) }),
             ("address on pick-up", SubmitOrderArgs {
@@ -745,7 +815,7 @@ mod tests {
     fn a_delivery_order_answer_with_charges_is_read_and_totalled() {
         let parse = || quick_xml::de::from_str::<Envelope>(DELIVERY_ORDER_ANSWER).expect("Octopus's answer parses");
 
-        let sent = Sent { pid: 7824, reference: "ai_test_20261011_1".into(), lines: 1 };
+        let sent = Sent { pid: 7824, reference: "ai_test_20261011_1".into(), lines: 1, prices: vec![] };
         let (result, certainly_not_recorded) = describe_answer(parse(), &sent);
         assert!(!certainly_not_recorded);
         assert_ne!(result.is_error, Some(true));
@@ -776,7 +846,10 @@ mod tests {
     fn a_line_shipping_in_parts_is_read_as_recorded() {
         let parse = || quick_xml::de::from_str::<Envelope>(SPLIT_LINE_ANSWER).expect("Octopus's answer parses");
 
-        let sent = Sent { pid: 29936, reference: "4502301770/N09/4120".into(), lines: 2 };
+        // Line 6 asks for the price Octopus recorded, line 7 for one it did not
+        // use (price sending not enabled, say).
+        let prices = vec![None, None, None, None, None, Some(3506.8), Some(300.0)];
+        let sent = Sent { pid: 29936, reference: "4502301770/N09/4120".into(), lines: 2, prices };
         let (result, _) = describe_answer(parse(), &sent);
         let text = result.content.first().and_then(|content| content.as_text()).map(|text| text.text.clone()).unwrap_or_default();
         let payload: Value = serde_json::from_str(&text).expect("the summary is JSON");
@@ -789,6 +862,9 @@ mod tests {
             { "quantity": 9.0, "expected_date": "2026-11-20" }
         ]));
         assert!(payload["lines"][1].get("deliveries").is_none(), "one part needs no breakdown");
+        assert_eq!(split["price_applied"], true);
+        assert_eq!(payload["lines"][1]["price_applied"], false, "Octopus kept its own 381.70");
+        assert!(payload["note"].as_str().is_some_and(|note| note.contains("NOT recorded at the requested unit price")));
 
         let english = crate::service::get_data::to_xml_string(
             &crate::forms::out::xml::orders_response::Envelope::from(parse())

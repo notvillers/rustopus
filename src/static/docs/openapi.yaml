@@ -1418,6 +1418,22 @@ components:
               qty:
                 type: number
                 example: 1.0
+              unit_price:
+                type: number
+                description: >-
+                  Optional net unit price to record the line at (Octopus `egysar`).
+                  Applied only if Orink has enabled price submission for the partner;
+                  otherwise, or when omitted, Octopus records its current price. Compare
+                  the answer's `unit_price_net` to see which one was used. A decimal point
+                  or a decimal comma are both accepted (`1193.5` or `1193,5`).
+                example: 1193.5
+              enduser_price:
+                type: number
+                description: Optional end-user unit price (Octopus `vegfegysar`), for delivery mode 3.
+                example: 1690.0
+              note:
+                type: string
+                description: Optional note for the line.
 
     OrderResponse:
       type: object

@@ -101,6 +101,10 @@ OutModelDeriveOnly! {
         pub tetelszam: u64,
         pub cikkszam: String,
         pub mennyiseg: f64,
+        // Octopus writes its numbers with a decimal comma, and whether it reads
+        // a point is unproven: every quantity sent so far was a whole number.
+        #[serde(skip_serializing_if = "Option::is_none", with = "hungarian_decimal_opt")]
+        pub egysar: Option<f64>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub vegfegysar: Option<f64>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -179,6 +183,26 @@ mod hungarian_date_format_opt {
 }
 
 
+/// `3506.8` → `3506,8`, the way Octopus writes numbers. Rounded to Octopus's
+/// own seven decimals first, so float noise (`0.30000000000000004`) never
+/// reaches it; a whole number carries no separator at all.
+mod hungarian_decimal_opt {
+    pub fn serialize<S>(value: &Option<f64>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match value {
+            Some(value) => serializer.serialize_str(&super::hungarian_decimal(*value)),
+            None => serializer.serialize_none(),
+        }
+    }
+}
+
+fn hungarian_decimal(value: f64) -> String {
+    ((value * 1e7).round() / 1e7).to_string().replace('.', ",")
+}
+
+
 impl From<p_orders::Items> for Tetelek {
     fn from(is: p_orders::Items) -> Self {
         let items = is.items;
@@ -195,6 +219,7 @@ impl From<p_orders::Item> for Tetel {
             tetelszam: i.lot_no,
             cikkszam: i.no,
             mennyiseg: i.qty,
+            egysar: i.unit_price,
             vegfegysar: i.enduser_price,
             megj: i.note
         }
@@ -204,4 +229,28 @@ impl From<p_orders::Item> for Tetel {
 
 pub fn error_struct_xml(_: u64, _: &str) -> String {
     "<Envelope></Envelope>".to_string()
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn prices_reach_octopus_with_a_decimal_comma() {
+        for (value, sent) in [(3506.8, "3506,8"), (1200.0, "1200"), (0.1 + 0.2, "0,3"), (12.123456789, "12,1234568")] {
+            assert_eq!(hungarian_decimal(value), sent);
+        }
+
+        // A REST caller may write either separator; Octopus gets a comma.
+        for price in ["3506.8", "3506,8"] {
+            let body = format!(
+                "<order version=\"1.0\"><header><pid>1</pid><delivery_mode>2</delivery_mode></header>\
+                 <items><item><lot_no>1</lot_no><no>A</no><qty>2</qty><unit_price>{price}</unit_price></item></items></order>"
+            );
+            let order: p_orders::Order = quick_xml::de::from_str(&body).expect("the order parses");
+            let sent = crate::service::get_data::to_xml_string(&Rendeles::from(order));
+            assert!(sent.contains("<egysar>3506,8</egysar>"), "{sent}");
+        }
+    }
 }

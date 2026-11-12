@@ -53,7 +53,33 @@ O8ModelLowercase! {
         pub lot_no: u64,
         pub no: String,
         pub qty: f64,
+        /// Net unit price to record the line at (Octopus `egysar`). Octopus
+        /// honours it only where Orink has enabled it for the partner, and
+        /// otherwise records its own current price. Accepts `3506.8` and
+        /// `3506,8` alike.
+        #[serde(default, deserialize_with = "decimal_point_or_comma")]
+        pub unit_price: Option<f64>,
         pub enduser_price: Option<f64>,
         pub note: Option<String>
     }
+}
+
+
+/// A number written with a decimal point or a decimal comma; blank is absent.
+fn decimal_point_or_comma<'de, D>(deserializer: D) -> Result<Option<f64>, D::Error>
+where
+    D: serde::Deserializer<'de>
+{
+    use serde::Deserialize;
+
+    let Some(text) = Option::<String>::deserialize(deserializer)? else {
+        return Ok(None)
+    };
+    let text = text.trim();
+    if text.is_empty() {
+        return Ok(None)
+    }
+    text.replace(',', ".").parse::<f64>()
+        .map(Some)
+        .map_err(|_| serde::de::Error::custom(format!("'{}' is not a number", text)))
 }
