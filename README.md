@@ -142,6 +142,22 @@ written `0700` with `0600` files and should be treated as sensitive.
 | `list_categories` | Brands, main groups and product groups, with counts |
 | `catalog_status` | Snapshot age and product count, so the assistant can state how fresh an answer is |
 | `export_products` | **Excel or CSV of the whole catalog** (or any filtered slice), returned as a download link |
+| `list_invoices` | The partner's invoices for a period (default: last 90 days), or every unpaid / overdue one, with totals per currency |
+| `get_invoice` | One invoice with all its lines |
+| `export_invoices` | Invoices as Excel or CSV — one row per line or per invoice — returned as a download link |
+
+The invoice tools read **live from Octopus**, not from the snapshot, and a year
+for a busy partner can take Octopus minutes — far longer than an MCP client waits
+for a tool call. So the fetch runs in the background, one calendar month per
+call: a tool waits up to `invoice_wait_secs` (default 30), then answers
+`"status": "in_progress"` with how many months have arrived, and the same call
+repeated collects the result. A finished result is kept for `invoice_ttl_secs`
+(default 15 minutes), so paging, `get_invoice` and an export of what was just
+listed are instant. If one month fails, the months that arrived are kept and the
+next call fetches only what is missing. One invoice fetch runs per partner at a
+time, and at most two monthly calls run across all partners, so invoice jobs
+never crowd out the REST endpoints' share of Octopus. "What do I owe"
+(`unpaid_only`) is a single call over the whole history rather than a period.
 
 `export_products` exists because paging is not a bulk mechanism: ~24,000 products
 cannot cross a model's context at any page size. The rows are written to a file

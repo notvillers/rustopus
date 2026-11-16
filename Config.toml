@@ -110,6 +110,20 @@ orders_enabled = false
 # unknown" itself, rather than the client giving up and retrying an order that
 # may already have been recorded.
 order_timeout_secs = 45
+# The invoice tools (list_invoices, get_invoice, export_invoices). Default true:
+# they are read-only and show nothing the caller's authcode cannot already read
+# from /get-invoice. Set false to leave them out of the tool list.
+invoices_enabled = true
+# How long an invoice tool waits for Octopus before answering "in progress", in
+# seconds. Default 30. A busy partner's year can take Octopus minutes, so the
+# fetch runs in the background and the model calls again to collect it; keep this
+# below the MCP client's own tool-call timeout, or the client gives up first and
+# the user sees a bare failure instead of "still fetching".
+invoice_wait_secs = 30
+# How long fetched invoices are kept for paging, get_invoice and export, in
+# seconds. Default 900. Short on purpose: an outstanding balance changes when an
+# invoice is paid.
+invoice_ttl_secs = 900
 # Admin dashboard token. Prefer the RUSTOPUS_ADMIN_TOKEN environment variable —
 # this file is tracked in git, so a token written here gets committed. With
 # neither set, /admin is not registered at all.

@@ -9,8 +9,9 @@
 //! the one exception: booking to another partner is a real case, and Octopus
 //! decides whether this authcode may do it.
 //!
-//! Five read tools, plus `submit_order` when `[mcp] orders_enabled` is on —
-//! shaped by what people ask rather than by SOAP operation. Every
+//! Five catalog tools, three invoice tools (unless `[mcp] invoices_enabled` is
+//! off), plus `submit_order` when `[mcp] orders_enabled` is on — shaped by what
+//! people ask rather than by SOAP operation. Every
 //! tool definition costs context on every request, so there is deliberately no
 //! tool-per-endpoint mapping, and deliberately **no sync tool**: refresh is the
 //! precache job's business, and a model-triggered 28-second sync is exactly what
@@ -40,8 +41,9 @@ use crate::{
             cache::cache,
             export,
             index::{CatalogSnapshot, SearchFilters, fold},
+            invoices::{self, Fetch, Question, Scope},
             mask_authcode,
-            orders::{self, SubmitOrderArgs}
+            orders::{self, SubmitOrderArgs, lenient_flag}
         },
         config::get_mcp_settings,
         soap_config::get_default_url
@@ -167,6 +169,60 @@ McpToolArgs! {
         /// Restrict to a main group, by code or name.
         pub main_category: Option<String>
     }
+
+    pub struct ListInvoicesArgs {
+        /// First invoice date, `YYYY-MM-DD`. Defaults to 90 days before `to_date`.
+        pub from_date: Option<String>,
+        /// Last invoice date, `YYYY-MM-DD`. Defaults to today. At most two years
+        /// after `from_date`.
+        pub to_date: Option<String>,
+        /// Every invoice with an outstanding balance, whatever its age ("what do
+        /// I owe"). The dates, if given, then only narrow that list.
+        #[serde(default, deserialize_with = "lenient_flag")]
+        pub unpaid_only: Option<bool>,
+        /// Only unpaid invoices past their payment deadline. Implies `unpaid_only`.
+        #[serde(default, deserialize_with = "lenient_flag")]
+        pub overdue_only: Option<bool>,
+        /// Words to look for: invoice number, the partner's own order number, or
+        /// an article number or product name on any line. Accent-insensitive.
+        pub query: Option<String>,
+        /// How many invoices to return. Clamped to 100.
+        #[serde(default, deserialize_with = "lenient_count")]
+        pub limit: Option<u32>,
+        /// How many to skip; use `next_offset` from the previous response. For
+        /// more than a few pages use `export_invoices`.
+        #[serde(default, deserialize_with = "lenient_count")]
+        pub offset: Option<u32>
+    }
+
+    pub struct GetInvoiceArgs {
+        /// The invoice number, as shown by `list_invoices`.
+        pub no: String,
+        /// The invoice's date, `YYYY-MM-DD`. Needed only when the invoice was not
+        /// in a `list_invoices` result of the last few minutes.
+        pub date: Option<String>
+    }
+
+    pub struct ExportInvoicesArgs {
+        /// `xlsx` (default, for Excel) or `csv` (semicolon-delimited).
+        pub format: Option<String>,
+        /// `lines` (default): one row per invoice line, with its invoice's number
+        /// and dates. `invoices`: one row per invoice, with its totals.
+        pub detail: Option<String>,
+        /// First invoice date, `YYYY-MM-DD`. Defaults to 90 days before `to_date`.
+        pub from_date: Option<String>,
+        /// Last invoice date, `YYYY-MM-DD`. Defaults to today. At most two years
+        /// after `from_date`.
+        pub to_date: Option<String>,
+        /// Every invoice with an outstanding balance, whatever its age.
+        #[serde(default, deserialize_with = "lenient_flag")]
+        pub unpaid_only: Option<bool>,
+        /// Only unpaid invoices past their payment deadline.
+        #[serde(default, deserialize_with = "lenient_flag")]
+        pub overdue_only: Option<bool>,
+        /// Words to narrow the export, as in `list_invoices`.
+        pub query: Option<String>
+    }
 }
 
 
@@ -193,8 +249,14 @@ impl Default for RustopusMcp {
 impl RustopusMcp {
     pub fn new() -> Self {
         let mut tool_router = Self::tool_router();
-        if !get_mcp_settings().orders_enabled() {
+        let settings = get_mcp_settings();
+        if !settings.orders_enabled() {
             tool_router.remove_route("submit_order");
+        }
+        if !settings.invoices_enabled() {
+            for name in ["list_invoices", "get_invoice", "export_invoices"] {
+                tool_router.remove_route(name);
+            }
         }
         Self { tool_router }
     }
@@ -559,6 +621,221 @@ impl RustopusMcp {
         Ok(orders::run(args, &auth, &url).await)
     }
 
+    /// Invoices for a period, or every unpaid one. The fetch runs in the
+    /// background (see `service/mcp/invoices.rs`): a busy partner's year takes
+    /// Octopus minutes, far past any client's patience, so this answers
+    /// "in progress" rather than letting the call time out.
+    #[tool(annotations(read_only_hint = true, open_world_hint = false), description = "List this partner's \
+        Orink invoices for a period (default: the last 90 days), or every unpaid / overdue invoice, with \
+        totals per currency. Returns invoice headers; use get_invoice for the lines. A long period can take \
+        Octopus several minutes: if the answer has status \"in_progress\", tell the user it is being fetched \
+        and call this tool again with exactly the same arguments — the fetch keeps running in between.")]
+    async fn list_invoices(
+        &self,
+        context: RequestContext<RoleServer>,
+        Parameters(args): Parameters<ListInvoicesArgs>
+    ) -> Result<CallToolResult, McpError> {
+        let (auth, url) = match credentials(&context) {
+            Ok(credentials) => credentials,
+            Err(result) => return Ok(result)
+        };
+        let today = invoices::today();
+        let question = match invoices::resolve(
+            args.from_date.as_deref(), args.to_date.as_deref(),
+            args.unpaid_only.unwrap_or(false), args.overdue_only.unwrap_or(false),
+            args.query.as_deref(), today
+        ) {
+            Ok(question) => question,
+            Err(message) => return Ok(CallToolResult::error(vec![Content::text(message)]))
+        };
+
+        let set = match invoices::fetch(&auth, &url, question.scope).await {
+            Fetch::Ready(set) => set,
+            other => return Ok(not_ready("list_invoices", &auth, other))
+        };
+
+        let limit = clamp(args.limit, DEFAULT_SEARCH_LIMIT, MAX_SEARCH_LIMIT);
+        let offset = args.offset.unwrap_or(0) as usize;
+        let selected = set.select(&question.filter, today);
+        let page: Vec<serde_json::Value> = selected.iter()
+            .skip(offset)
+            .take(limit)
+            .map(|invoice| invoice.summary(today))
+            .collect();
+
+        logger(format!(
+            "MCP tool 'list_invoices' by {}: {} filter={:?} offset={} limit={} -> fetched={} matched={} returned={}",
+            auth.masked(), question.scope.describe(), question.filter, offset, limit,
+            set.invoices.len(), selected.len(), page.len()
+        ));
+
+        let next_offset = offset + page.len();
+        let has_more = next_offset < selected.len();
+        let mut payload = json!({
+            "status": "ready",
+            "covers": describe_question(&question),
+            "matched": selected.len(),
+            "returned": page.len(),
+            "offset": offset,
+            "has_more": has_more,
+            "totals_by_currency": invoices::totals(&selected, today),
+            "fetched_seconds_ago": set.age_secs(),
+            "invoices": page
+        });
+        if let Some(object) = payload.as_object_mut() {
+            if has_more {
+                object.insert("next_offset".into(), json!(next_offset));
+                object.insert("hint".into(), json!(format!(
+                    "{} more. Call again with offset={} (it is instant now), or use export_invoices \
+                     with the same arguments for all {} as a spreadsheet.",
+                    selected.len() - next_offset, next_offset, selected.len()
+                )));
+            }
+            if selected.is_empty() {
+                object.insert("note".into(), json!(format!(
+                    "No invoices match{}.",
+                    if question.filter.query.is_some() || question.filter.overdue_only { " these filters" } else { " in this period" }
+                )));
+            }
+        }
+        Ok(json_result(payload))
+    }
+
+    /// One invoice with its lines.
+    #[tool(annotations(read_only_hint = true, open_world_hint = false), description = "One Orink invoice \
+        with all of its lines, by invoice number. Instant for an invoice listed by list_invoices in the last \
+        few minutes; otherwise pass its date too, so only that day is fetched from Octopus.")]
+    async fn get_invoice(
+        &self,
+        context: RequestContext<RoleServer>,
+        Parameters(args): Parameters<GetInvoiceArgs>
+    ) -> Result<CallToolResult, McpError> {
+        let (auth, url) = match credentials(&context) {
+            Ok(credentials) => credentials,
+            Err(result) => return Ok(result)
+        };
+        let today = invoices::today();
+        let reference = args.no.trim();
+        if reference.is_empty() {
+            return Ok(CallToolResult::error(vec![Content::text("no must be an invoice number.")]))
+        }
+
+        if let Some((invoice, set)) = invoices::find_kept(&auth, reference) {
+            logger(format!("MCP tool 'get_invoice' by {}: no='{}' -> found in a kept result", auth.masked(), reference));
+            return Ok(invoice_result(&invoice, today, set.age_secs()))
+        }
+
+        let Some(date) = args.date.as_deref() else {
+            logger(format!("MCP tool 'get_invoice' by {}: no='{}' -> not kept, no date given", auth.masked(), reference));
+            return Ok(CallToolResult::error(vec![Content::text(format!(
+                "Invoice '{}' is not among the invoices fetched in the last few minutes. Call get_invoice \
+                 again with its date (date=YYYY-MM-DD), or list_invoices for the period that contains it.",
+                reference
+            ))]))
+        };
+        let day = match invoices::parse_date(date, "date") {
+            Ok(day) => day,
+            Err(message) => return Ok(CallToolResult::error(vec![Content::text(message)]))
+        };
+
+        let set = match invoices::fetch(&auth, &url, Scope::Period { from: day, to: day }).await {
+            Fetch::Ready(set) => set,
+            other => return Ok(not_ready("get_invoice", &auth, other))
+        };
+        match set.find(reference) {
+            Some(invoice) => {
+                logger(format!("MCP tool 'get_invoice' by {}: no='{}' date={} -> found", auth.masked(), reference, day));
+                Ok(invoice_result(invoice, today, set.age_secs()))
+            }
+            None => {
+                logger(format!("MCP tool 'get_invoice' by {}: no='{}' date={} -> not found", auth.masked(), reference, day));
+                let others: Vec<&str> = set.invoices.iter().filter_map(|invoice| invoice.no.as_deref()).take(10).collect();
+                Ok(CallToolResult::error(vec![Content::text(if others.is_empty() {
+                    format!("This partner has no invoice dated {}.", day)
+                } else {
+                    format!("No invoice '{}' dated {}. Invoices on that day: {}.", reference, day, others.join(", "))
+                })]))
+            }
+        }
+    }
+
+    /// Invoices to a spreadsheet, for anything past a page or two — a year of
+    /// lines cannot cross the context any more than the catalog can.
+    #[tool(annotations(read_only_hint = true, open_world_hint = false), description = "Export this partner's \
+        Orink invoices to an Excel (.xlsx) or CSV file and return a download link — one row per invoice line \
+        (default) or per invoice. Takes the same period and filters as list_invoices. Use it for anything \
+        larger than a page, e.g. a whole year. Like list_invoices, a long period can answer \"in_progress\": \
+        call again with the same arguments to collect the file.")]
+    async fn export_invoices(
+        &self,
+        context: RequestContext<RoleServer>,
+        Parameters(args): Parameters<ExportInvoicesArgs>
+    ) -> Result<CallToolResult, McpError> {
+        let (auth, url) = match credentials(&context) {
+            Ok(credentials) => credentials,
+            Err(result) => return Ok(result)
+        };
+        let Some(format) = export::Format::parse(args.format.as_deref()) else {
+            return Ok(CallToolResult::error(vec![Content::text("format must be 'xlsx' or 'csv'.")]))
+        };
+        let Some(detail) = invoices::Detail::parse(args.detail.as_deref()) else {
+            return Ok(CallToolResult::error(vec![Content::text("detail must be 'lines' or 'invoices'.")]))
+        };
+        let question = match invoices::resolve(
+            args.from_date.as_deref(), args.to_date.as_deref(),
+            args.unpaid_only.unwrap_or(false), args.overdue_only.unwrap_or(false),
+            args.query.as_deref(), invoices::today()
+        ) {
+            Ok(question) => question,
+            Err(message) => return Ok(CallToolResult::error(vec![Content::text(message)]))
+        };
+
+        let set = match invoices::fetch(&auth, &url, question.scope).await {
+            Fetch::Ready(set) => set,
+            other => return Ok(not_ready("export_invoices", &auth, other))
+        };
+
+        // The workbook is written from the kept result behind its `Arc`, off the
+        // async workers, exactly as the catalog export is.
+        let for_export = Arc::clone(&set);
+        let filter = question.filter.clone();
+        let built = actix_web::web::block(move || invoices::write_export(&for_export, &filter, detail, format)).await;
+        let (prepared, rows) = match built {
+            Ok(Ok(written)) => written,
+            Ok(Err(error)) => {
+                elogger(format!("MCP invoice export failed for {}: {}", auth.masked(), error));
+                return Ok(CallToolResult::error(vec![Content::text(format!("The export could not be written: {}", error))]))
+            }
+            Err(error) => {
+                elogger(format!("MCP invoice export failed to run for {}: {}", auth.masked(), error));
+                return Ok(CallToolResult::error(vec![Content::text(
+                    "The export could not be started. This is a server-side problem."
+                )]))
+            }
+        };
+
+        logger(format!(
+            "MCP tool 'export_invoices' by {}: {} detail={} format={} rows={} -> {} ({:.1} MB)",
+            auth.masked(), question.scope.describe(), detail.name(), format.extension(), rows,
+            prepared.file_name, prepared.bytes as f64 / 1_048_576.0
+        ));
+
+        Ok(json_result(json!({
+            "status": "ready",
+            "covers": describe_question(&question),
+            "rows": rows,
+            "detail": detail.name(),
+            "format": format.extension(),
+            "file_name": prepared.file_name,
+            "size_bytes": prepared.bytes,
+            "download_url": prepared.url,
+            "expires_in_seconds": export::ttl_secs(),
+            "fetched_seconds_ago": set.age_secs(),
+            "note": "Give the user this download_url. The link expires, needs no login, and the file holds \
+                     this partner's invoices — do not post it anywhere public."
+        })))
+    }
+
     /// The caller's catalog snapshot, or a ready-made error result explaining
     /// what is missing.
     ///
@@ -569,23 +846,7 @@ impl RustopusMcp {
         &self,
         context: &RequestContext<RoleServer>
     ) -> Result<Arc<CatalogSnapshot>, CallToolResult> {
-        let Some(auth) = context.extensions.get::<McpAuth>() else {
-            return Err(CallToolResult::error(vec![Content::text(format!(
-                "This connector is not sending credentials. Both the {} and {} request headers \
-                 must be configured on it before product data can be read.",
-                AUTHCODE_HEADER, PID_HEADER
-            ))]))
-        };
-
-        let Some(url) = get_default_url() else {
-            // Server-side misconfiguration, not the caller's problem — but they
-            // still need to be told why nothing works.
-            elogger("MCP: no default SOAP url configured (soap.json missing or empty)");
-            return Err(CallToolResult::error(vec![Content::text(
-                "The Rustopus server has no Octopus url configured, so no catalog can be read. \
-                 This is a server-side configuration problem."
-            )]))
-        };
+        let (auth, url) = credentials(context)?;
 
         match cache().get_or_build(&auth.authcode, auth.pid, &url).await {
             Ok(snapshot) => Ok(snapshot),
@@ -611,6 +872,13 @@ impl ServerHandler for RustopusMcp {
              periodically refreshed snapshot — call catalog_status when the freshness of an \
              answer matters."
         );
+        if get_mcp_settings().invoices_enabled() {
+            instructions.push_str(
+                " Invoices come live from the ERP, not from the snapshot, and a long period can take \
+                 minutes: when an invoice tool answers status \"in_progress\", tell the user and call it \
+                 again with the same arguments rather than giving up or changing them."
+            );
+        }
         if get_mcp_settings().orders_enabled() {
             instructions.push_str(
                 " submit_order places real orders: confirm the lines with the user before calling it, \
@@ -636,6 +904,112 @@ fn json_result(payload: serde_json::Value) -> CallToolResult {
             CallToolResult::error(vec![Content::text("The result could not be serialized.")])
         }
     }
+}
+
+
+/// The caller's identity and the Octopus url, or a ready-made error result.
+/// Shared by every tool that reaches Octopus, so a missing header reads the
+/// same everywhere.
+///
+/// The large `Err` is the tool's own answer, built once and returned as-is —
+/// boxing it would only add an allocation on a path that ends the call.
+#[allow(clippy::result_large_err)]
+fn credentials(context: &RequestContext<RoleServer>) -> Result<(McpAuth, String), CallToolResult> {
+    let Some(auth) = context.extensions.get::<McpAuth>().cloned() else {
+        return Err(CallToolResult::error(vec![Content::text(format!(
+            "This connector is not sending credentials. Both the {} and {} request headers \
+             must be configured on it before any data can be read.",
+            AUTHCODE_HEADER, PID_HEADER
+        ))]))
+    };
+
+    let Some(url) = get_default_url() else {
+        // Server-side misconfiguration, not the caller's problem — but they
+        // still need to be told why nothing works.
+        elogger("MCP: no default SOAP url configured (soap.json missing or empty)");
+        return Err(CallToolResult::error(vec![Content::text(
+            "The Rustopus server has no Octopus url configured, so nothing can be read from the ERP. \
+             This is a server-side configuration problem."
+        )]))
+    };
+
+    Ok((auth, url))
+}
+
+
+/// What an invoice answer covers, in words the model can repeat to the user.
+fn describe_question(question: &Question) -> String {
+    let mut text = question.scope.describe();
+    if question.filter.overdue_only {
+        text = "overdue unpaid invoices".to_string();
+    }
+    match (question.filter.from, question.filter.to) {
+        (Some(from), Some(to)) => text.push_str(&format!(", dated {} to {}", from, to)),
+        (Some(from), None) => text.push_str(&format!(", dated from {}", from)),
+        (None, Some(to)) => text.push_str(&format!(", dated up to {}", to)),
+        (None, None) => {}
+    }
+    if let Some(query) = &question.filter.query {
+        text.push_str(&format!(", matching '{}'", query));
+    }
+    text
+}
+
+
+/// The answer for an invoice fetch that has no result yet. "In progress" is a
+/// success, not an error: nothing went wrong, and an error result invites the
+/// model to give up or to change the arguments — which would start a second
+/// fetch instead of collecting the first.
+fn not_ready(tool: &str, auth: &McpAuth, fetch: Fetch) -> CallToolResult {
+    match fetch {
+        Fetch::Ready(_) => CallToolResult::error(vec![Content::text("Internal error: a ready result was not used.")]),
+        Fetch::Pending(pending) => {
+            let progress = if pending.total > 1 {
+                format!("{} of {} months fetched, {} invoices so far", pending.done, pending.total, pending.invoices_so_far)
+            } else {
+                "waiting for Octopus".to_string()
+            };
+            logger(format!(
+                "MCP tool '{}' by {}: {} still running after {}s ({})",
+                tool, auth.masked(), pending.scope.describe(), pending.elapsed_secs, progress
+            ));
+            json_result(json!({
+                "status": "in_progress",
+                "covers": pending.scope.describe(),
+                "progress": progress,
+                "elapsed_seconds": pending.elapsed_secs,
+                "note": format!(
+                    "Octopus is still assembling these invoices — a long period for a busy partner can take \
+                     several minutes. Tell the user it is being fetched, then call {} again with exactly the \
+                     same arguments to collect the result. The fetch keeps running in between; changing the \
+                     arguments would start a different one.", tool
+                )
+            }))
+        }
+        Fetch::Failed(message) => {
+            logger(format!("MCP tool '{}' by {}: failed — {}", tool, auth.masked(), message));
+            CallToolResult::error(vec![Content::text(format!(
+                "Octopus did not return the invoices: {}. Months that did arrive are kept; calling again \
+                 retries only what is missing. If this persists, check that the authcode and partner id on \
+                 this connector are correct.",
+                message
+            ))])
+        }
+        Fetch::Busy(message) => {
+            logger(format!("MCP tool '{}' by {}: refused — another invoice fetch is running", tool, auth.masked()));
+            CallToolResult::error(vec![Content::text(message)])
+        }
+    }
+}
+
+
+/// One invoice with its lines, plus whether it is overdue.
+fn invoice_result(invoice: &invoices::Invoice, today: chrono::NaiveDate, age_secs: i64) -> CallToolResult {
+    let mut payload = json!({ "fetched_seconds_ago": age_secs, "invoice": invoice });
+    if invoice.is_overdue(today) && let Some(object) = payload["invoice"].as_object_mut() {
+        object.insert("overdue".into(), json!(true));
+    }
+    json_result(payload)
 }
 
 

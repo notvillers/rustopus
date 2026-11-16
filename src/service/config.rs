@@ -55,7 +55,10 @@ ConfigModelDerive! {
         pub oauth_refresh_ttl_secs: Option<u64>,
         pub oauth_login_rate_limit: Option<u32>,
         pub orders_enabled: Option<bool>,
-        pub order_timeout_secs: Option<u64>
+        pub order_timeout_secs: Option<u64>,
+        pub invoices_enabled: Option<bool>,
+        pub invoice_wait_secs: Option<u64>,
+        pub invoice_ttl_secs: Option<u64>
     }
 
 }
@@ -135,6 +138,18 @@ const DEFAULT_OAUTH_LOGIN_RATE_LIMIT: u32 = 10;
 /// failure, retries, and an order Octopus did record gets placed twice. Within
 /// this limit the tool itself reports "outcome unknown" instead.
 const DEFAULT_ORDER_TIMEOUT_SECS: u64 = 45;
+
+/// How long an MCP invoice tool waits for its background fetch before answering
+/// "still running" when `[mcp] invoice_wait_secs` is unset. Below the MCP
+/// client's own tool-call timeout for the same reason as the order timeout: a
+/// client that gives up first shows the user a bare failure, while this limit
+/// lets the tool say "in progress, ask again" and keep the fetch running.
+const DEFAULT_INVOICE_WAIT_SECS: u64 = 30;
+
+/// How long fetched invoices are kept for paging, `get_invoice` and export when
+/// `[mcp] invoice_ttl_secs` is unset: 15 minutes. Short on purpose — the
+/// outstanding balance on an invoice changes when it is paid.
+const DEFAULT_INVOICE_TTL_SECS: u64 = 900;
 
 impl McpConfig {
     pub fn is_enabled(&self) -> bool {
@@ -251,6 +266,21 @@ impl McpConfig {
     pub fn order_timeout_secs(&self) -> u64 {
         self.order_timeout_secs.filter(|secs| *secs > 0).unwrap_or(DEFAULT_ORDER_TIMEOUT_SECS)
     }
+
+    /// Whether the MCP invoice tools (`list_invoices`, `get_invoice`,
+    /// `export_invoices`) are listed. On by default: they are read-only and show
+    /// a caller nothing its authcode cannot already read from `/get-invoice`.
+    pub fn invoices_enabled(&self) -> bool {
+        self.invoices_enabled.unwrap_or(true)
+    }
+
+    pub fn invoice_wait_secs(&self) -> u64 {
+        self.invoice_wait_secs.filter(|secs| *secs > 0).unwrap_or(DEFAULT_INVOICE_WAIT_SECS)
+    }
+
+    pub fn invoice_ttl_secs(&self) -> u64 {
+        self.invoice_ttl_secs.filter(|secs| *secs > 0).unwrap_or(DEFAULT_INVOICE_TTL_SECS)
+    }
 }
 
 
@@ -275,7 +305,10 @@ pub fn get_mcp_settings() -> McpConfig {
         oauth_refresh_ttl_secs: None,
         oauth_login_rate_limit: None,
         orders_enabled: None,
-        order_timeout_secs: None
+        order_timeout_secs: None,
+        invoices_enabled: None,
+        invoice_wait_secs: None,
+        invoice_ttl_secs: None
     })
 }
 

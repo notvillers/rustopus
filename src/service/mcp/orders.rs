@@ -134,7 +134,8 @@ McpToolArgs! {
 
 
 /// Accepts `true` and `"true"` — the same bridge problem `lenient_count` solves.
-fn lenient_flag<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
+/// Shared with the invoice tools' `unpaid_only` / `overdue_only`.
+pub(crate) fn lenient_flag<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
 where
     D: serde::Deserializer<'de>
 {

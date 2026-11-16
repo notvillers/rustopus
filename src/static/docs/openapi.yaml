@@ -554,7 +554,15 @@ paths:
         `/export/{token}` rather than the rows themselves — a catalog of ~24,000
         products cannot be delivered through a chat at any page size.
 
-        A sixth tool, `submit_order`, exists only with `[mcp] orders_enabled = true`.
+        Three invoice tools — `list_invoices`, `get_invoice` and `export_invoices`
+        — read live from Octopus rather than from the snapshot, and are listed
+        unless `[mcp] invoices_enabled = false`. A long period for a busy partner
+        can take Octopus minutes, so the fetch runs in the background, month by
+        month: a call that outlasts `invoice_wait_secs` answers
+        `"status": "in_progress"`, and the same call repeated collects the result,
+        which is then kept for `invoice_ttl_secs` for paging and export.
+
+        One more tool, `submit_order`, exists only with `[mcp] orders_enabled = true`.
         It places a real order through the same path as `/post-order`, waits for
         Octopus's answer and reports it line by line. An OAuth connector may use it
         only when its operator has allowed orders for that connector; a timeout is

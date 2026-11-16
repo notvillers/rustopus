@@ -1,4 +1,5 @@
-//! Bulk export: catalog rows to a spreadsheet, delivered as a download link.
+//! Bulk export: catalog rows (and invoices, see `invoices.rs`) to a spreadsheet,
+//! delivered as a download link.
 //!
 //! ## Why this exists
 //!
@@ -200,11 +201,66 @@ fn field_number(product: &IndexedProduct, key: &str) -> Option<f64> {
 }
 
 
-/// Writes the rows to a file and registers a download token for it.
+/// One spreadsheet cell. Numbers go into a workbook as numbers, so they can be
+/// summed and sorted without the recipient retyping them; everything else is
+/// text — including barcodes and dates, which a spreadsheet would otherwise
+/// reformat.
+pub enum Cell {
+    Text(String),
+    Number(f64)
+}
+
+impl Cell {
+    /// An optional number: empty text when absent, never "None".
+    pub fn number(value: Option<f64>) -> Self {
+        match value {
+            Some(number) => Cell::Number(number),
+            None => Cell::Text(String::new())
+        }
+    }
+
+    /// An optional piece of text, empty when absent.
+    pub fn text<T: ToString>(value: Option<T>) -> Self {
+        Cell::Text(value.map(|v| v.to_string()).unwrap_or_default())
+    }
+
+    fn render(&self) -> String {
+        match self {
+            Cell::Text(text) => text.clone(),
+            Cell::Number(number) => number.to_string()
+        }
+    }
+}
+
+
+/// Writes the catalog rows to a file and registers a download token for it.
 ///
 /// Blocking and CPU-bound by nature — callers must run it through
 /// `web::block` rather than on an async worker.
 pub fn write(rows: Vec<&IndexedProduct>, format: Format) -> Result<Prepared, String> {
+    let headers: Vec<&str> = COLUMNS.iter().map(|(_, header)| *header).collect();
+    write_table("orink-products", &headers, rows.into_iter().map(product_row), format)
+}
+
+fn product_row(product: &IndexedProduct) -> Vec<Cell> {
+    COLUMNS.iter()
+        .map(|(key, _)| match field_number(product, key) {
+            Some(number) => Cell::Number(number),
+            None => Cell::Text(field_text(product, key))
+        })
+        .collect()
+}
+
+
+/// Writes any table to a file and registers a download token for it. Rows are
+/// pulled one at a time, so a caller can stream them out of a structure it
+/// holds behind an `Arc` instead of copying it first.
+///
+/// Blocking and CPU-bound — run it through `web::block`.
+pub fn write_table<I>(stem: &str, headers: &[&str], rows: I, format: Format) -> Result<Prepared, String>
+where
+    I: Iterator<Item = Vec<Cell>>
+{
     let dir = export_dir();
     if !dir.is_dir() {
         std::fs::create_dir_all(&dir).map_err(|error| format!("cannot create '{:?}': {}", dir, error))?;
@@ -212,12 +268,12 @@ pub fn write(rows: Vec<&IndexedProduct>, format: Format) -> Result<Prepared, Str
     }
 
     let token = new_token();
-    let file_name = format!("orink-products-{}.{}", chrono::Utc::now().format("%Y%m%d-%H%M"), format.extension());
+    let file_name = format!("{}-{}.{}", stem, chrono::Utc::now().format("%Y%m%d-%H%M"), format.extension());
     let path = dir.join(format!("{}.{}", token, format.extension()));
 
     match format {
-        Format::Xlsx => write_xlsx(&rows, &path)?,
-        Format::Csv => write_csv(&rows, &path)?
+        Format::Xlsx => write_xlsx(headers, rows, &path)?,
+        Format::Csv => write_csv(headers, rows, &path)?
     }
     restrict(&path, 0o600);
 
@@ -251,29 +307,32 @@ fn public_base_url() -> String {
 }
 
 
-fn write_xlsx(rows: &[&IndexedProduct], path: &PathBuf) -> Result<(), String> {
+fn write_xlsx<I>(headers: &[&str], rows: I, path: &PathBuf) -> Result<(), String>
+where
+    I: Iterator<Item = Vec<Cell>>
+{
     use rust_xlsxwriter::{Format as XlsxFormat, Workbook};
 
     let mut workbook = Workbook::new();
     let bold = XlsxFormat::new().set_bold();
     let worksheet = workbook.add_worksheet();
 
-    for (column, (_, header)) in COLUMNS.iter().enumerate() {
+    for (column, header) in headers.iter().enumerate() {
         worksheet.write_string_with_format(0, column as u16, *header, &bold)
             .map_err(|error| error.to_string())?;
     }
     // Freeze the header so a 24,000-row sheet stays navigable.
     worksheet.set_freeze_panes(1, 0).map_err(|error| error.to_string())?;
 
-    for (index, product) in rows.iter().enumerate() {
+    for (index, cells) in rows.enumerate() {
         // Row 0 is the header, so data starts at 1. `u32` is the sheet's own row
         // type and the format's hard limit is ~1M rows, well above this catalog.
         let row = index as u32 + 1;
-        for (column, (key, _)) in COLUMNS.iter().enumerate() {
+        for (column, cell) in cells.into_iter().enumerate() {
             let column = column as u16;
-            match field_number(product, key) {
-                Some(number) => worksheet.write_number(row, column, number).map_err(|e| e.to_string())?,
-                None => worksheet.write_string(row, column, field_text(product, key)).map_err(|e| e.to_string())?
+            match cell {
+                Cell::Number(number) => worksheet.write_number(row, column, number).map_err(|e| e.to_string())?,
+                Cell::Text(text) => worksheet.write_string(row, column, text).map_err(|e| e.to_string())?
             };
         }
     }
@@ -282,7 +341,10 @@ fn write_xlsx(rows: &[&IndexedProduct], path: &PathBuf) -> Result<(), String> {
 }
 
 
-fn write_csv(rows: &[&IndexedProduct], path: &PathBuf) -> Result<(), String> {
+fn write_csv<I>(headers: &[&str], rows: I, path: &PathBuf) -> Result<(), String>
+where
+    I: Iterator<Item = Vec<Cell>>
+{
     // Semicolon-delimited, matching what the REST endpoints produce — and what a
     // Hungarian Excel opens without an import dialog.
     let mut writer = csv::WriterBuilder::new()
@@ -290,11 +352,10 @@ fn write_csv(rows: &[&IndexedProduct], path: &PathBuf) -> Result<(), String> {
         .from_path(path)
         .map_err(|error| error.to_string())?;
 
-    writer.write_record(COLUMNS.iter().map(|(_, header)| *header))
-        .map_err(|error| error.to_string())?;
+    writer.write_record(headers).map_err(|error| error.to_string())?;
 
-    for product in rows {
-        let record: Vec<String> = COLUMNS.iter().map(|(key, _)| field_text(product, key)).collect();
+    for cells in rows {
+        let record: Vec<String> = cells.iter().map(Cell::render).collect();
         writer.write_record(&record).map_err(|error| error.to_string())?;
     }
 

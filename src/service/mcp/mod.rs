@@ -13,6 +13,7 @@ pub mod admin;
 pub mod cache;
 pub mod export;
 pub mod index;
+pub mod invoices;
 pub mod oauth;
 pub mod orders;
 pub mod precache;
