@@ -347,13 +347,13 @@ body.landing .hero::before {
     pointer-events: none;
 }
 
-/* #4 FORWARD — octopus8 decoration, only its LEFT HALF showing */
-.feature--forward {
+/* #4 MCP — octopus8 decoration, only its LEFT HALF showing */
+.feature--mcp {
     position: relative;
     isolation: isolate;
 }
 
-.feature--forward::before {
+.feature--mcp::before {
     content: "";
     position: absolute;
     top: 0;
