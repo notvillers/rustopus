@@ -26,11 +26,19 @@
 //! another. That does not make the whole faster, and is not meant to. It keeps
 //! **one response in memory at a time** — a busy partner's year as a single XML
 //! string is tens of megabytes on a host with ~1 GB of RAM — and it makes
-//! progress reportable and **failure partial**: if month 9 times out, months
-//! 1–8 are kept and a retry fetches only what is missing. Windows are fetched
+//! progress reportable and **failure partial**: if month 9 times out, the
+//! other months are still answered, the result names the month that is missing,
+//! and a call a minute later fetches only that month. Two failed months in a
+//! row stop the job (a refused authcode fails every month alike), and a job in
+//! which no month arrived at all is reported as a failure. A month with no
+//! invoices is an empty result like any other, and is kept as one. Windows are fetched
 //! behind their own [`GATE`] of two, so however many partners ask at once,
 //! invoice jobs never hold more than two of the outbound `SOAP_GATE` permits the
 //! REST endpoints share.
+//!
+//! Jobs of one caller run **one after another**, not side by side: a second
+//! period asked while the first is running waits its turn (reported as
+//! `in_progress`, queued), up to [`MAX_JOBS_PER_CALLER`] at once.
 //!
 //! Adjacent windows **overlap at their boundary instant** and invoices are
 //! de-duplicated by id. Whether Octopus compares `datumig` inclusively, or by
@@ -81,6 +89,18 @@ const CONCURRENT_WINDOWS: usize = 2;
 /// Pause before the one automatic retry of a failed window. Long enough for a
 /// momentary rate limit or a dropped connection to clear.
 const WINDOW_RETRY_PAUSE: Duration = Duration::from_secs(10);
+
+/// After two failed months in a row the job stops: whatever made them fail
+/// (a refused authcode, a rate limit) would fail the rest alike.
+const MAX_CONSECUTIVE_FAILURES: usize = 2;
+
+/// A result with missing months is served as it is for this long — so paging
+/// through it does not refetch — and the next call after that retries the
+/// missing months.
+const PARTIAL_RETRY_AFTER: Duration = Duration::from_secs(60);
+
+/// Jobs one caller may have running or queued at once.
+const MAX_JOBS_PER_CALLER: usize = 3;
 
 /// Finished results kept per caller, and in all. A result is a few megabytes at
 /// most, but nothing else bounds how many a caller could accumulate.
@@ -182,9 +202,9 @@ impl From<p_invoices::Invoice> for Invoice {
             completion_date: head.completition_date,
             payment_deadline: head.payment_deadline,
             currency: head.currency,
-            net_total: head.net_price,
-            gross_total: head.price,
-            outstanding: head.remaining,
+            net_total: head.net_price.map(round_cents),
+            gross_total: head.price.map(round_cents),
+            outstanding: head.remaining.map(round_cents),
             cancellation_no: head.cancellation_no,
             customer_order_no: head.foreign_order_no,
             delivery_name: head.delivery_name,
@@ -205,10 +225,12 @@ impl From<p_invoices::Product> for InvoiceLine {
             name: product.name,
             quantity: product.qty,
             unit: product.unit,
-            net_unit_price: product.net_unit_price,
-            gross_unit_price: product.unit_price,
-            net_value: product.net_price,
-            gross_value: product.price,
+            // Octopus carries unit prices to six or eight decimals; a reader
+            // and a spreadsheet want money in cents.
+            net_unit_price: product.net_unit_price.map(round_cents),
+            gross_unit_price: product.unit_price.map(round_cents),
+            net_value: product.net_price.map(round_cents),
+            gross_value: product.price.map(round_cents),
             order_no: product.order_no,
             customer_order_no: product.order_foreign_no
         }
@@ -352,14 +374,41 @@ struct Fetched {
     invoices: Vec<Invoice>
 }
 
+OutModelDeriveSerializeOnly! {
+    /// A month of a period that Octopus did not answer.
+    #[derive(Clone)]
+    pub struct MissingMonth {
+        /// `YYYY-MM`.
+        pub month: String,
+        pub from: NaiveDate,
+        pub to: NaiveDate,
+        pub error: String
+    }
+}
+
+impl MissingMonth {
+    fn new(window: Window, error: String) -> Self {
+        // The window's end is the next month's first instant for every window
+        // but the last; step back a second so `to` names the last day covered.
+        let to = (window.to - chrono::Duration::seconds(1)).date_naive().max(window.from.date_naive());
+        Self { month: window.from.format("%Y-%m").to_string(), from: window.from.date_naive(), to, error }
+    }
+}
+
 /// A finished, de-duplicated result.
 pub struct InvoiceSet {
     pub invoices: Vec<Invoice>,
+    /// Months that failed. Empty for a complete result.
+    pub missing: Vec<MissingMonth>,
     pub fetched_at: DateTime<Utc>
 }
 
 impl InvoiceSet {
-    fn assemble(scope: Scope, fetched: Vec<Fetched>) -> Self {
+    pub fn is_partial(&self) -> bool {
+        !self.missing.is_empty()
+    }
+
+    fn assemble(scope: Scope, fetched: Vec<Fetched>, missing: Vec<MissingMonth>) -> Self {
         let mut seen = HashSet::new();
         let mut invoices: Vec<Invoice> = fetched.into_iter()
             .flat_map(|part| part.invoices)
@@ -382,7 +431,7 @@ impl InvoiceSet {
             })
         }
 
-        Self { invoices, fetched_at: Utc::now() }
+        Self { invoices, missing, fetched_at: Utc::now() }
     }
 
     pub fn age_secs(&self) -> i64 {
@@ -533,8 +582,11 @@ struct Caller {
 
 #[derive(Clone)]
 enum Progress {
-    Running { done: usize, total: usize, invoices: usize },
-    Done { set: Arc<InvoiceSet>, finished: Instant },
+    /// `queued`: waiting for an earlier job of the same caller to finish.
+    Running { done: usize, total: usize, invoices: usize, queued: bool },
+    /// `kept` holds the windows that arrived when `set` is partial, so a retry
+    /// fetches only the missing ones; empty otherwise.
+    Done { set: Arc<InvoiceSet>, kept: Arc<Vec<Fetched>>, finished: Instant },
     Failed { message: String, kept: Arc<Vec<Fetched>>, finished: Instant }
 }
 
@@ -575,12 +627,14 @@ pub enum Fetch {
     Pending(Pending),
     /// Octopus refused or failed. A further call retries what is missing.
     Failed(String),
-    /// Another question is still being fetched for this caller.
+    /// Too many questions are already being fetched for this caller.
     Busy(String)
 }
 
 pub struct Pending {
     pub scope: Scope,
+    /// Waiting for an earlier request of the same caller, not yet started.
+    pub queued: bool,
     pub done: usize,
     pub total: usize,
     pub invoices_so_far: usize,
@@ -639,11 +693,11 @@ pub async fn fetch(auth: &McpAuth, url: &str, scope: Scope) -> Fetch {
 }
 
 fn pending(scope: Scope, progress: &Progress, started: Instant) -> Fetch {
-    let (done, total, invoices_so_far) = match progress {
-        Progress::Running { done, total, invoices } => (*done, *total, *invoices),
-        _ => (0, 0, 0)
+    let (done, total, invoices_so_far, queued) = match progress {
+        Progress::Running { done, total, invoices, queued } => (*done, *total, *invoices, *queued),
+        _ => (0, 0, 0, false)
     };
-    Fetch::Pending(Pending { scope, done, total, invoices_so_far, elapsed_secs: started.elapsed().as_secs() })
+    Fetch::Pending(Pending { scope, queued, done, total, invoices_so_far, elapsed_secs: started.elapsed().as_secs() })
 }
 
 
@@ -655,11 +709,21 @@ fn claim(auth: &McpAuth, url: &str, key: (Caller, Scope)) -> Claim {
     sweep(&mut jobs);
 
     let mut kept = Arc::new(Vec::new());
+    // A partial result due for a retry, still served if the retry cannot start.
+    let mut partial = None;
     if let Some(job) = jobs.get_mut(&key) {
         let progress = job.progress.borrow().clone();
         match progress {
             Progress::Running { .. } => return Claim::Wait(job.progress.clone(), job.started),
-            Progress::Done { set, .. } => return Claim::Ready(set),
+            Progress::Done { set, kept: fetched, finished } => {
+                if !set.is_partial() || finished.elapsed() < PARTIAL_RETRY_AFTER {
+                    return Claim::Ready(set)
+                }
+                // Served as it was for a while; this call retries the months
+                // that are missing. The new job replaces this entry below.
+                kept = fetched;
+                partial = Some(set);
+            }
             Progress::Failed { message, kept: fetched, .. } => {
                 if !job.reported {
                     job.reported = true;
@@ -673,22 +737,27 @@ fn claim(auth: &McpAuth, url: &str, key: (Caller, Scope)) -> Claim {
         }
     }
 
-    // One running job per caller. Without this a model asking five periods in
-    // a row would queue five jobs, each pinning a gate permit in turn.
-    if let Some(((_, other), job)) = jobs.iter().find(|((c, s), job)| *c == caller && *s != scope && job.progress.borrow().is_running()) {
-        let progress = match &*job.progress.borrow() {
-            Progress::Running { done, total, .. } if *total > 1 => format!(", {} of {} months fetched", done, total),
-            _ => String::new()
-        };
+    // A caller's jobs run one after another (see `run`); this bounds how many
+    // can be queued, so a model asking ten periods in a row does not line up
+    // ten fetches.
+    let running: Vec<Scope> = jobs.iter()
+        .filter(|((c, _), job)| *c == caller && job.progress.borrow().is_running())
+        .map(|((_, s), _)| *s)
+        .collect();
+    if running.len() >= MAX_JOBS_PER_CALLER {
+        if let Some(set) = partial {
+            return Claim::Ready(set)
+        }
+        let list: Vec<String> = running.iter().map(Scope::describe).collect();
         return Claim::Busy(format!(
-            "Another invoice request for this partner is still running ({}{}, started {}s ago). \
-             Only one runs at a time: ask for that one again to collect it, or retry this one when it is done.",
-            other.describe(), progress, job.started.elapsed().as_secs()
+            "{} invoice requests for this partner are already running or waiting ({}). Ask for one of \
+             those again to collect it, and retry this one when they are done.",
+            running.len(), list.join("; ")
         ))
     }
 
     let total = scope.windows(today()).len();
-    let (sender, receiver) = watch::channel(Progress::Running { done: 0, total, invoices: 0 });
+    let (sender, receiver) = watch::channel(Progress::Running { done: 0, total, invoices: 0, queued: false });
     let started = Instant::now();
     jobs.insert(key, Job { started, progress: receiver.clone(), reported: false });
     trim(&mut jobs, caller);
@@ -699,7 +768,7 @@ fn claim(auth: &McpAuth, url: &str, key: (Caller, Scope)) -> Claim {
         mask_authcode(&auth.authcode), auth.pid, scope.describe(), total,
         if kept.is_empty() { String::new() } else { format!(", {} kept from the failed attempt", kept.len()) }
     ));
-    tokio::spawn(run(auth.authcode.clone(), auth.pid, url.to_string(), scope, kept, sender));
+    tokio::spawn(run(auth.authcode.clone(), caller, url.to_string(), scope, kept, sender));
 
     Claim::Wait(receiver, started)
 }
@@ -749,53 +818,90 @@ pub fn find_kept(auth: &McpAuth, reference: &str) -> Option<(Invoice, Arc<Invoic
 }
 
 
-/// The job itself: every missing window in turn, then the assembled result.
+/// One turn lock per caller, so a caller's jobs run one after another.
+static CALLER_TURNS: Lazy<Mutex<HashMap<Caller, Arc<tokio::sync::Mutex<()>>>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+
+fn caller_turn(caller: Caller) -> Arc<tokio::sync::Mutex<()>> {
+    let mut turns = CALLER_TURNS.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    // A lock nobody holds or waits for is only referenced by the map.
+    turns.retain(|_, turn| Arc::strong_count(turn) > 1);
+    Arc::clone(turns.entry(caller).or_default())
+}
+
+/// The job itself: waits for the caller's earlier jobs, then every missing
+/// window in turn, then the assembled result.
 async fn run(
     authcode: String,
-    pid: i64,
+    caller: Caller,
     url: String,
     scope: Scope,
     kept: Arc<Vec<Fetched>>,
     sender: watch::Sender<Progress>
 ) {
-    let started = Instant::now();
+    let pid = caller.pid;
     let windows = scope.windows(today());
     let total = windows.len();
     let mut fetched: Vec<Fetched> = kept.iter().filter(|part| windows.contains(&part.window)).cloned().collect();
     let count = |fetched: &[Fetched]| fetched.iter().map(|part| part.invoices.len()).sum::<usize>();
-    sender.send_replace(Progress::Running { done: fetched.len(), total, invoices: count(&fetched) });
 
+    let turn = caller_turn(caller);
+    let _turn = match Arc::clone(&turn).try_lock_owned() {
+        Ok(guard) => guard,
+        Err(_) => {
+            sender.send_replace(Progress::Running { done: fetched.len(), total, invoices: count(&fetched), queued: true });
+            turn.lock_owned().await
+        }
+    };
+
+    let started = Instant::now();
+    sender.send_replace(Progress::Running { done: fetched.len(), total, invoices: count(&fetched), queued: false });
+
+    let mut missing: Vec<MissingMonth> = Vec::new();
+    let mut consecutive_failures = 0;
     for window in windows {
         if fetched.iter().any(|part| part.window == window) {
             continue
         }
+        if consecutive_failures >= MAX_CONSECUTIVE_FAILURES {
+            missing.push(MissingMonth::new(window, "not fetched: the months before it failed".to_string()));
+            continue
+        }
         match fetch_window_with_retry(&authcode, pid, &url, window, scope.is_unpaid()).await {
             Ok(invoices) => {
+                consecutive_failures = 0;
                 fetched.push(Fetched { window, invoices });
-                sender.send_replace(Progress::Running { done: fetched.len(), total, invoices: count(&fetched) });
+                sender.send_replace(Progress::Running { done: fetched.len(), total, invoices: count(&fetched), queued: false });
             }
             Err(message) => {
+                consecutive_failures += 1;
                 elogger(format!(
-                    "MCP invoices: job failed for {} pid={} — {} at {}..{} after {:.1}s ({} of {} call(s) done): {}",
-                    mask_authcode(&authcode), pid, scope.describe(), window.from.date_naive(), window.to.date_naive(),
-                    started.elapsed().as_secs_f64(), fetched.len(), total, message
+                    "MCP invoices: {} for {} pid={} — {}..{} failed after {:.1}s: {}",
+                    scope.describe(), mask_authcode(&authcode), pid, window.from.date_naive(), window.to.date_naive(),
+                    started.elapsed().as_secs_f64(), message
                 ));
-                sender.send_replace(Progress::Failed {
-                    message,
-                    kept: Arc::new(fetched),
-                    finished: Instant::now()
-                });
-                return
+                missing.push(MissingMonth::new(window, message));
             }
         }
     }
 
-    let set = InvoiceSet::assemble(scope, fetched);
+    // Nothing arrived: a failure, not an empty result.
+    if fetched.is_empty() && let Some(first) = missing.first() {
+        elogger(format!(
+            "MCP invoices: job failed for {} pid={} — {} after {:.1}s: {}",
+            mask_authcode(&authcode), pid, scope.describe(), started.elapsed().as_secs_f64(), first.error
+        ));
+        sender.send_replace(Progress::Failed { message: first.error.clone(), kept: Arc::new(fetched), finished: Instant::now() });
+        return
+    }
+
+    let kept = if missing.is_empty() { Vec::new() } else { fetched.clone() };
+    let set = InvoiceSet::assemble(scope, fetched, missing);
     logger(format!(
-        "MCP invoices: job finished for {} pid={} — {}: {} invoice(s) in {:.1}s",
-        mask_authcode(&authcode), pid, scope.describe(), set.invoices.len(), started.elapsed().as_secs_f64()
+        "MCP invoices: job finished for {} pid={} — {}: {} invoice(s) in {:.1}s{}",
+        mask_authcode(&authcode), pid, scope.describe(), set.invoices.len(), started.elapsed().as_secs_f64(),
+        if set.is_partial() { format!(", {} month(s) missing", set.missing.len()) } else { String::new() }
     ));
-    sender.send_replace(Progress::Done { set: Arc::new(set), finished: Instant::now() });
+    sender.send_replace(Progress::Done { set: Arc::new(set), kept: Arc::new(kept), finished: Instant::now() });
 }
 
 /// One window, retried once after a pause: a single dropped connection or a
@@ -1047,11 +1153,11 @@ mod tests {
             Fetched { window, invoices: vec![invoice(2, "2025-02-01", 500.0, "2025-02-11"), invoice(3, "2025-02-03", 100.0, "2025-01-20")] }
         ];
 
-        let period = InvoiceSet::assemble(Scope::Period { from: date("2025-01-01"), to: date("2025-02-28") }, parts.clone());
+        let period = InvoiceSet::assemble(Scope::Period { from: date("2025-01-01"), to: date("2025-02-28") }, parts.clone(), Vec::new());
         let ids: Vec<i64> = period.invoices.iter().map(|i| i.id).collect();
         assert_eq!(ids, vec![3, 2, 1], "each invoice once, newest first");
 
-        let unpaid = InvoiceSet::assemble(Scope::Unpaid, parts);
+        let unpaid = InvoiceSet::assemble(Scope::Unpaid, parts, Vec::new());
         let ids: Vec<i64> = unpaid.invoices.iter().map(|i| i.id).collect();
         assert_eq!(ids, vec![3, 2], "paid invoice dropped, earliest deadline first");
     }
@@ -1062,7 +1168,7 @@ mod tests {
         let set = InvoiceSet::assemble(Scope::Unpaid, vec![Fetched {
             window: Window { from: start_of_day(today), to: end_of_day(today) },
             invoices: vec![invoice(1, "2025-01-10", 100.0, "2025-02-01"), invoice(2, "2025-02-20", 100.0, "2025-03-20")]
-        }]);
+        }], Vec::new());
 
         let overdue = Filter { overdue_only: true, ..Default::default() };
         assert_eq!(set.select(&overdue, today).iter().map(|i| i.id).collect::<Vec<_>>(), vec![1]);

@@ -88,6 +88,9 @@ O8ModelLowercase! {
 
     #[derive(Default)]
     pub struct Szamlak {
+        /// Defaulted: a period with no invoices arrives as `<szamlak/>`, and
+        /// without it that fails to parse as a generic 304 instead of an empty list.
+        #[serde(default)]
         pub szamla: Vec<Szamla>
     }
     
@@ -126,6 +129,7 @@ O8ModelLowercase! {
     }
     
     pub struct Tetelek {
+        #[serde(default)]
         pub tetel: Vec<Tetel>
     }
     
@@ -193,5 +197,25 @@ where
                 .map_err(|_| serde::de::Error::custom("invalid float format"))
         }
         None => Ok(None)
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A period without invoices comes back as an empty `<szamlak/>`; it must
+    /// read as an empty list, not fail to parse.
+    #[test]
+    fn an_empty_invoice_list_parses() {
+        for inner in ["", "<szamlak/>", "<szamlak></szamlak>"] {
+            let xml = format!(
+                r#"<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><GetSzamlakAuthResponse xmlns="x"><GetSzamlakAuthResult><valasz verzio="1.0">{}</valasz></GetSzamlakAuthResult></GetSzamlakAuthResponse></soap:Body></soap:Envelope>"#,
+                inner
+            );
+            let envelope = quick_xml::de::from_str::<Envelope>(&xml).unwrap_or_else(|error| panic!("{:?}: {}", inner, error));
+            assert!(envelope.body.get_szamlak_auth_response.get_szamlak_auth_result.valasz.szamlak.szamla.is_empty());
+        }
     }
 }

@@ -58,6 +58,7 @@ O8ModelDeriveOnly! {
 
     #[derive(Default)]
     pub struct Arak {
+        #[serde(default)]
         pub ar: Vec<Ar>
     }
     

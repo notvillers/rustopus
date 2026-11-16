@@ -629,7 +629,11 @@ impl RustopusMcp {
         Orink invoices for a period (default: the last 90 days), or every unpaid / overdue invoice, with \
         totals per currency. Returns invoice headers; use get_invoice for the lines. A long period can take \
         Octopus several minutes: if the answer has status \"in_progress\", tell the user it is being fetched \
-        and call this tool again with exactly the same arguments — the fetch keeps running in between.")]
+        and call this tool again with exactly the same arguments — the fetch keeps running in between. If \
+        \"partial\" is true, some months could not be read: tell the user which (missing_months) and that the \
+        listed invoices and totals leave them out. Amounts are rounded to 2 decimals; an invoice's net_total \
+        and gross_total are the ERP's own figures (rounded by the ERP, after any advance payment deducted), so \
+        they can differ from the sum of its lines by a few fillér, and can be 0 for a fully prepaid invoice.")]
     async fn list_invoices(
         &self,
         context: RequestContext<RoleServer>,
@@ -683,6 +687,7 @@ impl RustopusMcp {
             "invoices": page
         });
         if let Some(object) = payload.as_object_mut() {
+            add_partial(object, &set);
             if has_more {
                 object.insert("next_offset".into(), json!(next_offset));
                 object.insert("hint".into(), json!(format!(
@@ -704,7 +709,9 @@ impl RustopusMcp {
     /// One invoice with its lines.
     #[tool(annotations(read_only_hint = true, open_world_hint = false), description = "One Orink invoice \
         with all of its lines, by invoice number. Instant for an invoice listed by list_invoices in the last \
-        few minutes; otherwise pass its date too, so only that day is fetched from Octopus.")]
+        few minutes; otherwise pass its date too, so only that day is fetched from Octopus. Amounts are rounded \
+        to 2 decimals; the header's net_total and gross_total are the ERP's own rounded figures after any \
+        advance payment deducted, so they need not equal the sum of the lines.")]
     async fn get_invoice(
         &self,
         context: RequestContext<RoleServer>,
@@ -820,7 +827,7 @@ impl RustopusMcp {
             prepared.file_name, prepared.bytes as f64 / 1_048_576.0
         ));
 
-        Ok(json_result(json!({
+        let mut payload = json!({
             "status": "ready",
             "covers": describe_question(&question),
             "rows": rows,
@@ -833,7 +840,11 @@ impl RustopusMcp {
             "fetched_seconds_ago": set.age_secs(),
             "note": "Give the user this download_url. The link expires, needs no login, and the file holds \
                      this partner's invoices — do not post it anywhere public."
-        })))
+        });
+        if let Some(object) = payload.as_object_mut() {
+            add_partial(object, &set);
+        }
+        Ok(json_result(payload))
     }
 
     /// The caller's catalog snapshot, or a ready-made error result explaining
@@ -964,7 +975,9 @@ fn not_ready(tool: &str, auth: &McpAuth, fetch: Fetch) -> CallToolResult {
     match fetch {
         Fetch::Ready(_) => CallToolResult::error(vec![Content::text("Internal error: a ready result was not used.")]),
         Fetch::Pending(pending) => {
-            let progress = if pending.total > 1 {
+            let progress = if pending.queued {
+                "waiting for an earlier invoice request of this partner to finish".to_string()
+            } else if pending.total > 1 {
                 format!("{} of {} months fetched, {} invoices so far", pending.done, pending.total, pending.invoices_so_far)
             } else {
                 "waiting for Octopus".to_string()
@@ -989,19 +1002,31 @@ fn not_ready(tool: &str, auth: &McpAuth, fetch: Fetch) -> CallToolResult {
         Fetch::Failed(message) => {
             logger(format!("MCP tool '{}' by {}: failed — {}", tool, auth.masked(), message));
             CallToolResult::error(vec![Content::text(format!(
-                "Octopus did not return the invoices: {}. Months that did arrive are kept; calling again \
-                 retries only what is missing. If this persists, check that the authcode and partner id on \
-                 this connector are correct.",
+                "Octopus did not return the invoices: {}. Calling again with the same arguments retries.",
                 message
             ))])
         }
         Fetch::Busy(message) => {
-            logger(format!("MCP tool '{}' by {}: refused — another invoice fetch is running", tool, auth.masked()));
+            logger(format!("MCP tool '{}' by {}: refused — too many invoice fetches running", tool, auth.masked()));
             CallToolResult::error(vec![Content::text(message)])
         }
     }
 }
 
+
+/// Marks a result that lacks some months, and names them. The model has to say
+/// so: totals over a partial period read as the whole period's otherwise.
+fn add_partial(object: &mut serde_json::Map<String, serde_json::Value>, set: &invoices::InvoiceSet) {
+    if !set.is_partial() {
+        return
+    }
+    object.insert("partial".into(), json!(true));
+    object.insert("missing_months".into(), json!(set.missing));
+    object.insert("partial_note".into(), json!(
+        "Octopus did not answer for the months in missing_months, so their invoices are not included \
+         and the totals leave them out. Tell the user. Asking again in a minute retries only those months."
+    ));
+}
 
 /// One invoice with its lines, plus whether it is overdue.
 fn invoice_result(invoice: &invoices::Invoice, today: chrono::NaiveDate, age_secs: i64) -> CallToolResult {

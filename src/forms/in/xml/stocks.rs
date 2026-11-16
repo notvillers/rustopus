@@ -70,6 +70,7 @@ O8ModelDeriveOnly! {
 
     #[derive(Default)]
     pub struct Cikkek {
+        #[serde(default)]
         pub cikk: Vec<Cikk>
     }
 }

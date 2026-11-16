@@ -58,7 +58,7 @@ O8ModelLowercase! {
 
     #[derive(Default)]
     pub struct Vonalkodok {
-        #[serde(rename = "vonalkod")]
+        #[serde(rename = "vonalkod", default)]
         pub vonalkod: Vec<Vonalkod>
     }
 
