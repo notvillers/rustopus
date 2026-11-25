@@ -438,18 +438,16 @@ body.landing {
     position: relative;
     max-width: 880px;
     margin: 0 auto;
-    padding: 84px 24px 0;
+    padding: 84px 24px 200px;
     text-align: center;
 }
 
-/* the command block sits outside .dive-copy so the phone rules can drop the
-   octopus into the gap above it. On wider screens it just continues the copy,
-   and carries the bottom padding that leaves room for the octopus below. */
+/* the command lives outside the band, under the ticker, so the hero holds
+   only the pitch and the artwork */
 .dive-terminal {
-    position: relative;
     max-width: 880px;
     margin: 0 auto;
-    padding: 0 24px 200px;
+    padding: 44px 24px 0;
     text-align: center;
 }
 
@@ -623,9 +621,7 @@ body.landing {
 /* phones: the band goes edge to edge (no page gutter, no rounded card)
    so the copy gets the full width; the buttons stack at equal width, the
    curl line wraps instead of scrolling, and the four outer tiles frame
-   the copy from the top corners and either side of the octopus. The command
-   block moves below the octopus here, so the artwork fills what used to be a
-   dead gap between the buttons and the panel's bottom edge. */
+   the copy from the top corners and either side of the octopus. */
 @media (max-width: 560px) {
     .dive {
         padding: 0;
@@ -635,7 +631,7 @@ body.landing {
         box-shadow: 0 -1px 0 rgba(255, 255, 255, .14) inset;
     }
     .dive-copy {
-        padding: 92px 20px 0;
+        padding: 92px 20px 150px;
     }
     /* iOS tints the strip behind the status bar from the canvas background
        colour, not from whatever is painted there, so the panel's gradient
@@ -689,43 +685,15 @@ body.landing {
     }
     .dive-tile--2 { top: 22px; left: 20px; }
     .dive-tile--4 { top: 26px; right: 20px; }
-    .dive-tile--1 { top: auto; bottom: 244px; left: 14px; }
-    .dive-tile--6 { top: auto; bottom: 256px; right: 14px; }
-    /* the octopus and its glow leave the panel's bottom edge and become the
-       command block's own backdrop, so the command reads below the artwork
-       and the dead space under the buttons is gone */
+    .dive-tile--1 { top: auto; bottom: 92px; left: 18px; }
+    .dive-tile--6 { top: auto; bottom: 104px; right: 18px; }
     .dive-panel::after {
-        content: none;
+        width: 380px;
+        height: 380px;
+        bottom: -150px;
     }
     .dive-terminal {
-        padding: 112px 20px 22px;
-    }
-    .dive-terminal::before,
-    .dive-terminal::after {
-        content: "";
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: -1;
-        pointer-events: none;
-    }
-    .dive-terminal::before {
-        top: -88px;
-        width: 290px;
-        height: 290px;
-        background: url("/docs/assets/octopus_small.webp") no-repeat center / contain;
-        -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 22%, transparent 50%);
-        mask-image: radial-gradient(circle at 50% 50%, #000 22%, transparent 50%);
-        opacity: .42;
-    }
-    .dive-terminal::after {
-        top: -10px;
-        width: min(360px, 100%);
-        height: 96px;
-        background:
-            radial-gradient(ellipse 34% 38% at 50% 100%, rgba(255, 252, 238, .95) 0%, rgba(255, 246, 214, .55) 45%, transparent 100%),
-            radial-gradient(ellipse 50% 70% at 50% 100%, rgba(170, 210, 255, .55) 0%, transparent 100%);
-        filter: blur(6px);
+        padding: 32px 20px 0;
     }
     /* the band is edge to edge and the copy starts near the top, so the
        elliptical mask's fade left the whole header flat blue; on phones the
@@ -735,7 +703,8 @@ body.landing {
         mask-image: linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%);
     }
     .dive-glow {
-        display: none;
+        bottom: 40px;
+        height: 200px;
     }
     .features {
         padding-top: 44px;

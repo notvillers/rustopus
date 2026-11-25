@@ -10,8 +10,11 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Safari tints the status bar and its toolbars from this, which is the
+         only documented way to stop the strip above the band reading as a seam -->
+    <meta name="theme-color" content="#1f55ff">
     <title>RustOpus</title>
-    <link rel="stylesheet" type="text/css" href="/docs/landing.css?v=11" />
+    <link rel="stylesheet" type="text/css" href="/docs/landing.css?v=12" />
     <link rel="icon" type="image/png" href="/docs/assets/octo.ico"/>
   </head>
 
@@ -58,16 +61,6 @@
           </div>
         </div>
 
-        <!-- its own block, not part of .dive-copy: on phones the octopus moves
-             into the gap above it so the command reads below the artwork -->
-        <div class="dive-terminal">
-          <p class="terminal-label">CALL VIA TERMINAL</p>
-          <div class="terminal">
-            <!-- domain is filled in by landing.js from landing-config.js -->
-            <code id="terminal-cmd">curl "https://&lt;domain&gt;/get-bulk?url=&lt;wsdl&gt;&amp;authcode=&lt;code&gt;&amp;pid=&lt;partner_id&gt;"</code>
-          </div>
-        </div>
-
         <div class="dive-glow" aria-hidden="true"></div>
 
         <!-- the list is written twice so the loop is seamless; the copy is hidden from screen readers -->
@@ -95,6 +88,16 @@
         </div>
       </div>
     </header>
+
+    <!-- outside the band entirely, below the ticker: the hero is the pitch and
+         the artwork, the command is the first thing after it -->
+    <div class="dive-terminal">
+      <p class="terminal-label">CALL VIA TERMINAL</p>
+      <div class="terminal">
+        <!-- domain is filled in by landing.js from landing-config.js -->
+        <code id="terminal-cmd">curl "https://&lt;domain&gt;/get-bulk?url=&lt;wsdl&gt;&amp;authcode=&lt;code&gt;&amp;pid=&lt;partner_id&gt;"</code>
+      </div>
+    </div>
 
     <main class="features">
       <section class="feature feature--tentacles">
