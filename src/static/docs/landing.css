@@ -153,6 +153,8 @@ body.landing {
     max-width: 1420px;
     margin: 0 auto;
     padding: 56px 20px 8px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 40px 48px;
@@ -376,6 +378,8 @@ body.landing {
     max-width: 1420px;
     margin: 0 auto;
     padding: 20px 20px 0;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
 }
 
 .dive-panel {
@@ -612,7 +616,13 @@ body.landing {
 /* phones: the band goes edge to edge (no page gutter, no rounded card)
    so the copy gets the full width; the buttons stack at equal width, the
    curl line wraps instead of scrolling, and the four outer tiles frame
-   the copy from the top corners and either side of the octopus */
+   the copy from the top corners and either side of the octopus.
+
+   index.html asks for viewport-fit=cover so the panel also covers the strip
+   behind the status bar: without it iOS paints that strip with the *body*
+   background, a different blue from the panel's gradient, and the seam reads
+   as a broken header. The copy and the two top tiles add the inset back so
+   nothing sits under the clock. */
 @media (max-width: 560px) {
     .dive {
         padding: 0;
@@ -623,6 +633,7 @@ body.landing {
     }
     .dive-copy {
         padding: 92px 20px 150px;
+        padding-top: calc(92px + env(safe-area-inset-top, 0px));
     }
     .dive .hero-kicker {
         font-size: 10px;
@@ -664,8 +675,8 @@ body.landing {
         width: 19px;
         height: 19px;
     }
-    .dive-tile--2 { top: 22px; left: 20px; }
-    .dive-tile--4 { top: 26px; right: 20px; }
+    .dive-tile--2 { top: calc(22px + env(safe-area-inset-top, 0px)); left: 20px; }
+    .dive-tile--4 { top: calc(26px + env(safe-area-inset-top, 0px)); right: 20px; }
     .dive-tile--1 { top: auto; bottom: 92px; left: 18px; }
     .dive-tile--6 { top: auto; bottom: 104px; right: 18px; }
     .dive-panel::after {
@@ -693,6 +704,9 @@ body.landing {
 
 .colophon {
     padding: 56px 20px 44px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(44px, env(safe-area-inset-bottom));
     text-align: center;
     font-family: var(--mono);
     font-size: 11px;
