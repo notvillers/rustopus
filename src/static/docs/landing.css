@@ -466,13 +466,22 @@ body.landing {
     margin: 30px 0 40px;
 }
 
-/* sized to the command, so the full curl line shows on desktop */
+/* sized to the command: `fit-content` keeps the curl line on one row wherever
+   it fits, and the box falls back to the full column width once it does not.
+   The code wraps rather than inheriting the base `nowrap`, which would clip it
+   at the box edge on every width between the phone rules and the desktop. */
 .dive-copy .terminal {
     width: fit-content;
     max-width: 100%;
     box-sizing: border-box;
     margin: 0 auto;
     text-align: left;
+}
+
+.dive-copy .terminal code {
+    display: block;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 /* --------------------------- dive: tiles -------------------------- */
@@ -643,11 +652,8 @@ body.landing {
         padding: 14px 16px;
     }
     .dive-copy .terminal code {
-        display: block;
         font-size: 12px;
         line-height: 1.6;
-        white-space: normal;
-        overflow-wrap: anywhere;
     }
     .dive-tile {
         width: 46px;
@@ -666,6 +672,13 @@ body.landing {
         width: 380px;
         height: 380px;
         bottom: -150px;
+    }
+    /* the band is edge to edge and the copy starts near the top, so the
+       elliptical mask's fade left the whole header flat blue; on phones the
+       dots reach the top edge and fade downward into the octopus glow */
+    .dive-panel::before {
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%);
+        mask-image: linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%);
     }
     .dive-glow {
         bottom: 40px;
