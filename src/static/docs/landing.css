@@ -618,30 +618,25 @@ body.landing {
     .dive-tile--4 { top: 4%; right: 6%; }
 }
 
-/* phones: the band goes edge to edge (no page gutter, no rounded card)
-   so the copy gets the full width; the buttons stack at equal width, the
-   curl line wraps instead of scrolling, and the four outer tiles frame
-   the copy from the top corners and either side of the octopus. */
+/* phones: a tighter gutter than the desktop one, the buttons stack at equal
+   width, the curl line wraps instead of scrolling, and the four outer tiles
+   frame the copy from the top corners and either side of the octopus.
+
+   The panel keeps its rounded card edge here rather than bleeding to the top
+   of the screen. Matching the strip iOS paints behind the status bar is not
+   something a page can do reliably — it is tinted from the canvas colour, not
+   from what the panel draws — so instead of chasing that colour the card
+   simply ends, and the strip reads as the page margin it already is. */
 @media (max-width: 560px) {
     .dive {
-        padding: 0;
+        padding: 11px 11px 0;
     }
     .dive-panel {
-        border-radius: 0 0 18px 18px;
-        box-shadow: 0 -1px 0 rgba(255, 255, 255, .14) inset;
+        border-radius: 16px;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, .2) inset;
     }
     .dive-copy {
-        padding: 92px 20px 150px;
-    }
-    /* iOS tints the strip behind the status bar from the canvas background
-       colour, not from whatever is painted there, so the panel's gradient
-       never reached it however the panel was sized. Giving the root the
-       panel's own top colour is what closes that seam; the dot image tiles
-       in phase with the panel's, since both grids start at the page top. */
-    html {
-        background-color: #1f55ff;
-        background-image: radial-gradient(rgba(255, 255, 255, .22) 1px, transparent 1.3px);
-        background-size: 6px 6px;
+        padding: 84px 18px 150px;
     }
     .dive .hero-kicker {
         font-size: 10px;
