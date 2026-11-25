@@ -153,8 +153,6 @@ body.landing {
     max-width: 1420px;
     margin: 0 auto;
     padding: 56px 20px 8px;
-    padding-left: max(20px, env(safe-area-inset-left));
-    padding-right: max(20px, env(safe-area-inset-right));
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 40px 48px;
@@ -378,8 +376,6 @@ body.landing {
     max-width: 1420px;
     margin: 0 auto;
     padding: 20px 20px 0;
-    padding-left: max(20px, env(safe-area-inset-left));
-    padding-right: max(20px, env(safe-area-inset-right));
 }
 
 .dive-panel {
@@ -442,7 +438,18 @@ body.landing {
     position: relative;
     max-width: 880px;
     margin: 0 auto;
-    padding: 84px 24px 200px;
+    padding: 84px 24px 0;
+    text-align: center;
+}
+
+/* the command block sits outside .dive-copy so the phone rules can drop the
+   octopus into the gap above it. On wider screens it just continues the copy,
+   and carries the bottom padding that leaves room for the octopus below. */
+.dive-terminal {
+    position: relative;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 24px 200px;
     text-align: center;
 }
 
@@ -474,7 +481,7 @@ body.landing {
    it fits, and the box falls back to the full column width once it does not.
    The code wraps rather than inheriting the base `nowrap`, which would clip it
    at the box edge on every width between the phone rules and the desktop. */
-.dive-copy .terminal {
+.dive-terminal .terminal {
     width: fit-content;
     max-width: 100%;
     box-sizing: border-box;
@@ -482,7 +489,7 @@ body.landing {
     text-align: left;
 }
 
-.dive-copy .terminal code {
+.dive-terminal .terminal code {
     display: block;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -616,13 +623,9 @@ body.landing {
 /* phones: the band goes edge to edge (no page gutter, no rounded card)
    so the copy gets the full width; the buttons stack at equal width, the
    curl line wraps instead of scrolling, and the four outer tiles frame
-   the copy from the top corners and either side of the octopus.
-
-   index.html asks for viewport-fit=cover so the panel also covers the strip
-   behind the status bar: without it iOS paints that strip with the *body*
-   background, a different blue from the panel's gradient, and the seam reads
-   as a broken header. The copy and the two top tiles add the inset back so
-   nothing sits under the clock. */
+   the copy from the top corners and either side of the octopus. The command
+   block moves below the octopus here, so the artwork fills what used to be a
+   dead gap between the buttons and the panel's bottom edge. */
 @media (max-width: 560px) {
     .dive {
         padding: 0;
@@ -632,8 +635,17 @@ body.landing {
         box-shadow: 0 -1px 0 rgba(255, 255, 255, .14) inset;
     }
     .dive-copy {
-        padding: 92px 20px 150px;
-        padding-top: calc(92px + env(safe-area-inset-top, 0px));
+        padding: 92px 20px 0;
+    }
+    /* iOS tints the strip behind the status bar from the canvas background
+       colour, not from whatever is painted there, so the panel's gradient
+       never reached it however the panel was sized. Giving the root the
+       panel's own top colour is what closes that seam; the dot image tiles
+       in phase with the panel's, since both grids start at the page top. */
+    html {
+        background-color: #1f55ff;
+        background-image: radial-gradient(rgba(255, 255, 255, .22) 1px, transparent 1.3px);
+        background-size: 6px 6px;
     }
     .dive .hero-kicker {
         font-size: 10px;
@@ -658,11 +670,11 @@ body.landing {
         text-align: center;
         padding: 15px 16px;
     }
-    .dive-copy .terminal {
+    .dive-terminal .terminal {
         width: 100%;
         padding: 14px 16px;
     }
-    .dive-copy .terminal code {
+    .dive-terminal .terminal code {
         font-size: 12px;
         line-height: 1.6;
     }
@@ -675,14 +687,45 @@ body.landing {
         width: 19px;
         height: 19px;
     }
-    .dive-tile--2 { top: calc(22px + env(safe-area-inset-top, 0px)); left: 20px; }
-    .dive-tile--4 { top: calc(26px + env(safe-area-inset-top, 0px)); right: 20px; }
-    .dive-tile--1 { top: auto; bottom: 92px; left: 18px; }
-    .dive-tile--6 { top: auto; bottom: 104px; right: 18px; }
+    .dive-tile--2 { top: 22px; left: 20px; }
+    .dive-tile--4 { top: 26px; right: 20px; }
+    .dive-tile--1 { top: auto; bottom: 244px; left: 14px; }
+    .dive-tile--6 { top: auto; bottom: 256px; right: 14px; }
+    /* the octopus and its glow leave the panel's bottom edge and become the
+       command block's own backdrop, so the command reads below the artwork
+       and the dead space under the buttons is gone */
     .dive-panel::after {
-        width: 380px;
-        height: 380px;
-        bottom: -150px;
+        content: none;
+    }
+    .dive-terminal {
+        padding: 112px 20px 22px;
+    }
+    .dive-terminal::before,
+    .dive-terminal::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: -1;
+        pointer-events: none;
+    }
+    .dive-terminal::before {
+        top: -88px;
+        width: 290px;
+        height: 290px;
+        background: url("/docs/assets/octopus_small.webp") no-repeat center / contain;
+        -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 22%, transparent 50%);
+        mask-image: radial-gradient(circle at 50% 50%, #000 22%, transparent 50%);
+        opacity: .42;
+    }
+    .dive-terminal::after {
+        top: -10px;
+        width: min(360px, 100%);
+        height: 96px;
+        background:
+            radial-gradient(ellipse 34% 38% at 50% 100%, rgba(255, 252, 238, .95) 0%, rgba(255, 246, 214, .55) 45%, transparent 100%),
+            radial-gradient(ellipse 50% 70% at 50% 100%, rgba(170, 210, 255, .55) 0%, transparent 100%);
+        filter: blur(6px);
     }
     /* the band is edge to edge and the copy starts near the top, so the
        elliptical mask's fade left the whole header flat blue; on phones the
@@ -692,8 +735,7 @@ body.landing {
         mask-image: linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%);
     }
     .dive-glow {
-        bottom: 40px;
-        height: 200px;
+        display: none;
     }
     .features {
         padding-top: 44px;
@@ -704,9 +746,6 @@ body.landing {
 
 .colophon {
     padding: 56px 20px 44px;
-    padding-left: max(20px, env(safe-area-inset-left));
-    padding-right: max(20px, env(safe-area-inset-right));
-    padding-bottom: max(44px, env(safe-area-inset-bottom));
     text-align: center;
     font-family: var(--mono);
     font-size: 11px;
