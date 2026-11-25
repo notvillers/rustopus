@@ -15,30 +15,6 @@ body.landing {
     position: relative;
 }
 
-body.landing .hero::before {
-    content: "";
-    position: absolute;
-    top: 40px;
-    left: 0;
-    width: clamp(300px, 38vw, 620px);
-    height: clamp(300px, 38vw, 620px);
-    background: url("/docs/assets/octo_flip.png") no-repeat left top / contain;
-    opacity: .25;
-    z-index: -1;
-    pointer-events: none;
-}
-
-/* on narrow screens center it at the top, behind the stacked title */
-@media (max-width: 720px) {
-    body.landing .hero::before {
-        left: 50%;
-        transform: translateX(-50%);
-        width: min(80vw, 340px);
-        height: min(80vw, 340px);
-        background-position: center top;
-    }
-}
-
 /* ------------------------------- hero ---------------------------- */
 
 /* full-width blue band, used on swagger.html where the body is light */
@@ -53,61 +29,6 @@ body.landing .hero::before {
     margin: 0 auto;
     padding: 64px 20px 8px;
     position: relative;
-}
-
-/* decorative XML sample floating on the hero's empty right half,
-   echoing the "it's all about XML" idea (content mirrors example.xml) */
-.hero-xml {
-    position: absolute;
-    top: 170px;
-    right: 40px;
-    pointer-events: none;
-    user-select: none;
-}
-
-.hero-xml .terminal-label {
-    margin-bottom: 16px;
-    text-align: right;
-}
-
-/* two samples side by side: original (HU) on the left, english (EN) on the right */
-.hero-xml-cols {
-    display: flex;
-    gap: 40px;
-    align-items: center;
-}
-
-/* arrow between the two samples, signalling HU -> EN conversion */
-.hero-xml-arrow {
-    align-self: center;
-    font-size: 28px;
-    line-height: 1;
-    color: rgba(255, 255, 255, .55);
-}
-
-.hero-xml-caption {
-    margin: 0 0 10px 26px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: .3em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, .4);
-}
-
-.hero-xml pre {
-    margin: 0;
-    font-family: var(--mono);
-    font-size: clamp(11px, 1.1vw, 15px);
-    line-height: 1.75;
-    color: rgba(255, 255, 255, .55);
-    border-left: 1px solid rgba(255, 255, 255, .35);
-    padding-left: 26px;
-}
-
-@media (max-width: 1100px) {
-    .hero-xml {
-        display: none;
-    }
 }
 
 .hero-logo {
@@ -142,14 +63,6 @@ body.landing .hero::before {
     font-size: clamp(46px, 8vw, 104px);
     line-height: .95;
     letter-spacing: .01em;
-}
-
-.hero-sub {
-    margin: 0 0 10px;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: .22em;
-    text-transform: uppercase;
 }
 
 .hero-hint {
@@ -452,6 +365,265 @@ body.landing .hero::before {
 
 .endpoint-strip a:hover {
     border-bottom-color: #fff;
+}
+
+/* ------------------------------ dive ------------------------------ */
+
+/* Landing hero band: a lighter-blue panel with a dot texture,
+   tilted endpoint tiles drifting around the copy, the octopus rising out
+   of a cream glow at the bottom edge, and a feature ticker underneath. */
+.dive {
+    max-width: 1420px;
+    margin: 0 auto;
+    padding: 20px 20px 0;
+}
+
+.dive-panel {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #1f55ff 0%, #1048f5 55%, #0a3fee 100%);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .14) inset;
+}
+
+/* dot-matrix texture, fading out toward the edges */
+.dive-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, .22) 1px, transparent 1.3px);
+    background-size: 6px 6px;
+    -webkit-mask-image: radial-gradient(ellipse 75% 85% at 50% 45%, #000 20%, transparent 100%);
+    mask-image: radial-gradient(ellipse 75% 85% at 50% 45%, #000 20%, transparent 100%);
+    z-index: -2;
+    pointer-events: none;
+}
+
+/* the octopus, half-risen behind the glow; octopus_small already carries
+   its own light rays, which stand in for the sunrise */
+.dive-panel::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -210px;
+    width: 560px;
+    height: 560px;
+    transform: translateX(-50%);
+    background: url("/docs/assets/octopus_small.webp") no-repeat center / contain;
+    /* radial, so the square edge of the image's light rays never shows */
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 22%, transparent 50%);
+    mask-image: radial-gradient(circle at 50% 50%, #000 22%, transparent 50%);
+    opacity: .42;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.dive-glow {
+    position: absolute;
+    left: 50%;
+    bottom: 46px;
+    width: min(720px, 110%);
+    height: 260px;
+    transform: translateX(-50%);
+    background:
+        radial-gradient(ellipse 34% 38% at 50% 100%, rgba(255, 252, 238, .95) 0%, rgba(255, 246, 214, .55) 45%, transparent 100%),
+        radial-gradient(ellipse 50% 70% at 50% 100%, rgba(170, 210, 255, .55) 0%, transparent 100%);
+    filter: blur(6px);
+    z-index: -1;
+    pointer-events: none;
+}
+
+.dive-copy {
+    position: relative;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 84px 24px 200px;
+    text-align: center;
+}
+
+.dive-title {
+    margin: 22px 0 20px;
+    font-family: var(--serif);
+    font-weight: 400;
+    text-transform: uppercase;
+    color: #fff;
+    font-size: clamp(40px, 6vw, 76px);
+    line-height: .95;
+    letter-spacing: .01em;
+}
+
+.dive-sub {
+    margin: 0 auto;
+    max-width: 520px;
+    font-size: 11px;
+    line-height: 1.9;
+    letter-spacing: .12em;
+}
+
+.dive-ctas {
+    justify-content: center;
+    margin: 30px 0 40px;
+}
+
+/* sized to the command, so the full curl line shows on desktop */
+.dive-copy .terminal {
+    width: fit-content;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0 auto;
+    text-align: left;
+}
+
+/* --------------------------- dive: tiles -------------------------- */
+
+.dive-tiles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.dive-tile {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 66px;
+    height: 66px;
+    border: 1px solid rgba(255, 255, 255, .4);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .1);
+    box-shadow: 0 10px 30px rgba(0, 20, 120, .25);
+    --tilt: 0deg;
+    transform: rotate(var(--tilt));
+    animation: dive-bob 7s ease-in-out infinite;
+}
+
+.dive-tile svg {
+    width: 26px;
+    height: 26px;
+    fill: none;
+    stroke: var(--cream);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: .9;
+}
+
+.dive-tile--1 { top: 22%; left: 8%;   --tilt: -12deg; animation-delay: -1s; }
+.dive-tile--2 { top: 8%;  left: 18%;  --tilt: 14deg;  animation-delay: -4s; width: 58px; height: 58px; }
+.dive-tile--3 { top: 56%; left: 13%;  --tilt: -8deg;  animation-delay: -2.5s; width: 56px; height: 56px; }
+.dive-tile--4 { top: 10%; right: 17%; --tilt: -18deg; animation-delay: -3s; }
+.dive-tile--5 { top: 54%; right: 14%; --tilt: 6deg;   animation-delay: -5.5s; width: 58px; height: 58px; }
+.dive-tile--6 { top: 30%; right: 7%;  --tilt: -24deg; animation-delay: -0.5s; }
+
+@keyframes dive-bob {
+    0%, 100% { transform: translateY(0) rotate(var(--tilt)); }
+    50%      { transform: translateY(-10px) rotate(calc(var(--tilt) + 3deg)); }
+}
+
+/* -------------------------- dive: ticker -------------------------- */
+
+.dive-ticker {
+    position: relative;
+    border-top: 1px solid rgba(255, 255, 255, .3);
+    background: rgba(0, 40, 190, .35);
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+
+.dive-ticker-track {
+    display: flex;
+    width: max-content;
+    animation: dive-scroll 48s linear infinite;
+}
+
+.dive-ticker:hover .dive-ticker-track {
+    animation-play-state: paused;
+}
+
+.dive-ticker-list {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dive-ticker-list li {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    padding: 17px 0;
+    margin-right: 48px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .2em;
+    color: var(--cream);
+}
+
+/* a small octopus mark before each item, like the icons in a status ticker;
+   octo_white.png is a flat white silhouette, made to stay legible at 18px */
+.dive-ticker-list li::before {
+    content: "";
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    background: url("/docs/assets/octo_white.png") no-repeat center / contain;
+}
+
+@keyframes dive-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dive-tile,
+    .dive-ticker-track {
+        animation: none;
+    }
+}
+
+/* the inner tiles would cross the copy column below this width */
+@media (max-width: 1240px) {
+    .dive-tile--3,
+    .dive-tile--5 {
+        display: none;
+    }
+}
+
+/* narrow screens: keep only the outer tiles, tucked into the corners */
+@media (max-width: 900px) {
+    .dive-tile--1 { top: 64%; left: 5%; }
+    .dive-tile--6 { top: 62%; right: 5%; }
+    .dive-tile--2 { top: 4%; left: 6%; }
+    .dive-tile--4 { top: 4%; right: 6%; }
+}
+
+@media (max-width: 560px) {
+    .dive {
+        padding: 16px 16px 0;
+    }
+    .dive-copy {
+        padding: 96px 8px 190px;
+    }
+    .dive-tile {
+        width: 48px;
+        height: 48px;
+    }
+    .dive-tile svg {
+        width: 20px;
+        height: 20px;
+    }
+    .dive-tile--1,
+    .dive-tile--6 {
+        display: none;
+    }
+    .dive-panel::after {
+        width: 420px;
+        height: 420px;
+        bottom: -160px;
+    }
 }
 
 /* ----------------------------- footer ----------------------------- */
