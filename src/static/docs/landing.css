@@ -636,14 +636,14 @@ body.landing {
         box-shadow: 0 0 0 1px rgba(255, 255, 255, .2) inset;
     }
     .dive-copy {
-        padding: 84px 18px 150px;
+        padding: 68px 18px 84px;
     }
     .dive .hero-kicker {
         font-size: 10px;
         letter-spacing: .26em;
     }
     .dive-title {
-        margin: 18px 0 18px;
+        margin: 14px 0 14px;
         font-size: clamp(44px, 14vw, 60px);
         line-height: .92;
     }
@@ -655,7 +655,7 @@ body.landing {
     .dive-ctas {
         flex-direction: column;
         gap: 10px;
-        margin: 28px 0 32px;
+        margin: 22px 0 18px;
     }
     .dive-ctas .cta {
         text-align: center;
@@ -670,18 +670,18 @@ body.landing {
         line-height: 1.6;
     }
     .dive-tile {
-        width: 46px;
-        height: 46px;
+        width: 42px;
+        height: 42px;
         border-radius: 7px;
     }
     .dive-tile svg {
         width: 19px;
         height: 19px;
     }
-    .dive-tile--2 { top: 22px; left: 20px; }
-    .dive-tile--4 { top: 26px; right: 20px; }
-    .dive-tile--1 { top: auto; bottom: 92px; left: 18px; }
-    .dive-tile--6 { top: auto; bottom: 104px; right: 18px; }
+    .dive-tile--2 { top: 12px; left: 16px; }
+    .dive-tile--4 { top: 16px; right: 16px; }
+    .dive-tile--1 { top: auto; bottom: 74px; left: 16px; }
+    .dive-tile--6 { top: auto; bottom: 86px; right: 16px; }
     .dive-panel::after {
         width: 380px;
         height: 380px;
